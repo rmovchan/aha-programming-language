@@ -6,6 +6,9 @@ uses
   Classes, collections, core, metatypes
   { you can add units after this };
 
+exports
+  metatypes.GetModuleData name 'MetaTypes';
+
 begin
 end.
 

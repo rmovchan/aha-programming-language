@@ -40,7 +40,7 @@
         <UnitName Value="base"/>
       </Unit0>
       <Unit1>
-        <Filename Value="..\..\Dropbox\Aha\Base\collections.pas"/>
+        <Filename Value="collections.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="collections"/>
       </Unit1>
@@ -50,7 +50,7 @@
         <UnitName Value="core"/>
       </Unit2>
       <Unit3>
-        <Filename Value="..\..\Dropbox\Aha\Base\metatypes.pas"/>
+        <Filename Value="metatypes.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="metatypes"/>
       </Unit3>

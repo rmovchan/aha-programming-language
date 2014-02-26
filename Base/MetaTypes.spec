@@ -1,8 +1,4 @@
-unit metatypes;
-
-{$mode objfpc}{$H+}
-(*
-doc
+doc 
     Title: "Meta Types"
     Purpose: "Values describing Aha! types"
     Package: "Aha! Base Library"
@@ -15,13 +11,13 @@ type String: [character] "alias for character array type"
 export Types:
     type DataType: opaque "meta-type"
     type ComField: [ id: [ name: String | op: String ] "field name or operator" datatype: DataType "field type" ] "composite field descriptor"
-    type ComVariant: [ComField] "variant of a composite"
+    type ComVariant: [ComField] "variant of a composite" 
     type TypeInfo:
-        [
-            nilType: "nil" |
-            integerType: "integer" |
-            characterType: "character" |
-            arrayType: DataType "array" |
+        [ 
+            nilType: "nil" | 
+            integerType: "integer" | 
+            characterType: "character" | 
+            arrayType: DataType "array" | 
             compositeType: [ComVariant] "composite type" |
             functionType: [ param: [ single: DataType | first: DataType second: DataType ] result: DataType ] "function" |
             objectType: [ state: DataType actions: [[ name: String param: DataType ]] ] "object or sequence" |
@@ -44,25 +40,3 @@ export Utils:
     (DataType >= DataType): { DataType, DataType } "contravariance: reverse to <="
     (DataType = DataType): { DataType, DataType } "are types equivalent (i.e.both <= and >=)?"
 end
-*)
-interface
-
-uses
-  Classes, SysUtils;
-
-type
-  IahaModuleData = interface
-    function TypeInfo(out value: TahaUnaryFunction): Boolean;
-  end;
-
-function GetModuleData(out value: IahaModuleData): Boolean;
-
-implementation
-
-  TModuleData = class(TahaComposite, IahaModuleData)
-  private
-  public
-  end;
-
-end.
-
