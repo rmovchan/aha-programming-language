@@ -257,67 +257,87 @@ end;
 function TModuleData.TypeInfo(out value: IahaUnaryFunction): Boolean;
 begin
 
+  Result := True;
 end;
 
 function TModuleData.Nesting(out value: IahaUnaryFunction): Boolean;
 begin
 
+  Result := True;
 end;
 
 function TModuleData.FooType(out value: IUnknown): Boolean;
 begin
-  value := TFooType.Create;
   Result := True;
+  try
+    value := TFooType.Create;
+  except
+    Result := False;
+  end;
 end;
 
 function TModuleData.IntType(out value: IUnknown): Boolean;
 begin
 
+  Result := True;
 end;
 
 function TModuleData.CharType(out value: IUnknown): Boolean;
 begin
 
+  Result := True;
 end;
 
 function TModuleData.ArrayType(out value: IahaUnaryFunction): Boolean;
 begin
-  value := TArrayTypeConstructor.Create;
+  Result := True;
+  try
+    value := TArrayTypeConstructor.Create;
+  except
+    Result := False;
+  end;
 end;
 
 function TModuleData.SeqType(out value: IahaUnaryFunction): Boolean;
 begin
 
+  Result := True;
 end;
 
 function TModuleData.ComType(out value: IahaUnaryFunction): Boolean;
 begin
 
+  Result := True;
 end;
 
 function TModuleData.FuncType(out value: IahaUnaryFunction): Boolean;
 begin
 
+  Result := True;
 end;
 
 function TModuleData.ObjType(out value: IahaUnaryFunction): Boolean;
 begin
 
+  Result := True;
 end;
 
 function TModuleData.Covariant(out value: IahaBinaryRelation): Boolean;
 begin
 
+  Result := True;
 end;
 
 function TModuleData.Contravariant(out value: IahaBinaryRelation): Boolean;
 begin
 
+  Result := True;
 end;
 
 function TModuleData.Equivalent(out value: IahaBinaryRelation): Boolean;
 begin
 
+  Result := True;
 end;
 
 constructor TModuleData.Create;

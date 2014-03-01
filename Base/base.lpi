@@ -45,7 +45,7 @@
         <UnitName Value="collections"/>
       </Unit1>
       <Unit2>
-        <Filename Value="..\core.pas"/>
+        <Filename Value="core.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="core"/>
       </Unit2>
@@ -64,11 +64,12 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="..\..\Dropbox\Aha;.."/>
-      <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+      <OtherUnitFiles Value=".."/>
+      <UnitOutputDirectory Value="c:\users\roman\temp\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <CodeGeneration>
       <RelocatableUnit Value="True"/>
+      <TargetOS Value="win32"/>
     </CodeGeneration>
     <Linking>
       <Options>
