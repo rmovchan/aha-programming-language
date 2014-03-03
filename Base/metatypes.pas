@@ -71,6 +71,9 @@ function GetModuleData(out value: IahaModuleData): Boolean;
 
 implementation
 
+uses
+  SysUtils;
+
 type
 
   { TModuleData }
@@ -114,12 +117,14 @@ type
     function functionType(out datatype: IUnknown): Boolean;
     function objectType(out datatype: IUnknown): Boolean;
     function opaqueType: Boolean;
+    function nesting(out value: TahaInteger): Boolean;
   end;
 
   { TBaseTypeInfo }
 
   TBaseTypeInfo = class(TahaComposite, ITypeInfo)
   private
+    FNesting: TahaInteger;
     function fooType: Boolean; virtual;
     function characterType: Boolean; virtual;
     function integerType: Boolean; virtual;
@@ -128,6 +133,9 @@ type
     function functionType(out datatype: IUnknown): Boolean; virtual;
     function objectType(out datatype: IUnknown): Boolean; virtual;
     function opaqueType: Boolean; virtual;
+    function nesting(out value: TahaInteger): Boolean; virtual;
+  public
+    constructor Create(const N: TahaInteger);
   end;
 
   { TFooType }
@@ -177,9 +185,16 @@ begin
 end;
 
 constructor TArrayType.Create(const itemtype: ITypeInfo);
+var
+  N: TahaInteger;
 begin
-  inherited Create;
-  FItemType := itemtype;
+  if itemtype.nesting(N) then
+    begin
+      inherited Create(N + 1);
+      FItemType := itemtype;
+    end
+  else
+    Abort;
 end;
 
 { TArrayTypeConstructor }
@@ -252,6 +267,18 @@ begin
   Result := False;
 end;
 
+function TBaseTypeInfo.nesting(out value: TahaInteger): Boolean;
+begin
+  value := FNesting;
+  Result := True;
+end;
+
+constructor TBaseTypeInfo.Create(const N: TahaInteger);
+begin
+  inherited Create;
+  FNesting := N;
+end;
+
 { TModuleData }
 
 function TModuleData.TypeInfo(out value: IahaUnaryFunction): Boolean;
@@ -270,7 +297,7 @@ function TModuleData.FooType(out value: IUnknown): Boolean;
 begin
   Result := True;
   try
-    value := TFooType.Create;
+    value := TFooType.Create(0);
   except
     Result := False;
   end;
@@ -278,13 +305,13 @@ end;
 
 function TModuleData.IntType(out value: IUnknown): Boolean;
 begin
-
+  value := TIntegerType.Create(0);
   Result := True;
 end;
 
 function TModuleData.CharType(out value: IUnknown): Boolean;
 begin
-
+  value := TCharacterType.Create(0);
   Result := True;
 end;
 

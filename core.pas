@@ -16,17 +16,32 @@ type
   PahaCharacter = ^TahaCharacter;
   TahaCharacter = WideChar;
 
-  TahaObject = TInterfacedObject;
-
-  TahaComposite = TInterfacedObject;
-
-  TahaOpaque = TInterfacedObject;
-
   IahaArray = interface
     function size(out value: TahaInteger): Boolean;
     function at(const index: TahaInteger; out value): Boolean;
     function write(out value): Boolean;
   end;
+
+  IahaObject = interface
+    function state(out value): Boolean;
+  end;
+
+  IahaSequence = interface(IahaObject)
+    function skip(out new: IahaSequence): Boolean;
+  end;
+
+  { TahaObject }
+
+  TahaObject = class(TInterfacedObject, IahaObject)
+  protected
+    function state(out value): Boolean; virtual;
+    function get(out value): Boolean;
+    function copy(out value): Boolean; virtual;
+  end;
+
+  TahaComposite = TInterfacedObject;
+
+  TahaOpaque = TInterfacedObject;
 
   { TahaFooArrayWrapper }
 
@@ -142,7 +157,32 @@ function IntGreater(const a, b: TahaInteger): Boolean; inline;
 function CharEqual(const a, b: TahaCharacter): Boolean; inline;
 function CharNotEqual(const a, b: TahaCharacter): Boolean; inline;
 
+function IntSortArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;
+
 implementation
+
+{ TahaObject }
+
+function TahaObject.state(out value): Boolean;
+begin
+  Result := True;
+end;
+
+function TahaObject.get(out value): Boolean;
+begin
+  if RefCount > 1 then
+    Result := copy(value)
+  else
+    begin
+      IahaObject(value) := Self;
+      Result := True;
+    end;
+end;
+
+function TahaObject.copy(out value): Boolean;
+begin
+  Result := True;
+end;
 
 { TahaSegmentWrapper }
 
@@ -416,6 +456,11 @@ end;
 function CharNotEqual(const a, b: TahaCharacter): Boolean; inline;
 begin
   Result := a <> b;
+end;
+
+function IntSortArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;
+begin
+
 end;
 
 end.
