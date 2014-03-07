@@ -30,8 +30,52 @@ type
     function skip(out new: IahaSequence): Boolean;
   end;
 
-  { TahaObject }
+  TahaComposite = TInterfacedObject;
 
+  TahaOpaque = TInterfacedObject;
+
+  IahaUnaryRelation = interface
+    function Check(const param): Boolean;
+  end;
+
+  IahaBinaryRelation = interface
+    function Check(const param1, param2): Boolean;
+  end;
+
+  IahaUnaryFunction = interface
+    function Get(const param; out value): Boolean;
+  end;
+
+  IahaBinaryFunction = interface
+    function Get(const param1, param2; out value): Boolean;
+  end;
+
+  TahaFunction = TInterfacedObject;
+
+function CharArrayToString(const a: IahaArray; out s: UnicodeString): Boolean; inline;
+
+function IntPlus(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
+function IntMinus(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
+function IntMult(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
+function IntDiv(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
+function IntMod(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
+function IntLess(const a, b: TahaInteger): Boolean; inline;
+function IntLessEqual(const a, b: TahaInteger): Boolean; inline;
+function IntEqual(const a, b: TahaInteger): Boolean; inline;
+function IntNotEqual(const a, b: TahaInteger): Boolean; inline;
+function IntGreaterEqual(const a, b: TahaInteger): Boolean; inline;
+function IntGreater(const a, b: TahaInteger): Boolean; inline;
+function CharEqual(const a, b: TahaCharacter): Boolean; inline;
+function CharNotEqual(const a, b: TahaCharacter): Boolean; inline;
+
+function IntSortArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;
+
+implementation
+
+
+type
+
+{ TahaObject }
   TahaObject = class(TInterfacedObject, IahaObject)
   protected
     function state(out value): Boolean; virtual;
@@ -39,12 +83,7 @@ type
     function copy(out value): Boolean; virtual;
   end;
 
-  TahaComposite = TInterfacedObject;
-
-  TahaOpaque = TInterfacedObject;
-
   { TahaFooArrayWrapper }
-
   TahaFooArrayWrapper = class(TInterfacedObject, IahaArray)
   private
     FSize: TahaInteger;
@@ -123,44 +162,6 @@ type
     function Check: Boolean;
   end;
 
-  IahaUnaryRelation = interface
-    function Check(const param): Boolean;
-  end;
-
-  IahaBinaryRelation = interface
-    function Check(const param1, param2): Boolean;
-  end;
-
-  IahaUnaryFunction = interface
-    function Get(const param; out value): Boolean;
-  end;
-
-  IahaBinaryFunction = interface
-    function Get(const param1, param2; out value): Boolean;
-  end;
-
-  TahaFunction = TInterfacedObject;
-
-function CharArrayToString(const a: IahaArray; out s: UnicodeString): Boolean; inline;
-
-function IntPlus(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
-function IntMinus(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
-function IntMult(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
-function IntDiv(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
-function IntMod(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
-function IntLess(const a, b: TahaInteger): Boolean; inline;
-function IntLessEqual(const a, b: TahaInteger): Boolean; inline;
-function IntEqual(const a, b: TahaInteger): Boolean; inline;
-function IntNotEqual(const a, b: TahaInteger): Boolean; inline;
-function IntGreaterEqual(const a, b: TahaInteger): Boolean; inline;
-function IntGreater(const a, b: TahaInteger): Boolean; inline;
-function CharEqual(const a, b: TahaCharacter): Boolean; inline;
-function CharNotEqual(const a, b: TahaCharacter): Boolean; inline;
-
-function IntSortArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;
-
-implementation
-
 { TahaObject }
 
 function TahaObject.state(out value): Boolean;
@@ -181,6 +182,7 @@ end;
 
 function TahaObject.copy(out value): Boolean;
 begin
+  IahaObject(value) := Create;
   Result := True;
 end;
 
@@ -458,9 +460,164 @@ begin
   Result := a <> b;
 end;
 
-function IntSortArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;
-begin
+type
 
+  { TArraySlice }
+
+  TArraySlice = class(TahaObject, IahaSequence)
+  private
+    FArray: IahaArray;
+    FIndex: TahaInteger;
+    FCount: TahaInteger;
+  protected
+    function state(out value): Boolean; override;
+    function skip(out new: IahaSequence): Boolean;
+  end;
+
+  { TMergeSeq }
+
+  TMergeSeq = class(TahaObject, IahaSequence)
+  private
+    FSeq1: IahaSequence;
+    FSeq2: IahaSequence;
+    FRel: IahaBinaryRelation;
+  protected
+    function state(out value): Boolean; override;
+    function skip(out new: IahaSequence): Boolean;
+  public
+    constructor Create(const Seq1, Seq2: IahaSequence; const rel: IahaBinaryRelation);
+  end;
+
+
+function SortArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;
+var
+  L, I, J: TahaInteger;
+  S: TArraySlice;
+  SS: array of IahaSequence;
+  A, B: IahaInteger;
+begin
+  if param.size(L) then
+    begin
+      Result := True;
+      if L > 0 then
+        begin
+  //split array into ordered slices
+          SetLength(SS, L);
+          S := TArraySlice.Create;
+          S.FArray := param;
+          S.FIndex := 0;
+          I := 0;
+          J := 0;
+          while I < L do
+          begin
+            if I < L - 1 then
+              begin
+                repeat
+                  param.at(I, A);
+                  Inc(I);
+                  if I = L then Break;
+                  param.at(I, B);
+                until not rel.Check(A, B);
+              end;
+            S.FCount := I - S.FIndex;
+            SS[J] := S;
+            Inc(J);
+            Inc(I);
+            if I < L then
+              begin
+                S := TArraySlice.Create;
+                S.FArray := param;
+                S.FIndex := I;
+              end;
+          end;
+          SetLength(SS, J);
+  //merge slices
+          value := SS[0];
+          Dec(J);
+          while J > 0 do
+          begin
+            value := TMergeSeq.Create(value, SS[J]);
+            Dec(J);
+          end;
+        end
+      else
+        value := TEmptySeq.Create;
+    end
+  else
+    Result := False;
+end;
+
+{ TArraySlice }
+
+function TArraySlice.state(out value): Boolean;
+begin
+  Result := FCount > 0;
+  if Result then
+    Result := FArray.at(0, value);
+end;
+
+function TArraySlice.skip(out new: IahaSequence): Boolean;
+begin
+  if FCount > 0 then
+    begin
+      Inc(FIndex);
+      Dec(FCount);
+      new := Self;
+    end
+  else
+    Result := False;
+end;
+
+{ TMergeSeq }
+
+function TMergeSeq.state(out value): Boolean;
+var
+  S1, S2: TahaInteger;
+begin
+  if (FSeq1.state(S1) and not FSeq2.state(S2)) or FRel.Check(S1, S2) then
+    begin
+      TahaInteger(value) := S1;
+      Result := True;
+    end
+  else
+  if (not FSeq1.state(S1) and FSeq2.state(S2)) or FRel.Check(S2, S1) then
+    begin
+      TahaInteger(value) := S2;
+      Result := True;
+    end
+  else
+    Result := False;
+end;
+
+function TMergeSeq.skip(out new: IahaSequence): Boolean;
+var
+  S1, S2: TahaInteger;
+  next: IahaSequence;
+begin
+  new := Self;
+  if (FSeq1.state(S1) and not FSeq2.state(S2)) or FRel.Check(S1, S2) then
+    begin
+      Result := FSeq1.skip(next);
+      if Result then
+        FSeq1 := next;
+    end
+  else
+  if (not FSeq1.state(S1) and FSeq2.state(S2)) or FRel.Check(S2, S1) then
+    begin
+      Result := FSeq2.skip(next);
+      if Result then
+        FSeq2 := next;
+    end
+  else
+    Result := False;
+end;
+
+constructor TMergeSeq.Create(const Seq1, Seq2: IahaSequence; const rel: IahaBinaryRelation);
+begin
+  inherited Create
+  FSeq1 := Seq1;
+  FSeq2 := Seq2;
+  FRel := rel;
 end;
 
 end.

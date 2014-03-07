@@ -120,6 +120,11 @@ type
     function nesting(out value: TahaInteger): Boolean;
   end;
 
+  IAttribute = interface
+    function name(out value: IahaArray): Boolean;
+    function datatype(out value: ITypeInfo): Boolean;
+  end;
+
   { TBaseTypeInfo }
 
   TBaseTypeInfo = class(TahaComposite, ITypeInfo)
@@ -176,7 +181,85 @@ type
     function Get(const param; out value): Boolean;
   end;
 
+  { TCompositeType }
+
+  TCompositeType = class(TBaseTypeInfo)
+  private
+    FAttributes: IahaArray;
+    function compositeType(out comvars: IahaArray): Boolean; override;
+  public
+    constructor Create(const comvars: IahaArray);
+end;
+
+  { TCompositeTypeConstructor }
+
+  TCompositeTypeConstructor = class(TahaFunction, IahaUnaryFunction)
+  private
+    function Get(const param; out value): Boolean;
+  end;
+
   { Class implementation }
+
+{ TCompositeTypeConstructor }
+
+function TCompositeTypeConstructor.Get(const param; out value): Boolean;
+begin
+  try
+    ITypeInfo(value) := TCompositeType.Create(IahaArray(param));
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+
+{ TCompositeType }
+
+function TCompositeType.compositeType(out comvars: IahaArray): Boolean;
+begin
+  comvars := FAttributes;
+  Result := True;
+end;
+
+constructor TCompositeType.Create(const comvars: IahaArray);
+var
+  I, J, K, L, N, M: TahaInteger;
+  V: IahaArray;
+  A: IAttribute;
+  D: ITypeInfo;
+begin
+  if comvars.size(N) then
+    begin
+      M := 0;
+      I := 0;
+      while I < N do //scan variants
+      begin
+        if comvars.at(I, V) and V.size(L) then
+          begin
+            J := 0;
+            while J < L do //scan attributes
+            begin
+              if V.at(J, A) then
+                begin
+                  if A.datatype(D) and D.nesting(K) and (K > M) then
+                    M := K; //find maximum nesting level
+                end
+              else
+                Abort;
+              Inc(J);
+            end;
+          end
+        else
+          Abort;
+        Inc(I);
+      end;
+      inherited Create(M + 1);
+      FAttributes := comvars;
+    end
+  else
+    Abort;
+end;
+
+{ TArrayType }
 
 function TArrayType.arrayType(out datatype: ITypeInfo): Boolean;
 begin
@@ -201,7 +284,12 @@ end;
 
 function TArrayTypeConstructor.Get(const param; out value): Boolean;
 begin
-  ITypeInfo(value) := TArrayType.Create(ITypeInfo(param));
+  try
+    ITypeInfo(value) := TArrayType.Create(ITypeInfo(param));
+    Result := True;
+  except
+    Result := False;
+  end;
 end;
 
 { TFooType }
@@ -295,9 +383,9 @@ end;
 
 function TModuleData.FooType(out value: IUnknown): Boolean;
 begin
-  Result := True;
   try
     value := TFooType.Create(0);
+    Result := True;
   except
     Result := False;
   end;
@@ -305,21 +393,29 @@ end;
 
 function TModuleData.IntType(out value: IUnknown): Boolean;
 begin
-  value := TIntegerType.Create(0);
-  Result := True;
+  try
+    value := TIntegerType.Create(0);
+    Result := True;
+  except
+    Result := False;
+  end;
 end;
 
 function TModuleData.CharType(out value: IUnknown): Boolean;
 begin
-  value := TCharacterType.Create(0);
-  Result := True;
+  try
+    value := TCharacterType.Create(0);
+    Result := True;
+  except
+    Result := False;
+  end;
 end;
 
 function TModuleData.ArrayType(out value: IahaUnaryFunction): Boolean;
 begin
-  Result := True;
   try
     value := TArrayTypeConstructor.Create;
+    Result := True;
   except
     Result := False;
   end;
