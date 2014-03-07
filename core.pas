@@ -182,7 +182,7 @@ end;
 
 function TahaObject.copy(out value): Boolean;
 begin
-  IahaObject(value) := Create;
+  IahaObject(value) := TahaObject.Create;
   Result := True;
 end;
 
@@ -489,12 +489,12 @@ type
   end;
 
 
-function SortArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;
+function IntSortArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;
 var
   L, I, J: TahaInteger;
   S: TArraySlice;
   SS: array of IahaSequence;
-  A, B: IahaInteger;
+  A, B: TahaInteger;
 begin
   if param.size(L) then
     begin
@@ -536,12 +536,12 @@ begin
           Dec(J);
           while J > 0 do
           begin
-            value := TMergeSeq.Create(value, SS[J]);
+            value := TMergeSeq.Create(value, SS[J], rel);
             Dec(J);
           end;
         end
       else
-        value := TEmptySeq.Create;
+        value := TArraySlice.Create;
     end
   else
     Result := False;
@@ -614,7 +614,7 @@ end;
 
 constructor TMergeSeq.Create(const Seq1, Seq2: IahaSequence; const rel: IahaBinaryRelation);
 begin
-  inherited Create
+  inherited Create;
   FSeq1 := Seq1;
   FSeq2 := Seq2;
   FRel := rel;

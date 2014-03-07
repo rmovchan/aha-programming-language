@@ -53,8 +53,8 @@
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="3"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="557"/>
-        <CursorPos X="16" Y="572"/>
+        <TopLine Value="171"/>
+        <CursorPos X="34" Y="185"/>
         <UsageCount Value="118"/>
         <Loaded Value="True"/>
       </Unit4>
@@ -63,132 +63,132 @@
         <WindowIndex Value="0"/>
         <TopLine Value="178"/>
         <CursorPos X="23" Y="192"/>
-        <UsageCount Value="8"/>
+        <UsageCount Value="1"/>
       </Unit5>
     </Units>
     <General>
       <ActiveWindowIndexAtStart Value="0"/>
     </General>
-    <JumpHistory Count="30" HistoryIndex="28">
+    <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="..\core.pas"/>
-        <Caret Line="101" Column="14" TopLine="87"/>
+        <Caret Line="202" Column="27" TopLine="188"/>
       </Position1>
       <Position2>
         <Filename Value="..\core.pas"/>
-        <Caret Line="234" Column="48" TopLine="222"/>
+        <Caret Line="129" Column="59" TopLine="114"/>
       </Position2>
       <Position3>
         <Filename Value="..\core.pas"/>
-        <Caret Line="202" Column="27" TopLine="188"/>
+        <Caret Line="314" Column="28" TopLine="314"/>
       </Position3>
       <Position4>
         <Filename Value="..\core.pas"/>
-        <Caret Line="129" Column="59" TopLine="114"/>
+        <Caret Line="145" Column="53" TopLine="131"/>
       </Position4>
       <Position5>
         <Filename Value="..\core.pas"/>
-        <Caret Line="314" Column="28" TopLine="314"/>
+        <Caret Line="37" Column="49" TopLine="22"/>
       </Position5>
       <Position6>
         <Filename Value="..\core.pas"/>
-        <Caret Line="145" Column="53" TopLine="131"/>
+        <Caret Line="39" Column="18" TopLine="23"/>
       </Position6>
       <Position7>
         <Filename Value="..\core.pas"/>
-        <Caret Line="37" Column="49" TopLine="22"/>
+        <Caret Line="168" Column="17" TopLine="37"/>
       </Position7>
       <Position8>
         <Filename Value="..\core.pas"/>
-        <Caret Line="39" Column="18" TopLine="23"/>
+        <Caret Line="160" Column="62" TopLine="146"/>
       </Position8>
       <Position9>
-        <Filename Value="..\core.pas"/>
-        <Caret Line="168" Column="17" TopLine="37"/>
+        <Filename Value="metatypes.pas"/>
+        <Caret Line="124" Column="1" TopLine="123"/>
       </Position9>
       <Position10>
-        <Filename Value="..\core.pas"/>
-        <Caret Line="160" Column="62" TopLine="146"/>
+        <Filename Value="metatypes.pas"/>
+        <Caret Line="150" Column="50" TopLine="124"/>
       </Position10>
       <Position11>
         <Filename Value="metatypes.pas"/>
-        <Caret Line="124" Column="1" TopLine="123"/>
+        <Caret Line="135" Column="46" TopLine="116"/>
       </Position11>
       <Position12>
         <Filename Value="metatypes.pas"/>
-        <Caret Line="150" Column="50" TopLine="124"/>
+        <Caret Line="304" Column="36" TopLine="300"/>
       </Position12>
       <Position13>
         <Filename Value="metatypes.pas"/>
-        <Caret Line="135" Column="46" TopLine="116"/>
+        <Caret Line="166" Column="46" TopLine="141"/>
       </Position13>
       <Position14>
         <Filename Value="metatypes.pas"/>
-        <Caret Line="304" Column="36" TopLine="300"/>
+        <Caret Line="189" Column="14" TopLine="181"/>
       </Position14>
       <Position15>
         <Filename Value="metatypes.pas"/>
-        <Caret Line="166" Column="46" TopLine="141"/>
+        <Caret Line="222" Column="12" TopLine="213"/>
       </Position15>
       <Position16>
         <Filename Value="metatypes.pas"/>
-        <Caret Line="189" Column="14" TopLine="181"/>
+        <Caret Line="191" Column="17" TopLine="177"/>
       </Position16>
       <Position17>
         <Filename Value="metatypes.pas"/>
-        <Caret Line="222" Column="12" TopLine="213"/>
+        <Caret Line="226" Column="13" TopLine="212"/>
       </Position17>
       <Position18>
-        <Filename Value="metatypes.pas"/>
-        <Caret Line="191" Column="17" TopLine="177"/>
+        <Filename Value="..\core.pas"/>
+        <Caret Line="184" Column="31" TopLine="441"/>
       </Position18>
       <Position19>
-        <Filename Value="metatypes.pas"/>
-        <Caret Line="226" Column="13" TopLine="212"/>
+        <Filename Value="..\core.pas"/>
+        <Caret Line="464" Column="25" TopLine="441"/>
       </Position19>
       <Position20>
         <Filename Value="..\core.pas"/>
-        <Caret Line="184" Column="31" TopLine="441"/>
+        <Caret Line="80" Column="50" TopLine="55"/>
       </Position20>
       <Position21>
         <Filename Value="..\core.pas"/>
-        <Caret Line="464" Column="25" TopLine="441"/>
+        <Caret Line="465" Column="30" TopLine="450"/>
       </Position21>
       <Position22>
         <Filename Value="..\core.pas"/>
-        <Caret Line="80" Column="50" TopLine="55"/>
+        <Caret Line="471" Column="1" TopLine="450"/>
       </Position22>
       <Position23>
         <Filename Value="..\core.pas"/>
-        <Caret Line="465" Column="30" TopLine="450"/>
+        <Caret Line="79" Column="3" TopLine="65"/>
       </Position23>
       <Position24>
         <Filename Value="..\core.pas"/>
-        <Caret Line="471" Column="1" TopLine="450"/>
+        <Caret Line="484" Column="52" TopLine="458"/>
       </Position24>
       <Position25>
         <Filename Value="..\core.pas"/>
-        <Caret Line="79" Column="3" TopLine="65"/>
+        <Caret Line="485" Column="81" TopLine="470"/>
       </Position25>
       <Position26>
         <Filename Value="..\core.pas"/>
-        <Caret Line="484" Column="52" TopLine="458"/>
+        <Caret Line="560" Column="45" TopLine="539"/>
       </Position26>
       <Position27>
         <Filename Value="..\core.pas"/>
-        <Caret Line="485" Column="81" TopLine="470"/>
+        <Caret Line="572" Column="16" TopLine="557"/>
       </Position27>
       <Position28>
         <Filename Value="..\core.pas"/>
-        <Caret Line="560" Column="45" TopLine="539"/>
+        <Caret Line="470" Column="27" TopLine="457"/>
       </Position28>
       <Position29>
         <Filename Value="..\core.pas"/>
-        <Caret Line="572" Column="16" TopLine="557"/>
+        <Caret Line="609" Column="3" TopLine="589"/>
       </Position29>
       <Position30>
         <Filename Value="..\core.pas"/>
-        <Caret Line="174" Column="3" TopLine="172"/>
+        <Caret Line="185" Column="34" TopLine="171"/>
       </Position30>
     </JumpHistory>
   </ProjectSession>
