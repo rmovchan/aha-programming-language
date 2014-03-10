@@ -143,6 +143,20 @@ type
     constructor Create(const N: TahaInteger);
   end;
 
+  { TTypeInfo }
+
+  TTypeInfo = class(TahaFunction, IahaUnaryFunction)
+  private
+    function Get(const param; out value): Boolean;
+  end;
+
+  { TNesting }
+
+  TNesting = class(TahaFunction, IahaUnaryFunction)
+  private
+    function Get(const param; out value): Boolean;
+  end;
+
   { TFooType }
 
   TFooType = class(TBaseTypeInfo)
@@ -199,6 +213,21 @@ end;
   end;
 
   { Class implementation }
+
+{ TTypeInfo }
+
+function TTypeInfo.Get(const param; out value): Boolean;
+begin
+  Result := True;
+  ITypeInfo(value) := ITypeInfo(param);
+end;
+
+{ TNesting }
+
+function TNesting.Get(const param; out value): Boolean;
+begin
+  Result := ITypeInfo(param).nesting(TahaInteger(value));
+end;
 
 { TCompositeTypeConstructor }
 
@@ -371,14 +400,22 @@ end;
 
 function TModuleData.TypeInfo(out value: IahaUnaryFunction): Boolean;
 begin
-
-  Result := True;
+  try
+    value := TTypeInfo.Create;
+    Result := True;
+  except
+    Result := False;
+  end;
 end;
 
 function TModuleData.Nesting(out value: IahaUnaryFunction): Boolean;
 begin
-
-  Result := True;
+  try
+    value := TNesting.Create;
+    Result := True;
+  except
+    Result := False;
+  end;
 end;
 
 function TModuleData.FooType(out value: IUnknown): Boolean;

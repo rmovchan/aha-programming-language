@@ -34,6 +34,10 @@ type
 
   TahaOpaque = TInterfacedObject;
 
+  IahaFooRelation = interface
+    function Check: Boolean;
+  end;
+
   IahaUnaryRelation = interface
     function Check(const param): Boolean;
   end;
@@ -158,10 +162,6 @@ type
     constructor Create(const content: TahaOtherArray);
   end;
 
-  IahaFooRelation = interface
-    function Check: Boolean;
-  end;
-
 { TahaObject }
 
 function TahaObject.state(out value): Boolean;
@@ -190,13 +190,15 @@ end;
 
 function TahaSegmentWrapper.size(out value: TahaInteger): Boolean;
 begin
-  value := FHigh - FLow;
   Result := True;
+  value := FHigh - FLow;
 end;
 
 function TahaSegmentWrapper.at(const index: TahaInteger; out value): Boolean;
 begin
-  TahaInteger(value) := FLow + index;
+  Result := (index >= 0) and (index < FHigh - FLow);
+  if Result then
+    TahaInteger(value) := FLow + index;
 end;
 
 function TahaSegmentWrapper.write(out value): Boolean;
@@ -212,6 +214,7 @@ begin
     Inc(i);
     Inc(p);
   end;
+  Result := True;
 end;
 
 constructor TahaSegmentWrapper.Create(const alow, ahigh: TahaInteger);
@@ -476,7 +479,7 @@ type
 
   { TMergeSeq }
 
-  TMergeSeq = class(TahaObject, IahaSequence)
+  generic TMergeSeq<TItem> = class(TahaObject, IahaSequence)
   private
     FSeq1: IahaSequence;
     FSeq2: IahaSequence;
@@ -487,6 +490,8 @@ type
   public
     constructor Create(const Seq1, Seq2: IahaSequence; const rel: IahaBinaryRelation);
   end;
+
+  TMergeIntSeq = specialize TMergeSeq<Integer>;
 
 
 function SortIntArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;
@@ -536,7 +541,7 @@ begin
           Dec(J);
           while J > 0 do
           begin
-            value := TMergeSeq.Create(value, SS[J], rel);
+            value := TMergeIntSeq.Create(value, SS[J], rel);
             Dec(J);
           end;
         end
@@ -572,17 +577,17 @@ end;
 
 function TMergeSeq.state(out value): Boolean;
 var
-  S1, S2: TahaInteger;
+  S1, S2: TItem;
 begin
   if (FSeq1.state(S1) and not FSeq2.state(S2)) or FRel.Check(S1, S2) then
     begin
-      TahaInteger(value) := S1;
+      TItem(value) := S1;
       Result := True;
     end
   else
   if (not FSeq1.state(S1) and FSeq2.state(S2)) or FRel.Check(S2, S1) then
     begin
-      TahaInteger(value) := S2;
+      TItem(value) := S2;
       Result := True;
     end
   else
@@ -591,7 +596,7 @@ end;
 
 function TMergeSeq.skip(out new: IahaSequence): Boolean;
 var
-  S1, S2: TahaInteger;
+  S1, S2: TItem;
   next: IahaSequence;
 begin
   new := Self;
