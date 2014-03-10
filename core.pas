@@ -68,7 +68,7 @@ function IntGreater(const a, b: TahaInteger): Boolean; inline;
 function CharEqual(const a, b: TahaCharacter): Boolean; inline;
 function CharNotEqual(const a, b: TahaCharacter): Boolean; inline;
 
-function IntSortArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;
+function SortIntArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;
 
 implementation
 
@@ -182,7 +182,7 @@ end;
 
 function TahaObject.copy(out value): Boolean;
 begin
-  IahaObject(value) := TahaObject.Create;
+  //IahaObject(value) := TahaObject.Create;
   Result := True;
 end;
 
@@ -489,7 +489,7 @@ type
   end;
 
 
-function IntSortArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;
+function SortIntArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;
 var
   L, I, J: TahaInteger;
   S: TArraySlice;
@@ -530,7 +530,7 @@ begin
                 S.FIndex := I;
               end;
           end;
-          SetLength(SS, J);
+          //SetLength(SS, J);
   //merge slices
           value := SS[0];
           Dec(J);
@@ -553,7 +553,7 @@ function TArraySlice.state(out value): Boolean;
 begin
   Result := FCount > 0;
   if Result then
-    Result := FArray.at(0, value);
+    Result := FArray.at(FIndex, value);
 end;
 
 function TArraySlice.skip(out new: IahaSequence): Boolean;
