@@ -7,6 +7,7 @@ uses
   { you can add units after this };
 
 exports
+  collections.GetModuleData name 'Collections',
   metatypes.GetModuleData name 'MetaTypes';
 
 begin

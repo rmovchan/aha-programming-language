@@ -30,6 +30,13 @@ type
     function skip(out new: IahaSequence): Boolean;
   end;
 
+  { TahaObject }
+    TahaObject = class(TInterfacedObject, IahaObject)
+    protected
+      function state(out value): Boolean; virtual;
+      function copy(out value): Boolean; virtual;
+    end;
+
   TahaComposite = TInterfacedObject;
 
   TahaOpaque = TInterfacedObject;
@@ -55,37 +62,6 @@ type
   end;
 
   TahaFunction = TInterfacedObject;
-
-function CharArrayToString(const a: IahaArray; out s: UnicodeString): Boolean; inline;
-
-function IntPlus(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
-function IntMinus(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
-function IntMult(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
-function IntDiv(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
-function IntMod(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
-function IntLess(const a, b: TahaInteger): Boolean; inline;
-function IntLessEqual(const a, b: TahaInteger): Boolean; inline;
-function IntEqual(const a, b: TahaInteger): Boolean; inline;
-function IntNotEqual(const a, b: TahaInteger): Boolean; inline;
-function IntGreaterEqual(const a, b: TahaInteger): Boolean; inline;
-function IntGreater(const a, b: TahaInteger): Boolean; inline;
-function CharEqual(const a, b: TahaCharacter): Boolean; inline;
-function CharNotEqual(const a, b: TahaCharacter): Boolean; inline;
-
-function SortIntArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;
-
-implementation
-
-
-type
-
-{ TahaObject }
-  TahaObject = class(TInterfacedObject, IahaObject)
-  protected
-    function state(out value): Boolean; virtual;
-    function get(out value): Boolean;
-    function copy(out value): Boolean; virtual;
-  end;
 
   { TahaFooArrayWrapper }
   TahaFooArrayWrapper = class(TInterfacedObject, IahaArray)
@@ -162,22 +138,35 @@ type
     constructor Create(const content: TahaOtherArray);
   end;
 
+function CharArrayToString(const a: IahaArray; out s: UnicodeString): Boolean; inline;
+function CharArrayFromString(const s: UnicodeString; out a: IahaArray): Boolean; inline;
+function IntArrayFromEnum(const items: array of Integer; out a: IahaArray): Boolean; inline;
+function OtherArrayFromEnum(const items: array of IUnknown; out a: IahaArray): Boolean; inline;
+
+function IntPlus(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
+function IntMinus(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
+function IntMult(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
+function IntDiv(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
+function IntMod(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
+function IntLess(const a, b: TahaInteger): Boolean; inline;
+function IntLessEqual(const a, b: TahaInteger): Boolean; inline;
+function IntEqual(const a, b: TahaInteger): Boolean; inline;
+function IntNotEqual(const a, b: TahaInteger): Boolean; inline;
+function IntGreaterEqual(const a, b: TahaInteger): Boolean; inline;
+function IntGreater(const a, b: TahaInteger): Boolean; inline;
+function CharEqual(const a, b: TahaCharacter): Boolean; inline;
+function CharNotEqual(const a, b: TahaCharacter): Boolean; inline;
+
+function SortIntArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;
+
+implementation
+
+
 { TahaObject }
 
 function TahaObject.state(out value): Boolean;
 begin
   Result := True;
-end;
-
-function TahaObject.get(out value): Boolean;
-begin
-  if RefCount > 1 then
-    Result := copy(value)
-  else
-    begin
-      IahaObject(value) := Self;
-      Result := True;
-    end;
 end;
 
 function TahaObject.copy(out value): Boolean;
@@ -373,6 +362,39 @@ begin
     Result := False;
 end;
 
+function CharArrayFromString(const s: UnicodeString; out a: IahaArray): Boolean;
+begin
+  try
+    a := TahaCharArrayWrapper.Create(s);
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+
+function IntArrayFromEnum(const items: array of Integer; out a: IahaArray
+  ): Boolean;
+var
+  i: Integer;
+  arr: TahaIntArray;
+begin
+  try
+    SetLength(arr, Length(items));
+    for i := 0 to High(items) do
+      arr[i] := items[i];
+    a := TahaIntArrayWrapper.Create(arr);
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+
+function OtherArrayFromEnum(const items: array of IUnknown; out a: IahaArray
+  ): Boolean;
+begin
+
+end;
+
 function IntPlus(const a, b: TahaInteger; out c: TahaInteger): Boolean; inline;
 begin
   Result := True;
@@ -491,7 +513,7 @@ type
     constructor Create(const Seq1, Seq2: IahaSequence; const rel: IahaBinaryRelation);
   end;
 
-  TMergeIntSeq = specialize TMergeSeq<Integer>;
+  TMergeIntSeq = specialize TMergeSeq<TahaInteger>;
 
 
 function SortIntArray(const param: IahaArray; const rel: IahaBinaryRelation; out value: IahaSequence): Boolean;

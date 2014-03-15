@@ -51,7 +51,7 @@ uses
   core;
 
 type
-  IahaModuleData = interface
+  IModuleData = interface
     function TypeInfo(out value: IahaUnaryFunction): Boolean;
     function Nesting(out value: IahaUnaryFunction): Boolean;
     function FooType(out value: IUnknown): Boolean;
@@ -67,7 +67,29 @@ type
     function Equivalent(out value: IahaBinaryRelation): Boolean;
   end;
 
-function GetModuleData(out value: IahaModuleData): Boolean;
+  ITypeInfoEx = interface;
+
+  ITypeInfo = interface
+    function fooType: Boolean;
+    function characterType: Boolean;
+    function integerType: Boolean;
+    function arrayType(out datatype: ITypeInfoEx): Boolean;
+    function compositeType(out comvars: IahaArray): Boolean;
+    function functionType(out datatype: IUnknown): Boolean;
+    function objectType(out datatype: IUnknown): Boolean;
+    function opaqueType: Boolean;
+  end;
+
+  ITypeInfoEx = interface(ITypeInfo)
+    function nesting(out value: TahaInteger): Boolean;
+  end;
+
+  IAttribute = interface
+    function name(out value: IahaArray): Boolean;
+    function datatype(out value: ITypeInfoEx): Boolean;
+  end;
+
+function GetModuleData(out value: IModuleData): Boolean;
 
 implementation
 
@@ -78,7 +100,7 @@ type
 
   { TModuleData }
 
-  TModuleData = class(TahaComposite, IahaModuleData)
+  TModuleData = class(TahaComposite, IModuleData)
   private
     function TypeInfo(out value: IahaUnaryFunction): Boolean;
     function Nesting(out value: IahaUnaryFunction): Boolean;
@@ -97,7 +119,7 @@ type
     constructor Create;
   end;
 
-function GetModuleData(out value: IahaModuleData): Boolean;
+function GetModuleData(out value: IModuleData): Boolean;
 begin
   Result := True;
   try
@@ -108,32 +130,15 @@ begin
 end;
 
 type
-  ITypeInfo = interface
-    function fooType: Boolean;
-    function characterType: Boolean;
-    function integerType: Boolean;
-    function arrayType(out datatype: ITypeInfo): Boolean;
-    function compositeType(out comvars: IahaArray): Boolean;
-    function functionType(out datatype: IUnknown): Boolean;
-    function objectType(out datatype: IUnknown): Boolean;
-    function opaqueType: Boolean;
-    function nesting(out value: TahaInteger): Boolean;
-  end;
-
-  IAttribute = interface
-    function name(out value: IahaArray): Boolean;
-    function datatype(out value: ITypeInfo): Boolean;
-  end;
-
   { TBaseTypeInfo }
 
-  TBaseTypeInfo = class(TahaComposite, ITypeInfo)
+  TBaseTypeInfo = class(TahaComposite, ITypeInfoEx)
   private
     FNesting: TahaInteger;
     function fooType: Boolean; virtual;
     function characterType: Boolean; virtual;
     function integerType: Boolean; virtual;
-    function arrayType(out datatype: ITypeInfo): Boolean; virtual;
+    function arrayType(out datatype: ITypeInfoEx): Boolean; virtual;
     function compositeType(out comvars: IahaArray): Boolean; virtual;
     function functionType(out datatype: IUnknown): Boolean; virtual;
     function objectType(out datatype: IUnknown): Boolean; virtual;
@@ -182,10 +187,10 @@ type
 
   TArrayType = class(TBaseTypeInfo)
   private
-    FItemType: ITypeInfo;
-    function arrayType(out datatype: ITypeInfo): Boolean; override;
+    FItemType: ITypeInfoEx;
+    function arrayType(out datatype: ITypeInfoEx): Boolean; override;
   public
-    constructor Create(const itemtype: ITypeInfo);
+    constructor Create(const itemtype: ITypeInfoEx);
   end;
 
   { TArrayTypeConstructor }
@@ -219,14 +224,14 @@ end;
 function TTypeInfo.Get(const param; out value): Boolean;
 begin
   Result := True;
-  ITypeInfo(value) := ITypeInfo(param);
+  ITypeInfo(value) := ITypeInfoEx(param);
 end;
 
 { TNesting }
 
 function TNesting.Get(const param; out value): Boolean;
 begin
-  Result := ITypeInfo(param).nesting(TahaInteger(value));
+  Result := ITypeInfoEx(param).nesting(TahaInteger(value));
 end;
 
 { TCompositeTypeConstructor }
@@ -234,7 +239,7 @@ end;
 function TCompositeTypeConstructor.Get(const param; out value): Boolean;
 begin
   try
-    ITypeInfo(value) := TCompositeType.Create(IahaArray(param));
+    ITypeInfoEx(value) := TCompositeType.Create(IahaArray(param));
     Result := True;
   except
     Result := False;
@@ -254,7 +259,7 @@ var
   I, J, K, L, N, M: TahaInteger;
   V: IahaArray;
   A: IAttribute;
-  D: ITypeInfo;
+  D: ITypeInfoEx;
 begin
   if comvars.size(N) then
     begin
@@ -290,13 +295,13 @@ end;
 
 { TArrayType }
 
-function TArrayType.arrayType(out datatype: ITypeInfo): Boolean;
+function TArrayType.arrayType(out datatype: ITypeInfoEx): Boolean;
 begin
   datatype := FItemType;
   Result := True;
 end;
 
-constructor TArrayType.Create(const itemtype: ITypeInfo);
+constructor TArrayType.Create(const itemtype: ITypeInfoEx);
 var
   N: TahaInteger;
 begin
@@ -314,7 +319,7 @@ end;
 function TArrayTypeConstructor.Get(const param; out value): Boolean;
 begin
   try
-    ITypeInfo(value) := TArrayType.Create(ITypeInfo(param));
+    ITypeInfoEx(value) := TArrayType.Create(ITypeInfoEx(param));
     Result := True;
   except
     Result := False;
@@ -359,7 +364,7 @@ begin
   Result := False;
 end;
 
-function TBaseTypeInfo.arrayType(out datatype: ITypeInfo): Boolean;
+function TBaseTypeInfo.arrayType(out datatype: ITypeInfoEx): Boolean;
 begin
   Result := False;
 end;
