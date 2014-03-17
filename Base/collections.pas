@@ -188,6 +188,96 @@ type
     function copy(out value): Boolean; override;
   end;
 
+  IDynamicSequence = interface
+    function push(const item): Boolean;
+    function pop: Boolean;
+  end;
+
+  { TStack }
+
+  generic TStack<TItem> = class(TahaObject, IDynamicSequence)
+  private type TNode = record next: ^TNode; item: TItem; end;
+  private
+    head: Pointer;
+    function push(const item): Boolean;
+    function pop: Boolean;
+  protected
+    function state(out value): Boolean; override;
+    function copy(out value): Boolean; override;
+  end;
+
+  TCharStack = specialize TStack<TahaCharacter>;
+  TIntStack = specialize TStack<TahaInteger>;
+  TOtherStack = specialize TStack<IUnknown>;
+
+  { TFooStack }
+
+  TFooStack = class(TahaObject, IDynamicSequence)
+  private
+    FSize: TahaInteger;
+    function push(const item): Boolean;
+    function pop: Boolean;
+  protected
+    function state(out value): Boolean; override;
+    function copy(out value): Boolean; override;
+  end;
+
+  { TQueue }
+
+  generic TQueue<TItem> = class(TahaObject, IDynamicSequence)
+  private type TNode = record next, prev: ^TNode; item: TItem; end;
+  private
+    head: Pointer;
+    tail: Pointer;
+    function push(const item): Boolean;
+    function pop: Boolean;
+  protected
+    function state(out value): Boolean; override;
+    function copy(out value): Boolean; override;
+  end;
+
+  TCharQueue = specialize TQueue<TahaCharacter>;
+  TIntQueue = specialize TQueue<TahaInteger>;
+  TOtherQueue = specialize TQueue<IUnknown>;
+
+  IStorage = interface
+    function add(const item): Boolean;
+    function replace(const param): Boolean;
+    function delete(const index): Boolean;
+  end;
+
+  IReplaceStorageParam = interface
+    function at(out addr: IahaOpaque): Boolean;
+    function item(out value): Boolean;
+  end;
+
+  { TStorage }
+
+  generic TStorage<TItem> = class(TahaObject, IStorage)
+  private
+    items: array of ^TItem;
+    count: TahaInteger;
+    function add(const item): Boolean;
+    function replace(const param): Boolean;
+    function delete(const index): Boolean;
+  protected
+    function state(out value): Boolean; override;
+    function copy(out value): Boolean; override;
+  end;
+
+  { TAddress }
+
+  TAddress = class(TahaOpaque, IahaOpaque)
+  private
+    FValue: TahaInteger;
+    function get(out value): Boolean;
+  end;
+
+  TCharStack = specialize TStack<TahaCharacter>;
+  TIntStack = specialize TStack<TahaInteger>;
+  TOtherStack = specialize TStack<IUnknown>;
+
+
 function GetModuleData(out value: IModuleData; const Item: ITypeInfoEx): Boolean;
 begin
   Result := True;
@@ -202,6 +292,241 @@ begin
       value := TModuleDataInt.Create
     else
       value := TModuleDataOther.Create;
+  except
+    Result := False;
+  end;
+end;
+
+{ TAddress }
+
+function TAddress.get(out value): Boolean;
+begin
+  TahaInteger(value) := FValue;
+end;
+
+{ TStorage }
+
+function TStorage.add(const item): Boolean;
+begin
+  try
+    if count = Length(items) then
+      SetLength(items, count + 1000);
+    items[count] := TItem(item);
+    Inc(count);
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+
+function TStorage.replace(const param): Boolean;
+var
+  addr: IahaOpaque;
+  item: TItem;
+begin
+  try
+    if IReplaceStorageParam(param).at(addr) and addr.get(index) and IReplaceStorageParam(param).item(item) then
+      begin
+        items[index] := item;
+        Result := True;
+      end
+    else
+      Result := False;
+  except
+    Result := False;
+  end;
+end;
+
+function TStorage.delete(const index): Boolean;
+begin
+
+end;
+
+function TStorage.state(out value): Boolean;
+var
+  addr: TAddress;
+begin
+  try
+    addr := TAddress.Create;
+    addr.FValue := count;
+    IahaOpaque(value) := addr;
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+
+function TStorage.copy(out value): Boolean;
+begin
+  Result:=inherited copy(value);
+end;
+
+{ TQueue }
+
+function TQueue.push(const item): Boolean;
+var
+  newhead: ^TNode;
+begin
+  try
+    New(newhead);
+    newhead^.item := TItem(item);
+    newhead^.next := head;
+    head := newhead;
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+
+function TQueue.pop: Boolean;
+var
+  tmp: ^TNode;
+begin
+  if Assigned(tail) then
+    begin
+      tmp := tail;
+      tail := TNode(tail^).prev;
+      Dispose(tmp);
+      Result := True;
+    end
+  else
+    Result := False;
+end;
+
+function TQueue.state(out value): Boolean;
+begin
+  Result := Assigned(tail);
+  if Result then
+    TItem(value) := TNode(tail^).item;
+end;
+
+function TQueue.copy(out value): Boolean;
+var
+  queue: TQueue;
+  p, q, r: ^TNode;
+begin
+  try
+    queue := TQueue.Create;
+    p := head;
+    q := nil;
+    while Assigned(p) do
+    begin
+      New(r);
+      if Assigned(q) then
+        q^.next := r
+      else
+        queue.head := r;
+      q := r;
+      q^.item := p^.item;
+      p := p^.next;
+    end;
+    IDynamicSequence(value) := queue;
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+
+{ TFooStack }
+
+function TFooStack.push(const item): Boolean;
+begin
+  try
+    Inc(FSize);
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+
+function TFooStack.pop: Boolean;
+begin
+  if FSize > 0 then
+    begin
+      Dec(FSize);
+      Result := True;
+    end
+  else
+    Result := False;
+end;
+
+function TFooStack.state(out value): Boolean;
+begin
+  Result := FSize > 0;
+end;
+
+function TFooStack.copy(out value): Boolean;
+var
+  clone: TFooStack;
+begin
+  try
+    clone := TFooStack.Create;
+    clone.FSize := FSize;
+    IDynamicSequence(value) := clone;
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+
+{ TStack }
+
+function TStack.push(const item): Boolean;
+var
+  newhead: ^TNode;
+begin
+  try
+    New(newhead);
+    newhead^.item := TItem(item);
+    newhead^.next := head;
+    head := newhead;
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+
+function TStack.pop: Boolean;
+var
+  tmp: ^TNode;
+begin
+  if Assigned(head) then
+    begin
+      tmp := head;
+      head := TNode(head^).next;
+      Dispose(tmp);
+      Result := True;
+    end
+  else
+    Result := False;
+end;
+
+function TStack.state(out value): Boolean;
+begin
+  Result := Assigned(head);
+  if Result then
+    TItem(value) := TNode(head^).item;
+end;
+
+function TStack.copy(out value): Boolean;
+var
+  stack: TStack;
+  p, q, r: ^TNode;
+begin
+  try
+    stack := TStack.Create;
+    stack.head := head;
+    IDynamicSequence(value) := stack;
+    p := head;
+    q := nil;
+    while Assigned(p) do
+    begin
+      New(r);
+      if Assigned(q) then begin q^.next := r; q := r end;
+      q^.item := p^.item;
+      p := p^.next;
+    end;
+    Result := True;
   except
     Result := False;
   end;
@@ -298,12 +623,22 @@ end;
 
 function TModuleDataFoo.Stack(out value: IUnknown): Boolean;
 begin
-
+  try
+    value := TFooStack.Create;
+    Result := True;
+  except
+    Result := False;
+  end;
 end;
 
 function TModuleDataFoo.Queue(out value: IUnknown): Boolean;
 begin
-
+  try
+    value := TFooStack.Create;
+    Result := True;
+  except
+    Result := False;
+  end;
 end;
 
 function TModuleDataFoo.Storage(out value: IUnknown): Boolean;
@@ -313,17 +648,32 @@ end;
 
 function TModuleDataOther.DynamicArray(out value: IUnknown): Boolean;
 begin
-
+  try
+    value := TDynamicOtherArray.Create;
+    Result := True;
+  except
+    Result := False;
+  end;
 end;
 
 function TModuleDataOther.Stack(out value: IUnknown): Boolean;
 begin
-
+  try
+    value := TOtherStack.Create;
+    Result := True;
+  except
+    Result := False;
+  end;
 end;
 
 function TModuleDataOther.Queue(out value: IUnknown): Boolean;
 begin
-
+  try
+    value := TOtherQueue.Create;
+    Result := True;
+  except
+    Result := False;
+  end;
 end;
 
 function TModuleDataOther.Storage(out value: IUnknown): Boolean;
@@ -343,12 +693,22 @@ end;
 
 function TModuleDataInt.Stack(out value: IUnknown): Boolean;
 begin
-
+  try
+    value := TIntStack.Create;
+    Result := True;
+  except
+    Result := False;
+  end;
 end;
 
 function TModuleDataInt.Queue(out value: IUnknown): Boolean;
 begin
-
+  try
+    value := TIntQueue.Create;
+    Result := True;
+  except
+    Result := False;
+  end;
 end;
 
 function TModuleDataInt.Storage(out value: IUnknown): Boolean;
@@ -363,28 +723,96 @@ begin
 end;
 
 function TDynamicIntArray.replace(const param): Boolean;
+var
+  index: TahaInteger;
+  item: TahaInteger;
 begin
-
+  try
+    if IReplaceParam(param).at(index) and (index >= 0) and (index < Length(FItems)) and IReplaceParam(param).item(item) then
+      begin
+        FItems[index] := item;
+        Result := True;
+      end
+    else
+      Result := False;
+  except
+    Result := False;
+  end;
 end;
 
 function TDynamicIntArray.exchange(const param): Boolean;
+var
+  first, second: TahaInteger;
+  item: TahaInteger;
 begin
-
+  Result :=
+    IExchangeParam(param).first(first) and (first >= 0) and (first < Length(FItems)) and
+    IExchangeParam(param).second(second) and (second >= 0) and (second < Length(FItems));
+  if Result then
+    begin
+      item := FItems[first];
+      FItems[first] := FItems[second];
+      FItems[second] := item;
+    end;
 end;
 
 function TDynamicIntArray.move(const param): Boolean;
+var
+  first, second: TahaInteger;
+  item: TahaInteger;
 begin
-
+  Result :=
+    IExchangeParam(param).first(first) and (first >= 0) and (first < Length(FItems)) and
+    IExchangeParam(param).second(second) and (second >= 0) and (second < Length(FItems));
+  if Result then
+    begin
+      item := FItems[first];
+      if first < second - 1 then
+        begin
+          System.Move(FItems[first + 1], FItems[first], (second - first - 1) * SizeOf(TahaInteger));
+        end
+      else
+      if first > second + 1 then
+        begin
+          System.Move(FItems[second], FItems[second + 1], (first - second - 1) * SizeOf(TahaInteger));
+        end;
+      FItems[second] := item;
+    end;
 end;
 
 function TDynamicIntArray.insert(const param): Boolean;
+var
+  index: TahaInteger;
+  item: TahaInteger;
 begin
-
+  try
+    if IReplaceParam(param).at(index) and (index >= 0) and (index < Length(FItems)) and IReplaceParam(param).item(item) then
+      begin
+        SetLength(FItems, Length(FItems) + 1);
+        System.Move(FItems[index], FItems[index + 1], (Length(FItems) - index - 1) * SizeOf(TahaInteger));
+        FItems[index] := item;
+        Result := True;
+      end
+    else
+      Result := False;
+  except
+    Result := False;
+  end;
 end;
 
 function TDynamicIntArray.delete(const index): Boolean;
+var
+  idx: TahaInteger;
 begin
-
+  idx := TahaInteger(index);
+  if (idx >= 0) and (idx < Length(FItems)) then
+    begin
+      System.Move(FItems[idx + 1], FItems[idx], (Length(FItems) - idx - 1) * SizeOf(TahaInteger));
+      SetLength(FItems, Length(FItems) - 1);
+      Result := True;
+    end
+  else
+    Result := False;
 end;
 
 function TDynamicIntArray.state(out value): Boolean;
@@ -468,12 +896,12 @@ begin
       ch := FItems[first + 1];
       if first < second then
         begin
-          System.Move(FItems[first + 2], FItems[first + 1], (second - first) * SizeOf(TahaCharacter));
+          System.Move(FItems[first + 2], FItems[first + 1], (second - first - 1) * SizeOf(TahaCharacter));
         end
       else
       if first > second then
         begin
-          System.Move(FItems[second + 1], FItems[second + 2], (first - second) * SizeOf(TahaCharacter));
+          System.Move(FItems[second + 1], FItems[second + 2], (first - second - 1) * SizeOf(TahaCharacter));
         end;
       FItems[second + 1] := ch;
     end;
@@ -541,18 +969,26 @@ begin
 end;
 
 function TDynamicOtherArray.replace(const param): Boolean;
+var
+  index: TahaInteger;
+  item: IUnknown;
 begin
-
+  try
+    if IReplaceParam(param).at(index) and (index >= 0) and (index < Length(FItems)) and IReplaceParam(param).item(item) then
+      begin
+        FItems[index] := item;
+        Result := True;
+      end
+    else
+      Result := False;
+  except
+    Result := False;
+  end;
 end;
 
 function TDynamicOtherArray.exchange(const param): Boolean;
-begin
-
-end;
-
-function TDynamicOtherArray.move(const param): Boolean;
 var
-  first, second, i: TahaInteger;
+  first, second: TahaInteger;
   item: IUnknown;
 begin
   Result :=
@@ -560,39 +996,73 @@ begin
     IExchangeParam(param).second(second) and (second >= 0) and (second < Length(FItems));
   if Result then
     begin
-      item := FItems[first + 1];
-      if first < second then
+      item := FItems[first];
+      FItems[first] := FItems[second];
+      FItems[second] := item;
+    end;
+end;
+
+function TDynamicOtherArray.move(const param): Boolean;
+var
+  first, second: TahaInteger;
+  item: IUnknown;
+begin
+  Result :=
+    IExchangeParam(param).first(first) and (first >= 0) and (first < Length(FItems)) and
+    IExchangeParam(param).second(second) and (second >= 0) and (second < Length(FItems));
+  if Result then
+    begin
+      item := FItems[first];
+      FItems[first] := nil;
+      if first < second - 1 then
         begin
-          i := first + 1;
-          while i < second do
-          begin
-            FItems[i] := FItems[i + 1];
-            Inc(i);
-          end;
-          FItems[second + 1] := item;
+          System.Move(FItems[first + 1], FItems[first], (second - first - 1) * SizeOf(TahaCharacter));
         end
       else
-      if first > second then
+      if first > second + 1 then
         begin
-          i := first + 1;
-          while i > second do
-          begin
-            FItems[i] := FItems[i - 1];
-            Dec(i);
-          end;
-          FItems[second + 1] := item;
+          System.Move(FItems[second], FItems[second + 1], (first - second - 1) * SizeOf(TahaCharacter));
         end;
+      FItems[second] := item;
     end;
 end;
 
 function TDynamicOtherArray.insert(const param): Boolean;
+var
+  index: TahaInteger;
+  item: IUnknown;
 begin
-
+  try
+    if IReplaceParam(param).at(index) and (index >= 0) and (index < Length(FItems)) and IReplaceParam(param).item(item) then
+      begin
+        SetLength(FItems, Length(FItems) + 1);
+        System.Move(FItems[index], FItems[index + 1], (Length(FItems) - index - 1) * SizeOf(IUnknown));
+        FItems[index]._AddRef; //?
+        FItems[index] := item;
+        Result := True;
+      end
+    else
+      Result := False;
+  except
+    Result := False;
+  end;
 end;
 
 function TDynamicOtherArray.delete(const index): Boolean;
+var
+  idx: TahaInteger;
 begin
-
+  idx := TahaInteger(index);
+  if (idx >= 0) and (idx < Length(FItems)) then
+    begin
+      FItems[idx] := nil;
+      System.Move(FItems[idx + 1], FItems[idx], (Length(FItems) - idx - 1) * SizeOf(IUnknown));
+      //FItems[High(FItems)] := nil;
+      SetLength(FItems, Length(FItems) - 1);
+      Result := True;
+    end
+  else
+    Result := False;
 end;
 
 function TDynamicOtherArray.state(out value): Boolean;
@@ -633,12 +1103,22 @@ end;
 
 function TModuleDataChar.Stack(out value: IUnknown): Boolean;
 begin
-
+  try
+    value := TCharStack.Create;
+    Result := True;
+  except
+    Result := False;
+  end;
 end;
 
 function TModuleDataChar.Queue(out value: IUnknown): Boolean;
 begin
-
+  try
+    value := TCharQueue.Create;
+    Result := True;
+  except
+    Result := False;
+  end;
 end;
 
 function TModuleDataChar.Storage(out value: IUnknown): Boolean;

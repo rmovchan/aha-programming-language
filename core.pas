@@ -39,6 +39,10 @@ type
 
   TahaComposite = TInterfacedObject;
 
+  IahaOpaque = interface
+    function get(out value): Boolean;
+  end;
+
   TahaOpaque = TInterfacedObject;
 
   IahaFooRelation = interface
@@ -67,7 +71,6 @@ type
   TahaFooArrayWrapper = class(TInterfacedObject, IahaArray)
   private
     FSize: TahaInteger;
-  protected
     function size(out value: TahaInteger): Boolean;
     function at(const index: TahaInteger; out value): Boolean;
     function write(out value): Boolean;
@@ -75,7 +78,7 @@ type
     constructor Create(const content: TahaInteger);
   end;
 
-  TahaCharArray = UnicodeString;
+  TahaCharArray = array of TahaCharacter;
 
   { TahaCharArrayWrapper }
 
@@ -83,12 +86,12 @@ type
   private
     FSize: TahaInteger;
     FItems: PahaCharacter;
-  protected
     function size(out value: TahaInteger): Boolean;
     function at(const index: TahaInteger; out value): Boolean;
     function write(out value): Boolean;
   public
-    constructor Create(const content: TahaCharArray);
+    constructor Create(const content: TahaCharArray); overload;
+    constructor Create(const content: UnicodeString); overload;
     destructor Destroy; override;
   end;
 
@@ -100,7 +103,6 @@ type
   private
     FSize: TahaInteger;
     FItems: PahaInteger;
-  protected
     function size(out value: TahaInteger): Boolean;
     function at(const index: TahaInteger; out value): Boolean;
     function write(out value): Boolean;
@@ -307,6 +309,14 @@ begin
 end;
 
 constructor TahaCharArrayWrapper.Create(const content: TahaCharArray);
+begin
+  inherited Create;
+  FSize := Length(content);
+  GetMem(FItems, FSize * SizeOf(TahaCharacter));
+  Move(content[0], FItems^, FSize * SizeOf(TahaCharacter));
+end;
+
+constructor TahaCharArrayWrapper.Create(const content: UnicodeString);
 begin
   inherited Create;
   FSize := Length(content);
