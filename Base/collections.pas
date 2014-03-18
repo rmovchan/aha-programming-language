@@ -243,7 +243,7 @@ type
   IStorage = interface
     function add(const item): Boolean;
     function replace(const param): Boolean;
-    function delete(const index): Boolean;
+    function delete(const addr): Boolean;
   end;
 
   IReplaceStorageParam = interface
@@ -253,13 +253,15 @@ type
 
   { TStorage }
 
-  generic TStorage<TItem> = class(TahaObject, IStorage)
+  generic TStorage<TItem> = class(TahaObject, IStorage, IahaUnaryFunction)
+  private type TNode = record storage: TObject; next, prev: ^TNode; item: TItem; end;
   private
-    items: array of ^TItem;
+    head: Pointer;
     count: TahaInteger;
     function add(const item): Boolean;
     function replace(const param): Boolean;
-    function delete(const index): Boolean;
+    function delete(const addr): Boolean;
+    function Get(const param; out value): Boolean;
   protected
     function state(out value): Boolean; override;
     function copy(out value): Boolean; override;
@@ -269,13 +271,31 @@ type
 
   TAddress = class(TahaOpaque, IahaOpaque)
   private
-    FValue: TahaInteger;
+    FValue: Pointer;
     function get(out value): Boolean;
   end;
 
-  TCharStack = specialize TStack<TahaCharacter>;
-  TIntStack = specialize TStack<TahaInteger>;
-  TOtherStack = specialize TStack<IUnknown>;
+  IStorageState = interface
+    function next(out value: IahaOpaque): Boolean;
+    function get(out value: IahaUnaryFunction): Boolean;
+    function occupied(out value: IahaArray): Boolean;
+  end;
+
+  { TStorageState }
+
+  TStorageState = class(TahaComposite, IStorageState)
+  private
+    FNext: IahaOpaque;
+    FGet: IahaUnaryFunction;
+    FOcc: IahaArray;
+    function next(out value: IahaOpaque): Boolean;
+    function get(out value: IahaUnaryFunction): Boolean;
+    function occupied(out value: IahaArray): Boolean;
+ end;
+
+  TCharStorage = specialize TStorage<TahaCharacter>;
+  TIntStorage = specialize TStorage<TahaInteger>;
+  TOtherStorage = specialize TStorage<IUnknown>;
 
 
 function GetModuleData(out value: IModuleData; const Item: ITypeInfoEx): Boolean;
@@ -297,21 +317,49 @@ begin
   end;
 end;
 
+{ TStorageState }
+
+function TStorageState.next(out value: IahaOpaque): Boolean;
+begin
+  value := FNext;
+  Result := True;
+end;
+
+function TStorageState.get(out value: IahaUnaryFunction): Boolean;
+begin
+  value := FGet;
+  Result := True;
+end;
+
+function TStorageState.occupied(out value: IahaArray): Boolean;
+begin
+  value := FOcc;
+  Result := True;
+end;
+
+{ TGetFunction }
+
 { TAddress }
 
 function TAddress.get(out value): Boolean;
 begin
-  TahaInteger(value) := FValue;
+  Pointer(value) := FValue;
 end;
 
 { TStorage }
 
 function TStorage.add(const item): Boolean;
+var
+  newhead: ^TNode;
 begin
   try
-    if count = Length(items) then
-      SetLength(items, count + 1000);
-    items[count] := TItem(item);
+    TNode(head^).item := TItem(item);
+    New(newhead);
+    TNode(head^).prev := newhead;
+    newhead^.storage := Self;
+    newhead^.next := head;
+    newhead^.prev := nil;
+    head := newhead;
     Inc(count);
     Result := True;
   except
@@ -322,12 +370,13 @@ end;
 function TStorage.replace(const param): Boolean;
 var
   addr: IahaOpaque;
+  node: ^TNode;
   item: TItem;
 begin
   try
-    if IReplaceStorageParam(param).at(addr) and addr.get(index) and IReplaceStorageParam(param).item(item) then
+    if IReplaceStorageParam(param).at(addr) and addr.get(node) and IReplaceStorageParam(param).item(item) then
       begin
-        items[index] := item;
+        node^.item := item;
         Result := True;
       end
     else
@@ -337,19 +386,50 @@ begin
   end;
 end;
 
-function TStorage.delete(const index): Boolean;
+function TStorage.delete(const addr): Boolean;
 begin
 
+end;
+
+function TStorage.Get(const param; out value): Boolean;
+var
+  addr: IahaOpaque;
+  node: ^TNode;
+begin
+  if IahaOpaque(param).get(node) and (TNode(node^).storage = Self) then
+    begin
+      TItem(value) := node^.item;
+      Result := True;
+    end
+  else
+    Result := False;
 end;
 
 function TStorage.state(out value): Boolean;
 var
   addr: TAddress;
+  sstate: TStorageState;
+  items: array of TItem;
+  i: TahaInteger;
+  p: ^TNode;
 begin
   try
+    sstate := TStorageState.Create;
     addr := TAddress.Create;
-    addr.FValue := count;
-    IahaOpaque(value) := addr;
+    addr.FValue := head;
+    sstate.FNext := addr;
+    sstate.FGet := Self;
+    SetLength(items, count);
+    i := 0;
+    p := TNode(head^).next;
+    while Assigned(p) do
+    begin
+      items[i] := p^.item;
+      p := p^.next;
+      Inc(i);
+    end;
+    //state.FOcc;
+    IStorageState(value) := sstate;
     Result := True;
   except
     Result := False;
@@ -358,7 +438,7 @@ end;
 
 function TStorage.copy(out value): Boolean;
 begin
-  Result:=inherited copy(value);
+  //Result:=inherited copy(value);
 end;
 
 { TQueue }
@@ -369,6 +449,7 @@ var
 begin
   try
     New(newhead);
+    TNode(head^).prev := newhead;
     newhead^.item := TItem(item);
     newhead^.next := head;
     head := newhead;
