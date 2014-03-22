@@ -32,9 +32,11 @@ type
 
   { TahaObject }
     TahaObject = class(TInterfacedObject, IahaObject)
+    private
+      function state(out value): Boolean;
     protected
-      function state(out value): Boolean; virtual;
       function copy(out value): Boolean; virtual;
+      function getnew(out value): Boolean;
     end;
 
   TahaComposite = TInterfacedObject;
@@ -168,13 +170,24 @@ implementation
 
 function TahaObject.state(out value): Boolean;
 begin
-  Result := True;
+  Result := False;
 end;
 
 function TahaObject.copy(out value): Boolean;
 begin
   //IahaObject(value) := TahaObject.Create;
   Result := True;
+end;
+
+function TahaObject.getnew(out value): Boolean;
+begin
+  if RefCount > 1 then
+    Result := copy(value)
+  else
+    begin
+      IahaObject(value) := Self;
+      Result := True;
+    end;
 end;
 
 { TahaSegmentWrapper }
@@ -277,8 +290,8 @@ constructor TahaIntArrayWrapper.Create(const content: TahaIntArray);
 begin
   inherited Create;
   FSize := Length(content);
-  GetMem(FItems, FSize * SizeOf(TahaCharacter));
-  Move(content[1], FItems^, FSize * SizeOf(TahaCharacter));
+  GetMem(FItems, FSize * SizeOf(TahaInteger));
+  Move(content[1], FItems^, FSize * SizeOf(TahaInteger));
 end;
 
 destructor TahaIntArrayWrapper.Destroy;
@@ -504,8 +517,7 @@ type
     FArray: IahaArray;
     FIndex: TahaInteger;
     FCount: TahaInteger;
-  protected
-    function state(out value): Boolean; override;
+    function state(out value): Boolean;
     function skip(out new: IahaSequence): Boolean;
   end;
 
@@ -516,8 +528,7 @@ type
     FSeq1: IahaSequence;
     FSeq2: IahaSequence;
     FRel: IahaBinaryRelation;
-  protected
-    function state(out value): Boolean; override;
+    function state(out value): Boolean;
     function skip(out new: IahaSequence): Boolean;
   public
     constructor Create(const Seq1, Seq2: IahaSequence; const rel: IahaBinaryRelation);

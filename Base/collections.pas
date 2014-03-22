@@ -65,15 +65,6 @@ function GetModuleData(out value: IModuleData; const Item: ITypeInfoEx): Boolean
 implementation
 
 type
-  IDynamicArray = interface(IahaObject)
-    function add(const item): Boolean;
-    function replace(const param): Boolean;
-    function exchange(const param): Boolean;
-    function move(const param): Boolean;
-    function insert(const param): Boolean;
-    function delete(const index): Boolean;
-  end;
-
   IReplaceParam = interface
     function at(out index: TahaInteger): Boolean;
     function item(out value): Boolean;
@@ -82,6 +73,15 @@ type
   IExchangeParam = interface
     function first(out index: TahaInteger): Boolean;
     function second(out index: TahaInteger): Boolean;
+  end;
+
+  IDynamicArray = interface(IahaObject)
+    function add(out new: IDynamicArray; const item): Boolean;
+    function replace(out new: IDynamicArray; const param: IReplaceParam): Boolean;
+    function exchange(out new: IDynamicArray; const param: IExchangeParam): Boolean;
+    function move(out new: IDynamicArray; const param: IExchangeParam): Boolean;
+    function insert(out new: IDynamicArray; const param: IReplaceParam): Boolean;
+    function delete(out new: IDynamicArray; const index: TahaInteger): Boolean;
   end;
 
   { TModuleDataFoo }
@@ -99,14 +99,14 @@ type
   TDynamicFooArray = class(TahaObject, IDynamicArray)
   private
     FSize: TahaInteger;
-    function add(const item): Boolean;
-    function replace(const param): Boolean;
-    function exchange(const param): Boolean;
-    function move(const param): Boolean;
-    function insert(const param): Boolean;
-    function delete(const index): Boolean;
+    function state(out value): Boolean;
+    function add(out new: IDynamicArray; const item): Boolean;
+    function replace(out new: IDynamicArray; const param: IReplaceParam): Boolean;
+    function exchange(out new: IDynamicArray; const param: IExchangeParam): Boolean;
+    function move(out new: IDynamicArray; const param: IExchangeParam): Boolean;
+    function insert(out new: IDynamicArray; const param: IReplaceParam): Boolean;
+    function delete(out new: IDynamicArray; const index: TahaInteger): Boolean;
   protected
-    function state(out value): Boolean; override;
     function copy(out value): Boolean; override;
   end;
 
@@ -125,14 +125,14 @@ type
   TDynamicCharArray = class(TahaObject, IDynamicArray)
   private
     FItems: UnicodeString;
-    function add(const item): Boolean;
-    function replace(const param): Boolean;
-    function exchange(const param): Boolean;
-    function move(const param): Boolean;
-    function insert(const param): Boolean;
-    function delete(const index): Boolean;
+    function state(out value): Boolean;
+    function add(out new: IDynamicArray; const item): Boolean;
+    function replace(out new: IDynamicArray; const param: IReplaceParam): Boolean;
+    function exchange(out new: IDynamicArray; const param: IExchangeParam): Boolean;
+    function move(out new: IDynamicArray; const param: IExchangeParam): Boolean;
+    function insert(out new: IDynamicArray; const param: IReplaceParam): Boolean;
+    function delete(out new: IDynamicArray; const index: TahaInteger): Boolean;
   protected
-    function state(out value): Boolean; override;
     function copy(out value): Boolean; override;
   end;
 
@@ -151,14 +151,14 @@ type
   TDynamicIntArray = class(TahaObject, IDynamicArray)
   private
     FItems: array of TahaInteger;
-    function add(const item): Boolean;
-    function replace(const param): Boolean;
-    function exchange(const param): Boolean;
-    function move(const param): Boolean;
-    function insert(const param): Boolean;
-    function delete(const index): Boolean;
+    function state(out value): Boolean;
+    function add(out new: IDynamicArray; const item): Boolean;
+    function replace(out new: IDynamicArray; const param: IReplaceParam): Boolean;
+    function exchange(out new: IDynamicArray; const param: IExchangeParam): Boolean;
+    function move(out new: IDynamicArray; const param: IExchangeParam): Boolean;
+    function insert(out new: IDynamicArray; const param: IReplaceParam): Boolean;
+    function delete(out new: IDynamicArray; const index: TahaInteger): Boolean;
   protected
-    function state(out value): Boolean; override;
     function copy(out value): Boolean; override;
   end;
 
@@ -177,20 +177,20 @@ type
   TDynamicOtherArray = class(TahaObject, IDynamicArray)
   private
     FItems: array of IUnknown;
-    function add(const item): Boolean;
-    function replace(const param): Boolean;
-    function exchange(const param): Boolean;
-    function move(const param): Boolean;
-    function insert(const param): Boolean;
-    function delete(const index): Boolean;
+    function state(out value): Boolean;
+    function add(out new: IDynamicArray; const item): Boolean;
+    function replace(out new: IDynamicArray; const param: IReplaceParam): Boolean;
+    function exchange(out new: IDynamicArray; const param: IExchangeParam): Boolean;
+    function move(out new: IDynamicArray; const param: IExchangeParam): Boolean;
+    function insert(out new: IDynamicArray; const param: IReplaceParam): Boolean;
+    function delete(out new: IDynamicArray; const index: TahaInteger): Boolean;
   protected
-    function state(out value): Boolean; override;
     function copy(out value): Boolean; override;
   end;
 
   IDynamicSequence = interface
-    function push(const item): Boolean;
-    function pop: Boolean;
+    function push(out new: IDynamicSequence; const item): Boolean;
+    function pop(out new: IDynamicSequence): Boolean;
   end;
 
   { TStack }
@@ -199,10 +199,10 @@ type
   private type TNode = record next: ^TNode; item: TItem; end;
   private
     head: Pointer;
-    function push(const item): Boolean;
-    function pop: Boolean;
+    function state(out value): Boolean;
+    function push(out new: IDynamicSequence; const item): Boolean;
+    function pop(out new: IDynamicSequence): Boolean;
   protected
-    function state(out value): Boolean; override;
     function copy(out value): Boolean; override;
   end;
 
@@ -215,10 +215,10 @@ type
   TFooStack = class(TahaObject, IDynamicSequence)
   private
     FSize: TahaInteger;
-    function push(const item): Boolean;
-    function pop: Boolean;
+    function state(out value): Boolean;
+    function push(out new: IDynamicSequence; const item): Boolean;
+    function pop(out new: IDynamicSequence): Boolean;
   protected
-    function state(out value): Boolean; override;
     function copy(out value): Boolean; override;
   end;
 
@@ -229,10 +229,10 @@ type
   private
     head: Pointer;
     tail: Pointer;
-    function push(const item): Boolean;
-    function pop: Boolean;
+    function state(out value): Boolean;
+    function push(out new: IDynamicSequence; const item): Boolean;
+    function pop(out new: IDynamicSequence): Boolean;
   protected
-    function state(out value): Boolean; override;
     function copy(out value): Boolean; override;
   end;
 
@@ -240,17 +240,7 @@ type
   TIntQueue = specialize TQueue<TahaInteger>;
   TOtherQueue = specialize TQueue<IUnknown>;
 
-  IStorage = interface
-    function add(const item): Boolean;
-    function replace(const param): Boolean;
-    function delete(const addr): Boolean;
-  end;
-
-  IReplaceStorageParam = interface
-    function at(out addr: IahaOpaque): Boolean;
-    function item(out value): Boolean;
-  end;
-
+(*
   { TStorage }
 
   generic TStorage<TItem> = class(TahaObject, IStorage, IahaUnaryFunction)
@@ -297,7 +287,7 @@ type
   TIntStorage = specialize TStorage<TahaInteger>;
   TOtherStorage = specialize TStorage<IUnknown>;
 
-
+*)
 function GetModuleData(out value: IModuleData; const Item: ITypeInfoEx): Boolean;
 begin
   Result := True;
@@ -316,7 +306,7 @@ begin
     Result := False;
   end;
 end;
-
+(*
 { TStorageState }
 
 function TStorageState.next(out value: IahaOpaque): Boolean;
@@ -440,34 +430,43 @@ function TStorage.copy(out value): Boolean;
 begin
   //Result:=inherited copy(value);
 end;
-
+*)
 { TQueue }
 
-function TQueue.push(const item): Boolean;
+function TQueue.push(out new: IDynamicSequence; const item): Boolean;
 var
   newhead: ^TNode;
+  obj: TQueue;
 begin
   try
-    New(newhead);
-    TNode(head^).prev := newhead;
-    newhead^.item := TItem(item);
-    newhead^.next := head;
-    head := newhead;
-    Result := True;
+    Result := getnew(obj);
+    if Result then
+      begin
+        System.New(newhead);
+        TNode(obj.head^).prev := newhead;
+        newhead^.item := TItem(item);
+        newhead^.next := head;
+        obj.head := newhead;
+        new := obj;
+      end
+    else
+      Result := False;
   except
     Result := False;
   end;
 end;
 
-function TQueue.pop: Boolean;
+function TQueue.pop(out new: IDynamicSequence): Boolean;
 var
   tmp: ^TNode;
+  obj: TQueue;
 begin
-  if Assigned(tail) then
+  if Assigned(tail) and getnew(obj) then
     begin
       tmp := tail;
-      tail := TNode(tail^).prev;
+      obj.tail := TNode(obj.tail^).prev;
       Dispose(tmp);
+      new := obj;
       Result := True;
     end
   else
@@ -501,7 +500,7 @@ begin
       q^.item := p^.item;
       p := p^.next;
     end;
-    IDynamicSequence(value) := queue;
+    TQueue(value) := queue;
     Result := True;
   except
     Result := False;
@@ -510,21 +509,30 @@ end;
 
 { TFooStack }
 
-function TFooStack.push(const item): Boolean;
+function TFooStack.push(out new: IDynamicSequence; const item): Boolean;
+var
+  obj: TFooStack;
 begin
   try
-    Inc(FSize);
-    Result := True;
+    Result := getnew(obj);
+    if Result then
+    begin
+      Inc(obj.FSize);
+      new := obj;
+    end;
   except
     Result := False;
   end;
 end;
 
-function TFooStack.pop: Boolean;
+function TFooStack.pop(out new: IDynamicSequence): Boolean;
+var
+  obj: TFooStack;
 begin
-  if FSize > 0 then
+  if (FSize > 0) and getnew(obj) then
     begin
-      Dec(FSize);
+      Dec(obj.FSize);
+      new := obj;
       Result := True;
     end
   else
@@ -543,7 +551,7 @@ begin
   try
     clone := TFooStack.Create;
     clone.FSize := FSize;
-    IDynamicSequence(value) := clone;
+    TFooStack(value) := clone;
     Result := True;
   except
     Result := False;
@@ -552,30 +560,37 @@ end;
 
 { TStack }
 
-function TStack.push(const item): Boolean;
+function TStack.push(out new: IDynamicSequence; const item): Boolean;
 var
   newhead: ^TNode;
+  obj: TStack;
 begin
   try
-    New(newhead);
-    newhead^.item := TItem(item);
-    newhead^.next := head;
-    head := newhead;
-    Result := True;
+    Result := getnew(obj);
+    if Result then
+      begin
+        System.New(newhead);
+        newhead^.item := TItem(item);
+        newhead^.next := obj.head;
+        obj.head := newhead;
+        new := obj;
+      end;
   except
     Result := False;
   end;
 end;
 
-function TStack.pop: Boolean;
+function TStack.pop(out new: IDynamicSequence): Boolean;
 var
   tmp: ^TNode;
+  obj: TStack;
 begin
-  if Assigned(head) then
+  if Assigned(head) and getnew(obj) then
     begin
       tmp := head;
-      head := TNode(head^).next;
+      obj.head := TNode(obj.head^).next;
       Dispose(tmp);
+      new := obj;
       Result := True;
     end
   else
@@ -597,13 +612,15 @@ begin
   try
     stack := TStack.Create;
     stack.head := head;
-    IDynamicSequence(value) := stack;
+    TStack(value) := stack;
     p := head;
     q := nil;
     while Assigned(p) do
     begin
       New(r);
-      if Assigned(q) then begin q^.next := r; q := r end;
+      if Assigned(q) then
+        q^.next := r;
+      q := r;
       q^.item := p^.item;
       p := p^.next;
     end;
@@ -613,59 +630,72 @@ begin
   end;
 end;
 
-function TDynamicFooArray.Add(const item): Boolean;
+function TDynamicFooArray.add(out new: IDynamicArray; const item): Boolean;
+var
+  obj: TDynamicFooArray;
 begin
   try
-    Inc(FSize);
-    Result := True;
+    Result := getnew(obj);
+    if Result then
+    begin
+      Inc(obj.FSize);
+      new := obj;
+    end;
   except
     Result := False;
   end;
 end;
 
-function TDynamicFooArray.replace(const param): Boolean;
+function TDynamicFooArray.replace(out new: IDynamicArray; const param: IReplaceParam): Boolean;
 var
   index: TahaInteger;
 begin
-  Result := IReplaceParam(param).at(index) and (index >= 0) and (index < FSize);
+  Result := param.at(index) and (index >= 0) and (index < FSize);
 end;
 
-function TDynamicFooArray.exchange(const param): Boolean;
+function TDynamicFooArray.exchange(out new: IDynamicArray; const param: IExchangeParam): Boolean;
 var
   i1, i2: TahaInteger;
 begin
   Result :=
-    IExchangeParam(param).first(i1) and (i1 >= 0) and (i1 < FSize) and
-    IExchangeParam(param).second(i2) and (i2 >= 0) and (i2 < FSize);
+    param.first(i1) and (i1 >= 0) and (i1 < FSize) and
+    param.second(i2) and (i2 >= 0) and (i2 < FSize);
 end;
 
-function TDynamicFooArray.move(const param): Boolean;
+function TDynamicFooArray.move(out new: IDynamicArray; const param: IExchangeParam): Boolean;
 var
   i1, i2: TahaInteger;
 begin
   Result :=
-    IExchangeParam(param).first(i1) and (i1 >= 0) and (i1 < FSize) and
-    IExchangeParam(param).second(i2) and (i2 >= 0) and (i2 < FSize);
+    param.first(i1) and (i1 >= 0) and (i1 < FSize) and
+    param.second(i2) and (i2 >= 0) and (i2 < FSize);
 end;
 
-function TDynamicFooArray.insert(const param): Boolean;
+function TDynamicFooArray.insert(out new: IDynamicArray; const param: IReplaceParam): Boolean;
 var
   index: TahaInteger;
+  obj: TDynamicFooArray;
 begin
-  Result := IReplaceParam(param).at(index) and (index >= 0) and (index < FSize);
+  Result := IReplaceParam(param).at(index) and (index >= 0) and (index < FSize) and getnew(obj);
   if Result then
     try
-      Inc(FSize);
+      Inc(obj.FSize);
+      new := obj;
     except
       Result := False;
     end;
 end;
 
-function TDynamicFooArray.delete(const index): Boolean;
+function TDynamicFooArray.delete(out new: IDynamicArray; const index: TahaInteger): Boolean;
+var
+  obj: TDynamicFooArray;
 begin
-  Result := (TahaInteger(index) >= 0) and (TahaInteger(index) < FSize);
+  Result := (index >= 0) and (index < FSize) and getnew(obj);
   if Result then
-    Dec(FSize);
+  begin
+    Dec(obj.FSize);
+    new := obj;
+  end;
 end;
 
 function TDynamicFooArray.state(out value): Boolean;
@@ -685,7 +715,7 @@ begin
   try
     clone := TDynamicFooArray.Create;
     clone.FSize := FSize;
-    IDynamicArray(value) := clone;
+    TDynamicFooArray(value) := clone;
     Result := True;
   except
     Result := False;
@@ -724,7 +754,7 @@ end;
 
 function TModuleDataFoo.Storage(out value: IUnknown): Boolean;
 begin
-
+  Result := False;
 end;
 
 function TModuleDataOther.DynamicArray(out value: IUnknown): Boolean;
@@ -759,7 +789,7 @@ end;
 
 function TModuleDataOther.Storage(out value: IUnknown): Boolean;
 begin
-
+  Result := False;
 end;
 
 function TModuleDataInt.DynamicArray(out value: IUnknown): Boolean;
@@ -794,85 +824,103 @@ end;
 
 function TModuleDataInt.Storage(out value: IUnknown): Boolean;
 begin
-
+  Result := False;
 end;
 
-function TDynamicIntArray.Add(const item): Boolean;
-begin
-  SetLength(FItems, Length(FItems) + 1);
-  FItems[High(FItems)] := TahaInteger(item);
-end;
-
-function TDynamicIntArray.replace(const param): Boolean;
+function TDynamicIntArray.add(out new: IDynamicArray; const item): Boolean;
 var
-  index: TahaInteger;
-  item: TahaInteger;
+  obj: TDynamicIntArray;
 begin
-  try
-    if IReplaceParam(param).at(index) and (index >= 0) and (index < Length(FItems)) and IReplaceParam(param).item(item) then
-      begin
-        FItems[index] := item;
-        Result := True;
-      end
-    else
-      Result := False;
-  except
-    Result := False;
-  end;
-end;
-
-function TDynamicIntArray.exchange(const param): Boolean;
-var
-  first, second: TahaInteger;
-  item: TahaInteger;
-begin
-  Result :=
-    IExchangeParam(param).first(first) and (first >= 0) and (first < Length(FItems)) and
-    IExchangeParam(param).second(second) and (second >= 0) and (second < Length(FItems));
+  Result := getnew(obj);
   if Result then
     begin
-      item := FItems[first];
-      FItems[first] := FItems[second];
-      FItems[second] := item;
+      SetLength(obj.FItems, Length(obj.FItems) + 1);
+      FItems[High(obj.FItems)] := TahaInteger(item);
+      new := obj;
     end;
 end;
 
-function TDynamicIntArray.move(const param): Boolean;
+function TDynamicIntArray.replace(out new: IDynamicArray; const param: IReplaceParam): Boolean;
+var
+  index: TahaInteger;
+  item: TahaInteger;
+  obj: TDynamicIntArray;
+begin
+  if param.at(index) and (index >= 0) and (index < Length(FItems)) and param.item(item) then
+    begin
+      Result := getnew(obj);
+      if Result then
+      begin
+        obj.FItems[index] := item;
+        new := obj;
+      end;
+    end
+  else
+    Result := False;
+end;
+
+function TDynamicIntArray.exchange(out new: IDynamicArray; const param: IExchangeParam): Boolean;
 var
   first, second: TahaInteger;
   item: TahaInteger;
+  obj: TDynamicIntArray;
 begin
   Result :=
-    IExchangeParam(param).first(first) and (first >= 0) and (first < Length(FItems)) and
-    IExchangeParam(param).second(second) and (second >= 0) and (second < Length(FItems));
+    param.first(first) and (first >= 0) and (first < Length(FItems)) and
+    param.second(second) and (second >= 0) and (second < Length(FItems));
+  if Result then
+    Result := getnew(obj);
   if Result then
     begin
-      item := FItems[first];
-      if first < second - 1 then
+      item := obj.FItems[first];
+      obj.FItems[first] := obj.FItems[second];
+      obj.FItems[second] := item;
+    end;
+end;
+
+function TDynamicIntArray.move(out new: IDynamicArray; const param: IExchangeParam): Boolean;
+var
+  first, second: TahaInteger;
+  item: TahaInteger;
+  obj: TDynamicIntArray;
+begin
+  Result :=
+    param.first(first) and (first >= 0) and (first < Length(FItems)) and
+    param.second(second) and (second >= 0) and (second < Length(FItems));
+  if Result then
+    Result := getnew(obj);
+  if Result then
+    begin
+      item := obj.FItems[first];
+      if first < second then
         begin
-          System.Move(FItems[first + 1], FItems[first], (second - first - 1) * SizeOf(TahaInteger));
+          System.Move(obj.FItems[first + 1], obj.FItems[first], (second - first) * SizeOf(TahaInteger));
         end
       else
-      if first > second + 1 then
+      if first > second then
         begin
-          System.Move(FItems[second], FItems[second + 1], (first - second - 1) * SizeOf(TahaInteger));
+          System.Move(obj.FItems[second], obj.FItems[second + 1], (first - second) * SizeOf(TahaInteger));
         end;
-      FItems[second] := item;
+      obj.FItems[second] := item;
     end;
 end;
 
-function TDynamicIntArray.insert(const param): Boolean;
+function TDynamicIntArray.insert(out new: IDynamicArray; const param: IReplaceParam): Boolean;
 var
   index: TahaInteger;
   item: TahaInteger;
+  obj: TDynamicIntArray;
 begin
   try
-    if IReplaceParam(param).at(index) and (index >= 0) and (index < Length(FItems)) and IReplaceParam(param).item(item) then
+    if param.at(index) and (index >= 0) and (index < Length(FItems)) and param.item(item) then
       begin
-        SetLength(FItems, Length(FItems) + 1);
-        System.Move(FItems[index], FItems[index + 1], (Length(FItems) - index - 1) * SizeOf(TahaInteger));
-        FItems[index] := item;
-        Result := True;
+        Result := getnew(obj);
+        if Result then
+          begin
+            SetLength(obj.FItems, Length(FItems) + 1);
+            System.Move(obj.FItems[index], obj.FItems[index + 1], (Length(FItems) - index - 1) * SizeOf(TahaInteger));
+            obj.FItems[index] := item;
+          end;
       end
     else
       Result := False;
@@ -881,16 +929,20 @@ begin
   end;
 end;
 
-function TDynamicIntArray.delete(const index): Boolean;
+function TDynamicIntArray.delete(out new: IDynamicArray; const index): Boolean;
 var
   idx: TahaInteger;
 begin
   idx := TahaInteger(index);
   if (idx >= 0) and (idx < Length(FItems)) then
     begin
-      System.Move(FItems[idx + 1], FItems[idx], (Length(FItems) - idx - 1) * SizeOf(TahaInteger));
-      SetLength(FItems, Length(FItems) - 1);
-      Result := True;
+      Result := getnew(new);
+      if Result then
+        with TDynamicIntArray(new) do
+        begin
+          System.Move(FItems[idx + 1], FItems[idx], (Length(FItems) - idx - 1) * SizeOf(TahaInteger));
+          SetLength(FItems, Length(FItems) - 1);
+        end;
     end
   else
     Result := False;
@@ -900,7 +952,7 @@ function TDynamicIntArray.state(out value): Boolean;
 begin
   Result := True;
   try
-    IahaArray(value) := TahaIntArrayWrapper.Create(FItems);
+    IahaArray(value) := TahaIntArrayWrapper.Create(System.Copy(FItems, 0, Length(FItems)));
   except
     Result := False;
   end;
@@ -913,14 +965,14 @@ begin
   try
     clone := TDynamicIntArray.Create;
     clone.FItems := System.Copy(FItems, 0, Length(FItems));
-    IDynamicArray(value) := clone;
+    TDynamicIntArray(value) := clone;
     Result := True;
   except
     Result := False;
   end;
 end;
 
-function TDynamicCharArray.Add(const item): Boolean;
+function TDynamicCharArray.add(out new; const item): Boolean;
 begin
   try
     FItems := FItems + TahaCharacter(item);
@@ -930,25 +982,21 @@ begin
   end;
 end;
 
-function TDynamicCharArray.replace(const param): Boolean;
+function TDynamicCharArray.replace(out new; const param): Boolean;
 var
   index: TahaInteger;
   item: TahaCharacter;
 begin
-  try
-    if IReplaceParam(param).at(index) and (index >= 0) and (index < Length(FItems)) and IReplaceParam(param).item(item) then
-      begin
-        FItems[index + 1] := item;
-        Result := True;
-      end
-    else
-      Result := False;
-  except
+  if IReplaceParam(param).at(index) and (index >= 0) and (index < Length(FItems)) and IReplaceParam(param).item(item) then
+    begin
+      FItems[index + 1] := item;
+      Result := True;
+    end
+  else
     Result := False;
-  end;
 end;
 
-function TDynamicCharArray.exchange(const param): Boolean;
+function TDynamicCharArray.exchange(out new; const param): Boolean;
 var
   first, second: TahaInteger;
   ch: TahaCharacter;
@@ -964,7 +1012,7 @@ begin
     end;
 end;
 
-function TDynamicCharArray.move(const param): Boolean;
+function TDynamicCharArray.move(out new; const param): Boolean;
 var
   first, second: TahaInteger;
   ch: TahaCharacter;
@@ -977,18 +1025,18 @@ begin
       ch := FItems[first + 1];
       if first < second then
         begin
-          System.Move(FItems[first + 2], FItems[first + 1], (second - first - 1) * SizeOf(TahaCharacter));
+          System.Move(FItems[first + 2], FItems[first + 1], (second - first) * SizeOf(TahaCharacter));
         end
       else
       if first > second then
         begin
-          System.Move(FItems[second + 1], FItems[second + 2], (first - second - 1) * SizeOf(TahaCharacter));
+          System.Move(FItems[second + 1], FItems[second + 2], (first - second) * SizeOf(TahaCharacter));
         end;
       FItems[second + 1] := ch;
     end;
 end;
 
-function TDynamicCharArray.insert(const param): Boolean;
+function TDynamicCharArray.insert(out new; const param): Boolean;
 var
   index: TahaInteger;
   item: TahaCharacter;
@@ -1006,7 +1054,7 @@ begin
   end;
 end;
 
-function TDynamicCharArray.delete(const index): Boolean;
+function TDynamicCharArray.delete(out new; const index): Boolean;
 begin
   if (TahaInteger(index) >= 0) and (TahaInteger(index) < Length(FItems)) then
     begin
@@ -1035,7 +1083,7 @@ begin
   try
     clone := TDynamicCharArray.Create;
     clone.FItems := FItems;
-    IDynamicArray(value) := clone;
+    TDynamicCharArray(value) := clone;
   except
     Result := False;
   end;
@@ -1043,31 +1091,27 @@ end;
 
 { TDynamicArray }
 
-function TDynamicOtherArray.Add(const item): Boolean;
+function TDynamicOtherArray.add(out new; const item): Boolean;
 begin
   SetLength(FItems, Length(FItems) + 1);
   FItems[High(FItems)] := IUnknown(item);
 end;
 
-function TDynamicOtherArray.replace(const param): Boolean;
+function TDynamicOtherArray.replace(out new; const param): Boolean;
 var
   index: TahaInteger;
   item: IUnknown;
 begin
-  try
-    if IReplaceParam(param).at(index) and (index >= 0) and (index < Length(FItems)) and IReplaceParam(param).item(item) then
-      begin
-        FItems[index] := item;
-        Result := True;
-      end
-    else
-      Result := False;
-  except
+  if IReplaceParam(param).at(index) and (index >= 0) and (index < Length(FItems)) and IReplaceParam(param).item(item) then
+    begin
+      FItems[index] := item;
+      Result := True;
+    end
+  else
     Result := False;
-  end;
 end;
 
-function TDynamicOtherArray.exchange(const param): Boolean;
+function TDynamicOtherArray.exchange(out new; const param): Boolean;
 var
   first, second: TahaInteger;
   item: IUnknown;
@@ -1083,7 +1127,7 @@ begin
     end;
 end;
 
-function TDynamicOtherArray.move(const param): Boolean;
+function TDynamicOtherArray.move(out new; const param): Boolean;
 var
   first, second: TahaInteger;
   item: IUnknown;
@@ -1095,20 +1139,20 @@ begin
     begin
       item := FItems[first];
       FItems[first] := nil;
-      if first < second - 1 then
+      if first < second then
         begin
-          System.Move(FItems[first + 1], FItems[first], (second - first - 1) * SizeOf(TahaCharacter));
+          System.Move(FItems[first + 1], FItems[first], (second - first) * SizeOf(IUnknown));
         end
       else
-      if first > second + 1 then
+      if first > second then
         begin
-          System.Move(FItems[second], FItems[second + 1], (first - second - 1) * SizeOf(TahaCharacter));
+          System.Move(FItems[second], FItems[second + 1], (first - second) * SizeOf(IUnknown));
         end;
       FItems[second] := item;
     end;
 end;
 
-function TDynamicOtherArray.insert(const param): Boolean;
+function TDynamicOtherArray.insert(out new; const param): Boolean;
 var
   index: TahaInteger;
   item: IUnknown;
@@ -1129,7 +1173,7 @@ begin
   end;
 end;
 
-function TDynamicOtherArray.delete(const index): Boolean;
+function TDynamicOtherArray.delete(out new; const index): Boolean;
 var
   idx: TahaInteger;
 begin
@@ -1150,7 +1194,7 @@ function TDynamicOtherArray.state(out value): Boolean;
 begin
   Result := True;
   try
-    IahaArray(value) := TahaOherArrayWrapper.Create(FItems);
+    IahaArray(value) := TahaOherArrayWrapper.Create(System.Copy(FItems, 0, Length(FItems)));
   except
     Result := False;
   end;
@@ -1164,7 +1208,7 @@ begin
   try
     clone := TDynamicOtherArray.Create;
     clone.FItems := System.Copy(FItems, 0, Length(FItems));
-    IDynamicArray(value) := clone;
+    value := clone;
   except
     Result := False;
   end;
@@ -1204,7 +1248,7 @@ end;
 
 function TModuleDataChar.Storage(out value: IUnknown): Boolean;
 begin
-
+  Result := False;
 end;
 
 end.
