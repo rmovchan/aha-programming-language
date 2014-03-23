@@ -875,6 +875,7 @@ begin
       item := obj.FItems[first];
       obj.FItems[first] := obj.FItems[second];
       obj.FItems[second] := item;
+      new := obj;
     end;
 end;
 
@@ -902,6 +903,7 @@ begin
           System.Move(obj.FItems[second], obj.FItems[second + 1], (first - second) * SizeOf(TahaInteger));
         end;
       obj.FItems[second] := item;
+      new := obj;
     end;
 end;
 
@@ -920,6 +922,7 @@ begin
             SetLength(obj.FItems, Length(FItems) + 1);
             System.Move(obj.FItems[index], obj.FItems[index + 1], (Length(FItems) - index - 1) * SizeOf(TahaInteger));
             obj.FItems[index] := item;
+            new := obj;
           end;
       end
     else
