@@ -54,7 +54,7 @@ type
   IModuleData = interface
     function TypeInfo(out value: IahaUnaryFunction): Boolean;
     function Nesting(out value: IahaUnaryFunction): Boolean;
-    function FooType(out value: IUnknown): Boolean;
+    function VoidType(out value: IUnknown): Boolean;
     function IntType(out value: IUnknown): Boolean;
     function CharType(out value: IUnknown): Boolean;
     function ArrayType(out value: IahaUnaryFunction): Boolean;
@@ -70,7 +70,6 @@ type
   ITypeInfoEx = interface;
 
   ITypeInfo = interface
-    function fooType: Boolean;
     function characterType: Boolean;
     function integerType: Boolean;
     function arrayType(out datatype: ITypeInfoEx): Boolean;
@@ -104,7 +103,7 @@ type
   private
     function TypeInfo(out value: IahaUnaryFunction): Boolean;
     function Nesting(out value: IahaUnaryFunction): Boolean;
-    function FooType(out value: IUnknown): Boolean;
+    function VoidType(out value: IUnknown): Boolean;
     function IntType(out value: IUnknown): Boolean;
     function CharType(out value: IUnknown): Boolean;
     function ArrayType(out value: IahaUnaryFunction): Boolean;
@@ -135,7 +134,6 @@ type
   TBaseTypeInfo = class(TahaComposite, ITypeInfoEx)
   private
     FNesting: TahaInteger;
-    function fooType: Boolean; virtual;
     function characterType: Boolean; virtual;
     function integerType: Boolean; virtual;
     function arrayType(out datatype: ITypeInfoEx): Boolean; virtual;
@@ -160,13 +158,6 @@ type
   TNesting = class(TahaFunction, IahaUnaryFunction)
   private
     function Get(const param; out value): Boolean;
-  end;
-
-  { TFooType }
-
-  TFooType = class(TBaseTypeInfo)
-  private
-    function fooType: Boolean; override;
   end;
 
   { TCharacterType }
@@ -256,8 +247,7 @@ end;
 
 constructor TCompositeType.Create(const comvars: IahaArray);
 var
-  I, J, K, L, N, M: TahaInteger;
-  V: IahaArray;
+  I, K, L, N, M: TahaInteger;
   A: IAttribute;
   D: ITypeInfoEx;
 begin
@@ -265,22 +255,12 @@ begin
     begin
       M := 0;
       I := 0;
-      while I < N do //scan variants
+      while I < N do //scan attributes
       begin
-        if comvars.at(I, V) and V.size(L) then
+        if comvars.at(I, A) then
           begin
-            J := 0;
-            while J < L do //scan attributes
-            begin
-              if V.at(J, A) then
-                begin
-                  if A.datatype(D) and D.nesting(K) and (K > M) then
-                    M := K; //find maximum nesting level
-                end
-              else
-                Abort;
-              Inc(J);
-            end;
+            if A.datatype(D) and D.nesting(K) and (K > M) then
+              M := K; //find maximum nesting level
           end
         else
           Abort;
@@ -326,13 +306,6 @@ begin
   end;
 end;
 
-{ TFooType }
-
-function TFooType.fooType: Boolean;
-begin
-  Result := True;
-end;
-
 { TCharacterType }
 
 function TCharacterType.characterType: Boolean;
@@ -348,11 +321,6 @@ begin
 end;
 
 { TBaseTypeInfo }
-
-function TBaseTypeInfo.fooType: Boolean;
-begin
-  Result := False;
-end;
 
 function TBaseTypeInfo.characterType: Boolean;
 begin
@@ -423,11 +391,14 @@ begin
   end;
 end;
 
-function TModuleData.FooType(out value: IUnknown): Boolean;
+function TModuleData.VoidType(out value: IUnknown): Boolean;
+var
+  attrs: IahaArray;
 begin
   try
-    value := TFooType.Create(0);
-    Result := True;
+    Result := OtherArrayFromEnum([], attrs);
+    if Result then
+      value := TCompositeType.Create(attrs);
   except
     Result := False;
   end;

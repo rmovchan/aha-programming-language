@@ -8,8 +8,6 @@ uses
   Classes, SysUtils;
 
 type
-  TahaFoo = record end;
-
   PahaInteger =^TahaInteger;
   TahaInteger = Int64;
 
@@ -47,7 +45,7 @@ type
 
   TahaOpaque = TInterfacedObject;
 
-  IahaFooRelation = interface
+  IahaVoidRelation = interface
     function Check: Boolean;
   end;
 
@@ -68,17 +66,6 @@ type
   end;
 
   TahaFunction = TInterfacedObject;
-
-  { TahaFooArrayWrapper }
-  TahaFooArrayWrapper = class(TInterfacedObject, IahaArray)
-  private
-    FSize: TahaInteger;
-    function size(out value: TahaInteger): Boolean;
-    function at(const index: TahaInteger; out value): Boolean;
-    function write(out value): Boolean;
-  public
-    constructor Create(const content: TahaInteger);
-  end;
 
   TahaCharArray = array of TahaCharacter;
 
@@ -341,29 +328,6 @@ destructor TahaCharArrayWrapper.Destroy;
 begin
   FreeMem(FItems);
   inherited Destroy;
-end;
-
-{ TahaFooArrayWrapper }
-
-function TahaFooArrayWrapper.size(out value: TahaInteger): Boolean;
-begin
-  value := FSize;
-  Result := True;
-end;
-
-function TahaFooArrayWrapper.at(const index: TahaInteger; out value): Boolean;
-begin
-  Result := (index >= 0) and (index < FSize);
-end;
-
-function TahaFooArrayWrapper.write(out value): Boolean;
-begin
-  Result := True;
-end;
-
-constructor TahaFooArrayWrapper.Create(const content: TahaInteger);
-begin
-  FSize := content;
 end;
 
 {$O+}
