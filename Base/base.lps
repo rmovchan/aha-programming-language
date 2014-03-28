@@ -22,8 +22,8 @@
         <UnitName Value="collections"/>
         <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="384"/>
-        <CursorPos X="21" Y="405"/>
+        <TopLine Value="89"/>
+        <CursorPos X="14" Y="110"/>
         <UsageCount Value="268"/>
         <Loaded Value="True"/>
       </Unit1>
@@ -52,8 +52,8 @@
         <UnitName Value="core"/>
         <EditorIndex Value="6"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="16"/>
-        <CursorPos X="1" Y="37"/>
+        <TopLine Value="102"/>
+        <CursorPos X="1" Y="131"/>
         <UsageCount Value="118"/>
         <Loaded Value="True"/>
       </Unit4>
@@ -83,9 +83,9 @@
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="178"/>
-        <CursorPos X="1" Y="194"/>
-        <UsageCount Value="60"/>
+        <TopLine Value="391"/>
+        <CursorPos X="21" Y="435"/>
+        <UsageCount Value="89"/>
         <Loaded Value="True"/>
       </Unit7>
     </Units>
@@ -95,123 +95,123 @@
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="100" Column="50" TopLine="72"/>
+        <Caret Line="346" Column="7" TopLine="333"/>
       </Position1>
       <Position2>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="77" Column="66" TopLine="56"/>
+        <Caret Line="345" Column="7" TopLine="371"/>
       </Position2>
       <Position3>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="86" Column="81" TopLine="56"/>
+        <Caret Line="337" Column="3" TopLine="313"/>
       </Position3>
       <Position4>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="69" Column="1" TopLine="56"/>
+        <Caret Line="131" Column="1" TopLine="107"/>
       </Position4>
       <Position5>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="77" Column="34" TopLine="64"/>
+        <Caret Line="359" Column="35" TopLine="341"/>
       </Position5>
       <Position6>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="63" Column="1" TopLine="56"/>
+        <Caret Line="108" Column="122" TopLine="87"/>
       </Position6>
       <Position7>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="77" Column="32" TopLine="56"/>
+        <Caret Line="374" Column="20" TopLine="327"/>
       </Position7>
       <Position8>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="69" Column="25" TopLine="56"/>
+        <Caret Line="91" Column="1" TopLine="65"/>
       </Position8>
       <Position9>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="77" Column="34" TopLine="56"/>
+        <Caret Line="378" Column="11" TopLine="357"/>
       </Position9>
       <Position10>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="74" Column="5" TopLine="67"/>
+        <Caret Line="124" Column="24" TopLine="103"/>
       </Position10>
       <Position11>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="68" Column="26" TopLine="56"/>
+        <Caret Line="91" Column="5" TopLine="70"/>
       </Position11>
       <Position12>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="79" Column="67" TopLine="57"/>
+        <Caret Line="53" Column="5" TopLine="43"/>
       </Position12>
       <Position13>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="77" Column="54" TopLine="56"/>
+        <Caret Line="92" Column="1" TopLine="70"/>
       </Position13>
       <Position14>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="80" Column="10" TopLine="59"/>
+        <Caret Line="77" Column="36" TopLine="61"/>
       </Position14>
       <Position15>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="93" Column="23" TopLine="62"/>
+        <Caret Line="84" Column="22" TopLine="64"/>
       </Position15>
       <Position16>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="86" Column="25" TopLine="73"/>
+        <Caret Line="93" Column="27" TopLine="72"/>
       </Position16>
       <Position17>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="81" Column="12" TopLine="60"/>
+        <Caret Line="363" Column="29" TopLine="321"/>
       </Position17>
       <Position18>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="167" Column="36" TopLine="132"/>
+        <Caret Line="97" Column="1" TopLine="72"/>
       </Position18>
       <Position19>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="94" Column="46" TopLine="73"/>
+        <Caret Line="86" Column="1" TopLine="60"/>
       </Position19>
       <Position20>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="128" Column="43" TopLine="128"/>
+        <Caret Line="88" Column="20" TopLine="65"/>
       </Position20>
       <Position21>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="139" Column="53" TopLine="125"/>
+        <Caret Line="439" Column="23" TopLine="399"/>
       </Position21>
       <Position22>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="162" Column="9" TopLine="122"/>
+        <Caret Line="432" Column="16" TopLine="389"/>
       </Position22>
       <Position23>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="158" Column="32" TopLine="129"/>
+        <Caret Line="408" Column="23" TopLine="387"/>
       </Position23>
       <Position24>
-        <Filename Value="collections.pas"/>
-        <Caret Line="165" Column="43" TopLine="147"/>
+        <Filename Value="dictionaries.pas"/>
+        <Caret Line="441" Column="17" TopLine="408"/>
       </Position24>
       <Position25>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="94" Column="19" TopLine="73"/>
+        <Caret Line="415" Column="1" TopLine="400"/>
       </Position25>
       <Position26>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="188" Column="77" TopLine="167"/>
+        <Caret Line="441" Column="37" TopLine="420"/>
       </Position26>
       <Position27>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="94" Column="38" TopLine="73"/>
+        <Caret Line="399" Column="18" TopLine="396"/>
       </Position27>
       <Position28>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="138" Column="12" TopLine="128"/>
+        <Caret Line="461" Column="1" TopLine="440"/>
       </Position28>
       <Position29>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="134" Column="19" TopLine="116"/>
+        <Caret Line="245" Column="32" TopLine="242"/>
       </Position29>
       <Position30>
         <Filename Value="dictionaries.pas"/>
-        <Caret Line="128" Column="21" TopLine="107"/>
+        <Caret Line="261" Column="18" TopLine="248"/>
       </Position30>
     </JumpHistory>
   </ProjectSession>

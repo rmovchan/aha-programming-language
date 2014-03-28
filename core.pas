@@ -34,7 +34,7 @@ type
       function state(out value): Boolean;
     protected
       function copy(out value): Boolean; virtual;
-      function getnew(out value): Boolean;
+      function getnew(out value): Boolean; inline;
     end;
 
   TahaComposite = TInterfacedObject;
@@ -162,8 +162,7 @@ end;
 
 function TahaObject.copy(out value): Boolean;
 begin
-  //IahaObject(value) := TahaObject.Create;
-  Result := True;
+  Result := False;
 end;
 
 function TahaObject.getnew(out value): Boolean;
