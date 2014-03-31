@@ -574,6 +574,7 @@ begin
       Inc(FIndex);
       Dec(FCount);
       new := Self;
+      Result := True;
     end
   else
     Result := False;
