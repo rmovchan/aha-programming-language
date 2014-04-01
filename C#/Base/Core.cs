@@ -42,10 +42,10 @@ namespace Core
         public AhaArraySeq(Item[] list) { items = list; index = 0; }
     }
 
-    public struct AhaArray<Item> : IahaArray<Item>
+    public class AhaArray<Item> : IahaArray<Item>
     {
         private Item[] items;
-        public void init(Item[] list) { items = list; }
+        public AhaArray(Item[] list) { items = list; }
         public Int64 size() { return items.LongLength; }
         public Item at(Int64 index) { return items[index]; }
         public IahaSequence<Item> sort(IComparer<Item> comp)
@@ -60,12 +60,12 @@ namespace Core
             { Item[] sel = Array.FindAll<Item>(items, cond); return sel; }
     }
 
-    public struct AhaSegment : IahaArray<Int64>
+    public class AhaSegment : IahaArray<Int64>
     {
         private Int64 lo;
         private Int64 hi;
         private Int64[] list() { Int64[] result = new Int64[hi - lo]; int j = 0; for (Int64 i = lo; i < hi; i++) { result[j] = i; j++; } return result; }
-        public void init(Int64 low, Int64 high) { lo = low; hi = high; }
+        public AhaSegment(Int64 low, Int64 high) { lo = low; hi = high; }
         public Int64 size() { return hi - lo; }
         public Int64 at(Int64 index) { return lo + index; }
         public IahaSequence<Int64> sort(IComparer<Int64> comp)
