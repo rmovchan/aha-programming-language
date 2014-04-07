@@ -81,7 +81,7 @@ namespace BaseLibrary
 //    (Rational >= Rational): { Rational, Rational } "is first rational greater than or equal to second?"
 //    (Rational > Rational): { Rational, Rational } "is first rational greater than second?"
 //end
-    public class Rational
+    public struct Rational
     {
         public Int64 num;
         public Int64 den;
@@ -190,7 +190,7 @@ namespace BaseLibrary
 //    (~inv Matrix): { Matrix -> Matrix } "inverse matrix"
 //    (~tr Matrix): { Matrix -> Matrix } "transpose matrix"
 //end
-    public class Float
+    public struct Float
     {
         public double value;
     }
@@ -293,7 +293,7 @@ namespace BaseLibrary
         Int64 length();
     }
 
-    public class RegEx
+    public struct RegEx
     {
         public string value;
     }
@@ -313,12 +313,37 @@ namespace BaseLibrary
         IahaArray<char> in_();
     }
 
+    public interface IPutParams
+    {
+        Int64 at();
+        char char_();
+    }
+
+    public interface IReplaceParams
+    {
+        IahaArray<ISubstring> substr();
+        IahaArray<char> with();
+    }
+
+    public interface IPadParams
+    {
+        char with();
+        Int64 to();
+    }
+
+    public delegate char Convert(char ch);
+
     public interface IStringBuilder : IahaObject<IahaArray<char>>
     {
         void add(char ch);
+        void put(IPutParams param);
         void append(IahaArray<char> str);
+        void replace(IReplaceParams param);
         void extract(ISubstring sub);
+        void padL(IPadParams param);
+        void padR(IPadParams param);
         void trimSpaces();
+        void apply(Convert conv);
     }
 
     public class StrUtils : AhaModule
@@ -344,18 +369,6 @@ namespace BaseLibrary
             public ISubstring first(Predicate<ISubstring> that, Int64 max) { Int64 j = 0; substring substr = new substring(index, sub.Length); while (index != -1) { if (j == max) break; substr.idx = index; if (that(substr)) return substr; index = str.IndexOf(sub, index + 1); j++; } throw Failure.One; }
         }
 
-        class stringBuilder : IStringBuilder
-        {
-            private System.Text.StringBuilder sb;
-            public stringBuilder(string init) { sb = new System.Text.StringBuilder(); sb.Append(init); }
-            public IahaArray<char> state() { return new AhaString(sb.ToString()); }
-            public IahaObject<IahaArray<char>> copy() { return new stringBuilder(sb.ToString()); }
-            public void add(char ch) { sb.Append(ch); }
-            public void append(IahaArray<char> str) { sb.Append(str); }
-            public void extract(ISubstring sub) { sb = new System.Text.StringBuilder(sb.ToString().Substring((int)sub.index(), (int)sub.length())); }
-            public void trimSpaces() { sb = new System.Text.StringBuilder(sb.ToString().Trim()); }
-        }
-
         class fastBuilder : IStringBuilder
         {
             const int block = 1024;
@@ -368,6 +381,15 @@ namespace BaseLibrary
                 for (int i = 0; i < list.Count - 1; i++) { Array.Copy(list[i], 0, buf, j, block); j += block; }
                 if (j != count) Array.Copy(list[list.Count - 1], 0, buf, j, count - j);
                 return buf;
+            }
+            private void split(char[] buf, int index, int length)
+            {
+                list = new List<char[]>();
+                int j = index; //from position
+                count = length;
+                char[] b;
+                for (int i = 0; i < length / block; i++) { b = new char[block]; Array.Copy(buf, j, b, 0, block); j += block; list.Add(b); }
+                if (j != index + length) { b = new char[block]; Array.Copy(buf, j, b, 0, index + length - j); list.Add(b); }
             }
             public fastBuilder() { list = new List<char[]>(); }
             public IahaArray<char> state() { return new AhaString(gather()); }
@@ -396,27 +418,41 @@ namespace BaseLibrary
             }
             public void extract(ISubstring sub)
             {
-                list.RemoveRange(0, (int)(sub.index() / block)); //remove unused blocks
-                int j = (int)(sub.index() % block); //shift by
-                int l = (int)(sub.length() / block); //number of full blocks
-                if (j != 0)
-                {
-                    for (int i = 0; i < l - 1; i++) //shift characters in full blocks
-                    {
-                        Array.Copy(list[i], j, list[i], 0, block - j); //shift end of block to beginning
-                        Array.Copy(list[i + 1], 0, list[i], block - j, j); //fill the rest of block from next one
-                    }
-                    Array.Copy(list[l - 1], j, list[l - 1], 0, block - j);
-                }
-                int k = (int)(sub.length() % block); //chars in last block
-                if (k != 0)
-                {
-                    Array.Copy(list[l + 1], 0, list[l], block - j, k); //fill the rest of block from next one
-                    list.RemoveRange(l + 1, list.Count - l - 1); //remove unused blocks
-                }
-                else list.RemoveRange(l, list.Count - l); //remove unused blocks
+                char[] buf = gather();
+                split(buf, (int)sub.index(), (int)sub.length());
             }
-            public void trimSpaces() { sb = new System.Text.StringBuilder(sb.ToString().Trim()); }
+            public void trimSpaces()
+            {
+                char[] buf = gather();
+                int i = 0;
+                while ((i < count) && (buf[i] == ' ')) i++; //count leading spaces
+                int l = count - i;
+                if (i < count) //not all spaces?
+                {
+                    while (buf[i + l - 1] == ' ') l--; //exclude trailing spaces
+                }
+                if (l != 0) split(buf, i, l); else list = new List<char[]>();
+            }
+            void put(IPutParams param) { int at = (int)param.at(); char ch = param.char_(); list[at / block][at % block] = ch; }
+            void replace(IReplaceParams param)
+            {
+                char[] source = gather();
+                char[] with = param.with().get();
+                IahaArray<ISubstring> sub = param.substr();
+                int j = 0;
+                IahaSequence<ISubstring> seq = sub.sort(delegate(ISubstring x, ISubstring y) { return x.index() <= y.index(); });
+                for (int i = 0; i < sub.size(); i++) j += (int)seq.state().length() - with.Length;
+                char[] target = new char[source.Length + j];
+                int from = 0;
+                int to = 0;
+                for (int i = 0; i < sub.size(); i++)
+                {
+                    Array.Copy(source, from, target, to, seq.state().index());
+                }
+            }
+            void padL(IPadParams param);
+            void padR(IPadParams param);
+            void apply(Convert conv);
         }
 
         public IahaArray<char> Substr(IahaArray<char> s, ISubstring ss) { char[] items = new char[ss.length()]; Array.Copy(s.get(), ss.index(), items, 0, ss.length()); return new AhaString(items); }
@@ -428,7 +464,7 @@ namespace BaseLibrary
             string temp2 = new string(param.in_().get());
             return new SearchSeq(temp2, temp1);
         }
-        public IStringBuilder StringBuilder() { return new stringBuilder(""); }
+        public IStringBuilder StringBuilder() { return new fastBuilder(); }
         public Int64 StringHashFunc(IahaArray<char> s) { return s.get().GetHashCode(); }
     }
 

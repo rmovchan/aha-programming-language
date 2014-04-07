@@ -21,6 +21,18 @@ namespace AhaCore
         public static readonly Failure One = new Failure();
     }
 
+    public class Invalid<Item>
+    {
+        public static Item One() { throw Failure.One; }
+    }
+
+    public interface IahaVoid { }
+
+    public class AhaVoid : IahaVoid
+    {
+        public static AhaVoid One = new AhaVoid();
+    }
+
     public delegate Item Fold<Item>(Item first, Item second);
 
     public delegate bool Compare<Item>(Item first, Item second);
