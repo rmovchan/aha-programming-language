@@ -232,6 +232,147 @@ namespace BaseLibrary
         public Float sin(Float a) { return new Float { value = System.Math.Sin(a.value) }; }
     }
 
+//doc 
+//    Title:   "Time"
+//    Package: "Aha! Base Library"
+//    Purpose: "Date and time manipulation"
+//    Author:  "Roman Movchan, Melbourne, Australia"
+//    Created: "2011-10-11"
+//end
+
+//export Types:
+//    type Timestamp: opaque "Date and time"
+//    type Interval: opaque "Time interval"
+//    type DateStruc:
+//        [
+//            year: integer "year(s)" 
+//            month: integer "month(s)"
+//            day: integer "day(s)"
+//        ] "date as composite"
+//    type TimeStruc:
+//        [
+//            hour: integer "hour(s)"
+//            min: integer "minute(s)"
+//            sec: integer "second(s)"
+//        ] "time as composite"
+//    type TimestampStruc: [ date: DateStruc "date part" time: TimeStruc "time part" ] "timestamp as composite"
+//    type DayOfWeek:
+//        [
+//            monday: "Monday?" |
+//            tuesday: "Tuesday?" |
+//            wednesday: "Wednesday?" |
+//            thursday: "Thursday?" |
+//            friday: "Friday?" |
+//            saturday: "Saturday?" |
+//            sunday: "Sunday?" 
+//        ] "a day of the week"
+//end
+
+//export Utils:
+//    the DayOfWeek: { Timestamp -> DayOfWeek } "day of week for given Timestamp"
+//    the Year: Interval "1-year interval"
+//    the Month: Interval "1-month interval"
+//    the Day: Interval "1-day interval"
+//    the Hour: Interval "1-hour interval"
+//    the Minute: Interval "1-minute interval"
+//    the Second: Interval "1-second interval"
+//    the Millisecond: Interval "1-millisecond interval"
+//    the Zero: Interval "zero length interval"
+//    the TimestampCompare: { Timestamp, Timestamp -> integer } "negative - before, positive - after, zero - same time"
+//    the IntervalCompare: { Interval, Interval -> integer } "negative - shorter, positive - longer, zero - same length"
+//end
+
+//export Operators:
+//    (Timestamp - Timestamp): { Timestamp, Timestamp -> Interval } "difference between two timestamps"
+//    (Interval + Interval): { Interval, Interval -> Interval } "sum of intervals"
+//    (Interval - Interval): { Interval, Interval -> Interval } "difference between intervals"
+//    (Timestamp + Interval): { Timestamp, Interval -> Timestamp } "timestamp plus interval"
+//    (Timestamp - Interval): { Timestamp, Interval -> Timestamp } "timestamp minus interval"
+//    (integer * Interval): { integer, Interval -> Interval } "integer times interval"
+//    (Interval / integer): { Interval, integer -> Interval } "interval divided by an integer"
+//    (~date DateStruc): { DateStruc -> Timestamp } "convert DateStruc to Timestamp (date only)"
+//    (~time TimeStruc): { TimeStruc -> Interval } "convert TimeStruc to Interval (from midnight)"
+//    (~date Timestamp): { Timestamp -> Timestamp } "date part of a Timestamp"
+//    (~time Timestamp): { Timestamp -> Interval } "time part of a Timestamp as Interval (from midnight)"
+//    (~struc Timestamp): { Timestamp -> TimestampStruc } "convert Timestamp to TimestampStruc"
+//    (~struc Interval): { Interval -> TimestampStruc } "convert Interval to TimestampStruc"
+//end
+
+    public class Time : AhaModule
+    {
+        public struct Timestamp
+        { 
+            public Int64 ticks; 
+        }
+
+        public struct Interval
+        {
+            public Int64 ticks;
+        }
+
+        public interface IDateStruc
+        { 
+            Int64 year();
+            Int64 month();
+            Int64 day();
+        }
+
+        struct DateStruc : IDateStruc
+        {
+            public DateTime dt;
+            public Int64 year() { return dt.Year; }
+            public Int64 month() { return dt.Month; }
+            public Int64 day() { return dt.Day; }
+        }
+
+        public interface ITimeStruc
+        {
+            Int64 hour();
+            Int64 min();
+            Int64 sec();
+        }
+
+        public interface ITimestampStruc
+        {
+            IDateStruc date();
+            ITimeStruc time();
+        }
+
+        public interface IDayOfWeek
+        { 
+            bool monday();
+            bool tuesday();
+            bool wednesday();
+            bool thursday();
+            bool friday();
+            bool saturday();
+            bool sunday();
+        }
+
+        struct DayOfWeekStr : IDayOfWeek
+        {
+            public System.DayOfWeek value;
+            public bool monday() { return value == System.DayOfWeek.Monday;  }
+            public bool tuesday() { return value == System.DayOfWeek.Tuesday; }
+            public bool wednesday() { return value == System.DayOfWeek.Wednesday; }
+            public bool thursday() { return value == System.DayOfWeek.Thursday; }
+            public bool friday() { return value == System.DayOfWeek.Friday; }
+            public bool saturday() { return value == System.DayOfWeek.Saturday; }
+            public bool sunday() { return value == System.DayOfWeek.Sunday; }
+        }
+
+        public IDayOfWeek DayOfWeek(Timestamp dt) { return new DayOfWeekStr { value = (new DateTime(dt.ticks)).DayOfWeek }; }
+
+        public Interval Hour() { return new Interval { ticks = (new TimeSpan(1, 0, 0)).Ticks }; }
+
+        public Interval Minute() { return new Interval { ticks = (new TimeSpan(0, 1, 0)).Ticks }; }
+
+        public Interval Second() { return new Interval { ticks = (new TimeSpan(0, 0, 1)).Ticks }; }
+
+        public Interval Millisecond() { return new Interval { ticks = (new TimeSpan(0, 0, 0, 0, 1)).Ticks }; }
+
+        public Interval Zero() { return new Interval { ticks = 0 }; }
+    }
 //doc
 //    Title:   "StrUtils"
 //    Package: "Aha! Base Library"
@@ -340,10 +481,10 @@ namespace BaseLibrary
         void append(IahaArray<char> str);
         void replace(IReplaceParams param);
         void extract(ISubstring sub);
-        void padL(IPadParams param);
-        void padR(IPadParams param);
+        //void padL(IPadParams param);
+        //void padR(IPadParams param);
         void trimSpaces();
-        void apply(Convert conv);
+        //void apply(Convert conv);
     }
 
     public class StrUtils : AhaModule
@@ -433,8 +574,8 @@ namespace BaseLibrary
                 }
                 if (l != 0) split(buf, i, l); else list = new List<char[]>();
             }
-            void put(IPutParams param) { int at = (int)param.at(); char ch = param.char_(); list[at / block][at % block] = ch; }
-            void replace(IReplaceParams param)
+            public void put(IPutParams param) { int at = (int)param.at(); char ch = param.char_(); list[at / block][at % block] = ch; }
+            public void replace(IReplaceParams param)
             {
                 char[] source = gather();
                 char[] with = param.with().get();
@@ -450,9 +591,9 @@ namespace BaseLibrary
                     Array.Copy(source, from, target, to, seq.state().index());
                 }
             }
-            void padL(IPadParams param);
-            void padR(IPadParams param);
-            void apply(Convert conv);
+            //void padL(IPadParams param);
+            //void padR(IPadParams param);
+            //void apply(Convert conv);
         }
 
         public IahaArray<char> Substr(IahaArray<char> s, ISubstring ss) { char[] items = new char[ss.length()]; Array.Copy(s.get(), ss.index(), items, 0, ss.length()); return new AhaString(items); }
