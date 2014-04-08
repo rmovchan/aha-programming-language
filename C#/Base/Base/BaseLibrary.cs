@@ -254,6 +254,7 @@ namespace BaseLibrary
 //            hour: integer "hour(s)"
 //            min: integer "minute(s)"
 //            sec: integer "second(s)"
+//            msec: integer "millisecond(s)"
 //        ] "time as composite"
 //    type TimestampStruc: [ date: DateStruc "date part" time: TimeStruc "time part" ] "timestamp as composite"
 //    type DayOfWeek:
