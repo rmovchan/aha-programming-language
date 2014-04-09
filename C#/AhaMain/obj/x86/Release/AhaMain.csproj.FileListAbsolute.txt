@@ -1,0 +1,14 @@
+C:\Users\Roman\aha-programming-language\C#\AhaMain\bin\Release\AhaMain.exe
+C:\Users\Roman\aha-programming-language\C#\AhaMain\bin\Release\AhaMain.pdb
+C:\Users\Roman\aha-programming-language\C#\AhaMain\bin\Release\API.dll
+C:\Users\Roman\aha-programming-language\C#\AhaMain\bin\Release\Base.dll
+C:\Users\Roman\aha-programming-language\C#\AhaMain\bin\Release\HelloWorld.dll
+C:\Users\Roman\aha-programming-language\C#\AhaMain\bin\Release\API.pdb
+C:\Users\Roman\aha-programming-language\C#\AhaMain\bin\Release\Base.pdb
+C:\Users\Roman\aha-programming-language\C#\AhaMain\bin\Release\HelloWorld.pdb
+C:\Users\Roman\aha-programming-language\C#\AhaMain\obj\x86\Release\AhaMain.csprojResolveAssemblyReference.cache
+C:\Users\Roman\aha-programming-language\C#\AhaMain\obj\x86\Release\AhaMain.Properties.Resources.resources
+C:\Users\Roman\aha-programming-language\C#\AhaMain\obj\x86\Release\AhaMain.csproj.GenerateResource.Cache
+C:\Users\Roman\aha-programming-language\C#\AhaMain\obj\x86\Release\AhaMain.exe
+C:\Users\Roman\aha-programming-language\C#\AhaMain\obj\x86\Release\AhaMain.pdb
+C:\Users\Roman\aha-programming-language\C#\AhaMain\obj\x86\Release\AhaMain.Console.resources

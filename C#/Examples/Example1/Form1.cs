@@ -31,7 +31,7 @@ namespace Example1
                 try 
                 { 
                     listBox1.Items.Add(seq2.state().ToString());
-                    seq2.skip(); 
+                    seq2.action_skip(); 
                 }
                 catch (System.Exception) { break; }
             }

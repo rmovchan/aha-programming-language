@@ -11,7 +11,7 @@ namespace AhaCore
 
     public interface IahaSequence<Item> : IahaObject<Item>
     {
-        void skip();
+        void action_skip();
         Item first(Predicate<Item> that, Int64 max);
     }
 
@@ -19,18 +19,6 @@ namespace AhaCore
     {
         public Failure() : base() { }
         public static readonly Failure One = new Failure();
-    }
-
-    public class Invalid<Item>
-    {
-        public static Item One() { throw Failure.One; }
-    }
-
-    public interface IahaVoid { }
-
-    public class AhaVoid : IahaVoid
-    {
-        public static AhaVoid One = new AhaVoid();
     }
 
     public delegate Item Fold<Item>(Item first, Item second);
@@ -41,7 +29,6 @@ namespace AhaCore
     {
         Int64 size();
         Item at(Int64 index);
-        IahaSequence<Item> sort(Compare<Item> that);
         bool forEach(Predicate<Item> that);
         bool forSome(Predicate<Item> that);
         Item such(Predicate<Item> that);
@@ -50,6 +37,7 @@ namespace AhaCore
         IahaSequence<Item> enumerate(Predicate<Item> that);
         Item foldl(Fold<Item> rule);
         Item foldr(Fold<Item> rule);
+        IahaSequence<Item> sort(Compare<Item> that);
         Item[] get();
     }
 
@@ -61,8 +49,17 @@ namespace AhaCore
         public Rule rule;
         public Item state() { return curr; }
         public IahaObject<Item> copy() { AhaSeq<Item> clone = new AhaSeq<Item> { curr = curr, rule = rule }; return clone; }
-        public void skip() { curr = rule(curr); }
-        public Item first(Predicate<Item> that, Int64 max) { Int64 j = 0; Item item = curr; for (Int64 i = 0; i < max; i++) { if (j == max) break; if (that(item)) return item; item = rule(item); j++; } throw Failure.One; }
+        public void action_skip() { curr = rule(curr); }
+        public Item first(Predicate<Item> that, Int64 max) { Int64 j = 0; Item item = curr; while (j < max) { if (that(item)) return item; item = rule(item); j++; } throw Failure.One; }
+    }
+
+    public struct AhaObjSeq<Item> : IahaSequence<Item>
+    {
+        public IahaSequence<Item> obj;
+        public Item state() { return obj.state(); }
+        public IahaObject<Item> copy() { AhaObjSeq<Item> clone = new AhaObjSeq<Item> { obj = obj }; return clone; }
+        public void action_skip() { obj.action_skip(); }
+        public Item first(Predicate<Item> that, Int64 max) { IahaSequence<Item> clone = (IahaSequence<Item>)obj.copy(); Int64 j = 0; Item item = clone.state(); while (j < max) { if (that(item)) return item; clone.action_skip(); item = clone.state(); j++; } throw Failure.One; }
     }
 
     public struct AhaArraySeq<Item> : IahaSequence<Item>
@@ -71,15 +68,15 @@ namespace AhaCore
         public int index;
         public Item state() { return items[index]; }
         public IahaObject<Item> copy() { return new AhaArraySeq<Item> { items = items, index = index }; }
-        public void skip() { if (index < items.Length) index++; else throw Failure.One; }
-        public Item first(Predicate<Item> that, Int64 max) { Int64 j = 0; for (int i = index; i < items.Length; i++) { if (j == max) break; if (that(items[i])) return items[i]; j++; } throw Failure.One; }
+        public void action_skip() { if (index < items.Length) index++; else throw Failure.One; }
+        public Item first(Predicate<Item> that, Int64 max) { Int64 j = 0; while (j < items.Length) { if (that(items[j])) return items[j]; j++; } throw Failure.One; }
     }
 
     public struct AhaEmptySeq<Item> : IahaSequence<Item>
     {
         public Item state() { throw Failure.One; }
         public IahaObject<Item> copy() { return new AhaEmptySeq<Item>(); }
-        public void skip() { throw Failure.One; }
+        public void action_skip() { throw Failure.One; }
         public Item first(Predicate<Item> that, Int64 max) { throw Failure.One; }
     }
 
@@ -106,7 +103,7 @@ namespace AhaCore
             for (int i = 0; i < max; i++)
             {
                 items[i] = s.state();
-                try { s.skip(); }
+                try { s.action_skip(); }
                 catch (System.Exception) { Array.Resize<Item>(ref items, i + 1); break; }
             }
         }
@@ -125,7 +122,7 @@ namespace AhaCore
         public Item such(Predicate<Item> that)
         { int index = Array.FindIndex<Item>(items, that); if (index >= 0) return items[index]; else throw Failure.One; }
         public Int64 count(Predicate<Item> that)
-        { Item[] sel = Array.FindAll<Item>(items, that); return sel.LongLength; }
+        { int j = 0; for (int i = 0; i < items.Length; i++) { if (that(items[i])) j++; } return j; }
         public Item[] select(Predicate<Item> that)
         { Item[] sel = Array.FindAll<Item>(items, that); return sel; }
         public IahaSequence<Item> enumerate(Predicate<Item> that)
@@ -158,7 +155,7 @@ namespace AhaCore
             for (int i = 0; i < max; i++)
             {
                 temp[i] = s.state();
-                try { s.skip(); }
+                try { s.action_skip(); }
                 catch (System.Exception) { Array.Resize<char>(ref temp, i + 1); break; }
             }
             items = new string(temp);
@@ -178,7 +175,7 @@ namespace AhaCore
         public char such(Predicate<char> that)
         { int index = Array.FindIndex<char>(items.ToCharArray(), that); if (index >= 0) return items[index]; else throw Failure.One; }
         public Int64 count(Predicate<char> that)
-        { char[] sel = Array.FindAll<char>(items.ToCharArray(), that); return sel.LongLength; }
+        { int j = 0; for (int i = 0; i < items.Length; i++) { if (that(items[i])) j++; } return j; }
         public char[] select(Predicate<char> that)
         { char[] sel = Array.FindAll<char>(items.ToCharArray(), that); return sel; }
         public IahaSequence<char> enumerate(Predicate<char> that)

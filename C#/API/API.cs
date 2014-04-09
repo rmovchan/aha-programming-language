@@ -32,57 +32,23 @@ namespace API
 //        ] "interface to the job engine"
 //end
 
-    public class Jobs : AhaModule
+    public class module_Jobs<Event> : AhaModule
     {
-        public delegate void Job();
+        public delegate void opaque_Job();
 
-        public interface Behavior<Event> : IahaObject<IahaArray<Job>>
+        public interface iobj_Behavior : IahaObject<IahaArray<opaque_Job>>
         {
-            void handle(Event e);
+            void action_handle(Event e);
         }
 
-        public delegate Event EnquireTime<Event>(Time.Timestamp time);
+        public delegate Event func_EnquireTime(module_Time.opaque_Timestamp time);
 
-        public interface Engine<Event>
+        public interface icomp_Engine
         {
-            Job run(Job job);
-            Job raise(Event e);
+            opaque_Job fattr_run(opaque_Job job);
+            opaque_Job fattr_raise(Event e);
             //Job delay(double interval, Event e);
-            Job enquireTime(EnquireTime<Event> enq);
+            opaque_Job fattr_enquireTime(func_EnquireTime enq);
         }
-    }
-
-//doc 
-//    Title: "Application"
-//    Purpose: "A console application"
-//    Package: "Application Program Interface"
-//    Author: "Roman Movchan, Melbourne, Australia"
-//    Created: "2013-27-08"
-//end
-
-//type Event: opaque "must be defined by the implementation"
-//use Jobs: API/Jobs(Event: Event)
-//the Title: [character]  "application title"
-//the Signature: [character]  "vendor's signature"
-//the Permit: { [character] } "verify supplied password"
-//the Behavior: { [ input: [character] output: { [character] -> @Jobs!Job } engine: @Jobs!Engine ] -> @Jobs!Behavior } "application behavior"
-//the Receive: { [character] -> Event } "convert user input to events"
-    public delegate Jobs.Job Output(IahaArray<char> output);
-
-    public interface IBehaviorParams<Event>
-    {
-        IahaArray<char> settings();
-        Jobs.Job output(IahaArray<char> text);
-        Jobs.Engine<Event> engine();
-    }
-
-    //public delegate Behavior<Event> GetBehavior<Event>(IBehaviorParams<Event> param);
-
-    public interface IApplication<Event>
-    {
-        IahaArray<char> Title();
-        IahaArray<char> Signature();
-        Jobs.Behavior<Event> Behavior(IBehaviorParams<Event> param);
-        Event Receive(IahaArray<char> input);
     }
 }

@@ -43,11 +43,11 @@ namespace BaseLibrary
 //    the Queue: DynamicSequence "empty queue"
 //    the Storage: RandomStorage "empty random storage"
 //end
-    public class Collections<Item> : AhaModule
+    public class module_Collections<Item> : AhaModule
     {
-        public IDynamicArray<Item> DynamicArray() { return new Collections.DynamicArray<Item>(); }
-        public IDynamicSequence<Item> Stack() { return new Collections.Stack<Item>(); }
-        public IDynamicSequence<Item> Queue() { return new Collections.Queue<Item>(); }
+        public iobj_DynamicArray<Item> attr_DynamicArray() { return new Collections.obj_DynamicArray<Item>(); }
+        public iobj_DynamicSequence<Item> attr_Stack() { return new Collections.obj_Stack<Item>(); }
+        public iobj_DynamicSequence<Item> attr_Queue() { return new Collections.obj_Queue<Item>(); }
     }
 
 //doc
@@ -81,33 +81,33 @@ namespace BaseLibrary
 //    (Rational >= Rational): { Rational, Rational } "is first rational greater than or equal to second?"
 //    (Rational > Rational): { Rational, Rational } "is first rational greater than second?"
 //end
-    public struct Rational
+    public class module_Rational : AhaModule
     {
-        public Int64 num;
-        public Int64 den;
-    }
-
-    public interface IRatioStruc
-    {
-        Int64 num();
-        Int64 den();
-    }
-
-    public class Rationals : AhaModule
-    {
-        class RatioStruc : IRatioStruc
+        public struct opaque_Rational
         {
-            private Int64 fnum;
-            private Int64 fden;
-            public RatioStruc(Int64 n, Int64 d) { fnum = n; fden = d; }
-            public Int64 num() { return fnum; }
-            public Int64 den() { return fden; }
+            public Int64 num;
+            public Int64 den;
         }
 
-        public Rational Ratio(Int64 num, Int64 den) { return new Rational { num = num, den = den }; }
-        public IRatioStruc Struc(Rational x) { return new RatioStruc(x.num, x.den); }
-        public Rational RationalSum(Rational a, Rational b) { return new Rational { num = a.num * b.den + a.den * b.num, den = a.den * b.den }; }
-        public bool RationalLess(Rational a, Rational b) { return a.num * b.den < a.den * b.num; }
+        public interface icomp_RatioStruc
+        {
+            Int64 attr_num();
+            Int64 attr_den();
+        }
+
+        class comp_RatioStruc : icomp_RatioStruc
+        {
+            private Int64 num;
+            private Int64 den;
+            public comp_RatioStruc(Int64 n, Int64 d) { num = n; den = d; }
+            public Int64 attr_num() { return num; }
+            public Int64 attr_den() { return den; }
+        }
+
+        public opaque_Rational op_integer_Slash_integer(Int64 num, Int64 den) { return new opaque_Rational { num = num, den = den }; }
+        public icomp_RatioStruc op__struc(opaque_Rational x) { return new comp_RatioStruc(x.num, x.den); }
+        public opaque_Rational op_Rational_Plus_Rational(opaque_Rational a, opaque_Rational b) { return new opaque_Rational { num = a.num * b.den + a.den * b.num, den = a.den * b.den }; }
+        public bool op_Rational_Less_Rational(opaque_Rational a, opaque_Rational b) { return a.num * b.den < a.den * b.num; }
     }
 //doc 
 //    Title:   "Math"
@@ -190,46 +190,46 @@ namespace BaseLibrary
 //    (~inv Matrix): { Matrix -> Matrix } "inverse matrix"
 //    (~tr Matrix): { Matrix -> Matrix } "transpose matrix"
 //end
-    public struct Float
+    public class module_Math : AhaModule
     {
-        public double value;
-    }
+        public struct opaque_Float
+        {
+            public double value;
+        }
 
-    public interface IGeneralFormatParams
-    {
-        char period();
-    }
+        public interface icomp_GeneralFormatParams
+        {
+            char attr_period();
+        }
 
-    public interface IFixedFormatParams
-    {
-        char period();
-        Int64 decimals();
-    }
+        public interface icomp_FixedFormatParams
+        {
+            char attr_period();
+            Int64 attr_decimals();
+        }
 
-    public interface IExponentFormatParams
-    {
-        char period();
-    }
+        public interface icomp_ExponentFormatParams
+        {
+            char attr_period();
+        }
 
-    public interface FormatParams
-    {
-        IGeneralFormatParams general();
-        IFixedFormatParams fixed_();
-        IExponentFormatParams exponent();
-    }
+        public interface icomp_FormatParams
+        {
+            icomp_GeneralFormatParams attr_general();
+            icomp_FixedFormatParams attr_fixed();
+            icomp_ExponentFormatParams attr_exponent();
+        }
 
-    public class Matrix
-    {
-        public double[,] value;
-    }
+        public class opaque_Matrix
+        {
+            public double[,] value;
+        }
 
-    public class Math : AhaModule
-    {
-        public Float FloatFromInt(Int64 x) { return new Float { value = x }; }
-        public Float FloatFromRational(Rational x) { return new Float { value = x.num / x.den }; }
-        public Float FloatSum(Float a, Float b) { return new Float { value = a.value + b.value }; }
-        public bool FloatLess(Float a, Float b) { return a.value < b.value; }
-        public Float sin(Float a) { return new Float { value = System.Math.Sin(a.value) }; }
+        public opaque_Float op__float_integer(Int64 x) { return new opaque_Float { value = x }; }
+        public opaque_Float op__float_Rational(module_Rational.opaque_Rational x) { return new opaque_Float { value = x.num / x.den }; }
+        public opaque_Float op_Float_Plus_Float(opaque_Float a, opaque_Float b) { return new opaque_Float { value = a.value + b.value }; }
+        public bool op_Float_Less_Float(opaque_Float a, opaque_Float b) { return a.value < b.value; }
+        public opaque_Float fattr_sin(opaque_Float a) { return new opaque_Float { value = System.Math.Sin(a.value) }; }
     }
 
 //doc 
@@ -278,9 +278,8 @@ namespace BaseLibrary
 //    the Minute: Interval "1-minute interval"
 //    the Second: Interval "1-second interval"
 //    the Millisecond: Interval "1-millisecond interval"
+//    the Tick: Interval "minimum length interval"
 //    the Zero: Interval "zero length interval"
-//    the TimestampCompare: { Timestamp, Timestamp -> integer } "negative - before, positive - after, zero - same time"
-//    the IntervalCompare: { Interval, Interval -> integer } "negative - shorter, positive - longer, zero - same length"
 //end
 
 //export Operators:
@@ -297,82 +296,112 @@ namespace BaseLibrary
 //    (~time Timestamp): { Timestamp -> Interval } "time part of a Timestamp as Interval (from midnight)"
 //    (~struc Timestamp): { Timestamp -> TimestampStruc } "convert Timestamp to TimestampStruc"
 //    (~struc Interval): { Interval -> TimestampStruc } "convert Interval to TimestampStruc"
+//    (~ticks Interval): { Interval -> integer } "number of ticks in Interval"
 //end
 
-    public class Time : AhaModule
+    public class module_Time : AhaModule
     {
-        public struct Timestamp
+        public struct opaque_Timestamp
         { 
             public Int64 ticks; 
         }
 
-        public struct Interval
+        public struct opaque_Interval
         {
             public Int64 ticks;
         }
 
-        public interface IDateStruc
+        public interface icomp_DateStruc
         { 
-            Int64 year();
-            Int64 month();
-            Int64 day();
+            Int64 attr_year();
+            Int64 attr_month();
+            Int64 attr_day();
         }
 
-        struct DateStruc : IDateStruc
+        struct comp_DateStruc : icomp_DateStruc
         {
             public DateTime dt;
-            public Int64 year() { return dt.Year; }
-            public Int64 month() { return dt.Month; }
-            public Int64 day() { return dt.Day; }
+            public Int64 attr_year() { return dt.Year; }
+            public Int64 attr_month() { return dt.Month; }
+            public Int64 attr_day() { return dt.Day; }
         }
 
-        public interface ITimeStruc
+        public interface icomp_TimeStruc
         {
-            Int64 hour();
-            Int64 min();
-            Int64 sec();
+            Int64 attr_hour();
+            Int64 attr_min();
+            Int64 attr_sec();
+            Int64 attr_msec();
         }
 
-        public interface ITimestampStruc
+        public interface icomp_TimestampStruc
         {
-            IDateStruc date();
-            ITimeStruc time();
+            icomp_DateStruc attr_date();
+            icomp_TimeStruc attr_time();
         }
 
-        public interface IDayOfWeek
+        public interface icomp_DayOfWeek
         { 
-            bool monday();
-            bool tuesday();
-            bool wednesday();
-            bool thursday();
-            bool friday();
-            bool saturday();
-            bool sunday();
+            bool attr_Monday();
+            bool attr_Tuesday();
+            bool attr_Wednesday();
+            bool attr_Thursday();
+            bool attr_Friday();
+            bool attr_Saturday();
+            bool attr_Sunday();
         }
 
-        struct DayOfWeekStr : IDayOfWeek
+        struct comp_DayOfWeek : icomp_DayOfWeek
         {
             public System.DayOfWeek value;
-            public bool monday() { return value == System.DayOfWeek.Monday;  }
-            public bool tuesday() { return value == System.DayOfWeek.Tuesday; }
-            public bool wednesday() { return value == System.DayOfWeek.Wednesday; }
-            public bool thursday() { return value == System.DayOfWeek.Thursday; }
-            public bool friday() { return value == System.DayOfWeek.Friday; }
-            public bool saturday() { return value == System.DayOfWeek.Saturday; }
-            public bool sunday() { return value == System.DayOfWeek.Sunday; }
+            public bool attr_Monday() { return value == System.DayOfWeek.Monday;  }
+            public bool attr_Tuesday() { return value == System.DayOfWeek.Tuesday; }
+            public bool attr_Wednesday() { return value == System.DayOfWeek.Wednesday; }
+            public bool attr_Thursday() { return value == System.DayOfWeek.Thursday; }
+            public bool attr_Friday() { return value == System.DayOfWeek.Friday; }
+            public bool attr_Saturday() { return value == System.DayOfWeek.Saturday; }
+            public bool attr_Sunday() { return value == System.DayOfWeek.Sunday; }
         }
 
-        public IDayOfWeek DayOfWeek(Timestamp dt) { return new DayOfWeekStr { value = (new DateTime(dt.ticks)).DayOfWeek }; }
+        public icomp_DayOfWeek fattr_DayOfWeek(opaque_Timestamp dt) { return new comp_DayOfWeek { value = (new DateTime(dt.ticks)).DayOfWeek }; }
 
-        public Interval Hour() { return new Interval { ticks = (new TimeSpan(1, 0, 0)).Ticks }; }
+        public opaque_Interval attr_Day() { return new opaque_Interval { ticks = (new TimeSpan(1, 0, 0, 0)).Ticks }; }
 
-        public Interval Minute() { return new Interval { ticks = (new TimeSpan(0, 1, 0)).Ticks }; }
+        public opaque_Interval attr_Hour() { return new opaque_Interval { ticks = 14400000000 }; }
 
-        public Interval Second() { return new Interval { ticks = (new TimeSpan(0, 0, 1)).Ticks }; }
+        public opaque_Interval attr_Minute() { return new opaque_Interval { ticks = 600000000 }; }
 
-        public Interval Millisecond() { return new Interval { ticks = (new TimeSpan(0, 0, 0, 0, 1)).Ticks }; }
+        public opaque_Interval attr_Second() { return new opaque_Interval { ticks = 10000000 }; }
 
-        public Interval Zero() { return new Interval { ticks = 0 }; }
+        public opaque_Interval attr_Millisecond() { return new opaque_Interval { ticks = 10000 }; }
+
+        public opaque_Interval attr_Tick() { return new opaque_Interval { ticks = 1 }; }
+
+        public opaque_Interval attr_Zero() { return new opaque_Interval { ticks = 0 }; }
+
+        public opaque_Interval op_Timestamp_Minus_Timestamp(opaque_Timestamp a, opaque_Timestamp b) { return new opaque_Interval { ticks = a.ticks - b.ticks }; }
+        public opaque_Timestamp op_Timestamp_Plus_Interval(opaque_Timestamp a, opaque_Interval b) { return new opaque_Timestamp { ticks = a.ticks + b.ticks }; }
+        public opaque_Timestamp op_Timestamp_Minus_Interval(opaque_Timestamp a, opaque_Interval b) { return new opaque_Timestamp { ticks = a.ticks - b.ticks }; }
+        public opaque_Interval op_Interval_Plus_Interval(opaque_Interval a, opaque_Interval b) { return new opaque_Interval { ticks = a.ticks + b.ticks }; }
+        public opaque_Interval op_Interval_Minus_Interval(opaque_Interval a, opaque_Interval b) { return new opaque_Interval { ticks = a.ticks - b.ticks }; }
+        public opaque_Interval op_integer_Times_Interval(Int64 a, opaque_Interval i) { return new opaque_Interval { ticks = a * i.ticks }; }
+        public opaque_Interval op_Interval_Div_integer(opaque_Interval i, Int64 a) { return new opaque_Interval { ticks = i.ticks / a }; }
+        public bool op_Timestamp_LessEqual_Timestamp(opaque_Timestamp a, opaque_Timestamp b) { return a.ticks <= b.ticks; }
+        public bool op_Timestamp_Less_Timestamp(opaque_Timestamp a, opaque_Timestamp b) { return a.ticks < b.ticks; }
+        public bool op_Timestamp_Equal_Timestamp(opaque_Timestamp a, opaque_Timestamp b) { return a.ticks == b.ticks; }
+        public bool op_Timestamp_NotEqual_Timestamp(opaque_Timestamp a, opaque_Timestamp b) { return a.ticks != b.ticks; }
+        public bool op_Timestamp_Greater_Timestamp(opaque_Timestamp a, opaque_Timestamp b) { return a.ticks > b.ticks; }
+        public bool op_Timestamp_GreaterEqual_Timestamp(opaque_Timestamp a, opaque_Timestamp b) { return a.ticks >= b.ticks; }
+        public bool op_Interval_LessEqual_Interval(opaque_Interval a, opaque_Interval b) { return a.ticks <= b.ticks; }
+        public bool op_Interval_Less_Interval(opaque_Interval a, opaque_Interval b) { return a.ticks < b.ticks; }
+        public bool op_Interval_Equal_Interval(opaque_Interval a, opaque_Interval b) { return a.ticks == b.ticks; }
+        public bool op_Interval_NotEqual_Interval(opaque_Interval a, opaque_Interval b) { return a.ticks != b.ticks; }
+        public bool op_Interval_Greater_Interval(opaque_Interval a, opaque_Interval b) { return a.ticks > b.ticks; }
+        public bool op_Interval_GreaterEqual_Interval(opaque_Interval a, opaque_Interval b) { return a.ticks >= b.ticks; }
+        public opaque_Timestamp op__date_DateStruc(icomp_DateStruc date) { return new opaque_Timestamp { ticks = (new DateTime((int)date.attr_year(), (int)date.attr_month(), (int)date.attr_day())).Ticks }; }
+        public opaque_Interval op__time_TimeStruc(icomp_TimeStruc time) { return new opaque_Interval { ticks = (new TimeSpan(0, (int)time.attr_hour(), (int)time.attr_min(), (int)time.attr_sec(), (int)time.attr_msec())).Ticks }; }
+        public Int64 op__ticks_Interval(opaque_Interval i) { return i.ticks; }
+        public opaque_Interval op__interval_integer(Int64 t) { return new opaque_Interval { ticks = t }; }
     }
 //doc
 //    Title:   "StrUtils"
@@ -429,89 +458,89 @@ namespace BaseLibrary
 //    (String = String): { String, String } "compare strings"
 //end
     
-    public interface ISubstring
+    public class module_StrUtils : AhaModule
     {
-        Int64 index();
-        Int64 length();
-    }
-
-    public struct RegEx
-    {
-        public string value;
-    }
-
-    public delegate bool Equality(char a, char b);
-
-    public interface IPattern
-    {
-        IahaArray<char> string_();
-        RegEx regEx();
-        Equality equality();
-    }
-
-    public interface ISearchParams
-    {
-        IPattern for_();
-        IahaArray<char> in_();
-    }
-
-    public interface IPutParams
-    {
-        Int64 at();
-        char char_();
-    }
-
-    public interface IReplaceParams
-    {
-        IahaArray<ISubstring> substr();
-        IahaArray<char> with();
-    }
-
-    public interface IPadParams
-    {
-        char with();
-        Int64 to();
-    }
-
-    public delegate char Convert(char ch);
-
-    public interface IStringBuilder : IahaObject<IahaArray<char>>
-    {
-        void add(char ch);
-        void put(IPutParams param);
-        void append(IahaArray<char> str);
-        void replace(IReplaceParams param);
-        void extract(ISubstring sub);
-        //void padL(IPadParams param);
-        //void padR(IPadParams param);
-        void trimSpaces();
-        //void apply(Convert conv);
-    }
-
-    public class StrUtils : AhaModule
-    {
-        class SearchSeq : IahaSequence<ISubstring>
+        public interface icomp_Substring
         {
-            struct substring : ISubstring
+            Int64 attr_index();
+            Int64 attr_length();
+        }
+
+        public struct opaque_RegEx
+        {
+            public string value;
+        }
+
+        public delegate bool func_Equality(char a, char b);
+
+        public interface icomp_Pattern
+        {
+            IahaArray<char> attr_string();
+            opaque_RegEx attr_regEx();
+            func_Equality attr_equality();
+        }
+
+        public interface icomp_SearchParams
+        {
+            icomp_Pattern attr_for();
+            IahaArray<char> attr_in();
+        }
+
+        public interface icomp_PutParams
+        {
+            Int64 attr_at();
+            char attr_char();
+        }
+
+        public interface icomp_ReplaceParams
+        {
+            IahaArray<icomp_Substring> attr_substr();
+            IahaArray<char> attr_with();
+        }
+
+        public interface icomp_PadParams
+        {
+            char attr_with();
+            Int64 attr_to();
+        }
+
+        public delegate char func_Convert(char ch);
+
+        public interface iobj_StringBuilder : IahaObject<IahaArray<char>>
+        {
+            void action_add(char ch);
+            void action_put(icomp_PutParams param);
+            void action_append(IahaArray<char> str);
+            void action_replace(icomp_ReplaceParams param);
+            void action_extract(icomp_Substring sub);
+            //void action_padL(IPadParams param);
+            //void action_padR(IPadParams param);
+            void action_trimSpaces();
+            //void action_apply(Convert conv);
+        }
+
+        class obj_SearchSeq : IahaSequence<icomp_Substring>
+        {
+            struct substring : icomp_Substring
             {
                 public int idx;
                 private int len;
-                public Int64 index() { return idx; }
-                public Int64 length() { return len; }
+                public Int64 attr_index() { return idx; }
+                public Int64 attr_length() { return len; }
                 public substring(int i, int l) { idx = i; len = l; }
             }
 
             private string str;
             private string sub;
             private int index;
-            public SearchSeq(string s, string ss) { str = s; sub = ss; index = s.IndexOf(ss); }
-            public ISubstring state() { return new substring(index, sub.Length); }
-            public IahaObject<ISubstring> copy() { return new SearchSeq(str, sub) { index = index }; }
-            public void skip() { index = str.IndexOf(sub, index + 1); if (index == -1) throw Failure.One; }
-            public ISubstring first(Predicate<ISubstring> that, Int64 max) { Int64 j = 0; substring substr = new substring(index, sub.Length); while (index != -1) { if (j == max) break; substr.idx = index; if (that(substr)) return substr; index = str.IndexOf(sub, index + 1); j++; } throw Failure.One; }
+            public obj_SearchSeq(string s, string ss) { str = s; sub = ss; index = s.IndexOf(ss); }
+            public icomp_Substring state() { return new substring(index, sub.Length); }
+            public IahaObject<icomp_Substring> copy() { return new obj_SearchSeq(str, sub) { index = index }; }
+            public void action_skip() { index = str.IndexOf(sub, index + 1); if (index == -1) throw Failure.One; }
+            public icomp_Substring first(Predicate<icomp_Substring> that, Int64 max) { Int64 j = 0; substring substr = new substring(index, sub.Length); while (index != -1) { if (j == max) break; substr.idx = index; if (that(substr)) return substr; index = str.IndexOf(sub, index + 1); j++; } throw Failure.One; }
         }
 
-        class fastBuilder : IStringBuilder
+        class fastBuilder : iobj_StringBuilder
         {
             const int block = 1024;
             private List<char[]> list;
@@ -536,8 +565,8 @@ namespace BaseLibrary
             public fastBuilder() { list = new List<char[]>(); }
             public IahaArray<char> state() { return new AhaString(gather()); }
             public IahaObject<IahaArray<char>> copy() { fastBuilder fb = new fastBuilder() { count = count }; for (int i = 0; i < count; i++) { char[] b = new char[block]; list[i].CopyTo(b, 0); fb.list.Add(b); } return fb; }
-            public void add(char ch) { if (count == list.Count * block) list.Add(new char[block]); list[count / block][count % block] = ch; }
-            public void append(IahaArray<char> str) 
+            public void action_add(char ch) { if (count == list.Count * block) list.Add(new char[block]); list[count / block][count % block] = ch; }
+            public void action_append(IahaArray<char> str) 
             { 
                 char[] temp = str.get();
                 int j = list.Count * block - count; //positions in last block
@@ -558,12 +587,12 @@ namespace BaseLibrary
                     list.Add(b);
                 }
             }
-            public void extract(ISubstring sub)
+            public void action_extract(icomp_Substring sub)
             {
                 char[] buf = gather();
-                split(buf, (int)sub.index(), (int)sub.length());
+                split(buf, (int)sub.attr_index(), (int)sub.attr_length());
             }
-            public void trimSpaces()
+            public void action_trimSpaces()
             {
                 char[] buf = gather();
                 int i = 0;
@@ -575,21 +604,21 @@ namespace BaseLibrary
                 }
                 if (l != 0) split(buf, i, l); else list = new List<char[]>();
             }
-            public void put(IPutParams param) { int at = (int)param.at(); char ch = param.char_(); list[at / block][at % block] = ch; }
-            public void replace(IReplaceParams param)
+            public void action_put(icomp_PutParams param) { int at = (int)param.attr_at(); char ch = param.attr_char(); list[at / block][at % block] = ch; }
+            public void action_replace(icomp_ReplaceParams param)
             {
                 char[] source = gather();
-                char[] with = param.with().get();
-                IahaArray<ISubstring> sub = param.substr();
+                char[] with = param.attr_with().get();
+                IahaArray<icomp_Substring> sub = param.attr_substr();
                 int j = 0;
-                IahaSequence<ISubstring> seq = sub.sort(delegate(ISubstring x, ISubstring y) { return x.index() <= y.index(); });
-                for (int i = 0; i < sub.size(); i++) j += (int)seq.state().length() - with.Length;
+                IahaSequence<icomp_Substring> seq = sub.sort(delegate(icomp_Substring x, icomp_Substring y) { return x.attr_index() <= y.attr_index(); });
+                for (int i = 0; i < sub.size(); i++) j += (int)seq.state().attr_length() - with.Length;
                 char[] target = new char[source.Length + j];
                 int from = 0;
                 int to = 0;
                 for (int i = 0; i < sub.size(); i++)
                 {
-                    Array.Copy(source, from, target, to, seq.state().index());
+                    Array.Copy(source, from, target, to, seq.state().attr_index());
                 }
             }
             //void padL(IPadParams param);
@@ -597,16 +626,16 @@ namespace BaseLibrary
             //void apply(Convert conv);
         }
 
-        public IahaArray<char> Substr(IahaArray<char> s, ISubstring ss) { char[] items = new char[ss.length()]; Array.Copy(s.get(), ss.index(), items, 0, ss.length()); return new AhaString(items); }
-        public RegEx RegEx(IahaArray<char> s) { return new RegEx { value = new string(s.get()) }; }
-        public IahaSequence<ISubstring> Search(ISearchParams param)
+        public IahaArray<char> Substr(IahaArray<char> s, icomp_Substring ss) { char[] items = new char[ss.attr_length()]; Array.Copy(s.get(), ss.attr_index(), items, 0, ss.attr_length()); return new AhaString(items); }
+        public opaque_RegEx RegEx_(IahaArray<char> s) { return new opaque_RegEx { value = new string(s.get()) }; }
+        public IahaSequence<icomp_Substring> Search(icomp_SearchParams param)
         {
-            IahaArray<char> sub = param.for_().string_();
+            IahaArray<char> sub = param.attr_for().attr_string();
             string temp1 = new string(sub.get());
-            string temp2 = new string(param.in_().get());
-            return new SearchSeq(temp2, temp1);
+            string temp2 = new string(param.attr_in().get());
+            return new obj_SearchSeq(temp2, temp1);
         }
-        public IStringBuilder StringBuilder() { return new fastBuilder(); }
+        public iobj_StringBuilder StringBuilder() { return new fastBuilder(); }
         public Int64 StringHashFunc(IahaArray<char> s) { return s.get().GetHashCode(); }
     }
 
