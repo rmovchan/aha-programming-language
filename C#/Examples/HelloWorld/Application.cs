@@ -23,7 +23,7 @@ namespace API
     //the Permit: { [character] } "verify supplied password"
     //the Behavior: { [ input: [character] output: { [character] -> @Jobs!Job } engine: @Jobs!Engine ] -> @Jobs!Behavior } "application behavior"
     //the Receive: { [character] -> Event } "convert user input to events"
-    public partial class Application : AhaModule
+    public class Application : AhaModule
     {
         public struct Event { }
 

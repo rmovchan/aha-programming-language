@@ -10,11 +10,17 @@ namespace Collections
         Item attr_item();
     }
 
+    public interface icomp_InsertParam<Item>
+    {
+        Int64 attr_index();
+        Item attr_item();
+    }
+
     public interface iobj_DynamicArray<Item> : IahaObject<IahaArray<Item>>
     {
         void action_add(Item item);
         void action_replace(icomp_ReplaceParam<Item> param);
-        void action_insert(icomp_ReplaceParam<Item> param);
+        void action_insert(icomp_InsertParam<Item> param);
         void action_delete(Int64 index);
     }
 
@@ -33,7 +39,7 @@ namespace Collections
         public IahaObject<IahaArray<Item>> copy() { obj_DynamicArray<Item> clone = new obj_DynamicArray<Item>(list.ToArray()); return clone; }
         public void action_add(Item item) { list.Add(item); }
         public void action_replace(icomp_ReplaceParam<Item> param) { list[(int)param.attr_index()] = param.attr_item(); }
-        public void action_insert(icomp_ReplaceParam<Item> param) { list.Insert((int)param.attr_index(), param.attr_item()); }
+        public void action_insert(icomp_InsertParam<Item> param) { list.Insert((int)param.attr_index(), param.attr_item()); }
         public void action_delete(Int64 index) { list.RemoveAt((int)index); }
     }
 
@@ -47,16 +53,7 @@ namespace Collections
         }
         private node head = null;
         public Item state() { if (head != null) return head.item; else throw Failure.One; }
-        public IahaObject<Item> copy()
-            { 
-                node tail = null; 
-                node p = head; 
-                node q; 
-                while (p != null) { q = new node(); q.item = p.item; q.next = tail; tail = q; p = p.next; } 
-                obj_Stack<Item> clone = new obj_Stack<Item>();
-                while (tail != null) { clone.action_push(tail.item); tail = tail.next; }
-                return clone; 
-            }
+        public IahaObject<Item> copy() { obj_Stack<Item> clone = new obj_Stack<Item>() { head = head }; return clone; }
         public void action_push(Item item) { node h = new node(); h.item = item; h.next = head; head = h; }
         public void action_pop() { if (head != null) head = head.next; else throw Failure.One; }
     }

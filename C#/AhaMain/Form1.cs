@@ -15,55 +15,41 @@ namespace AhaMain
 {
     public partial class Console : Form
     {
-        delegate module_Jobs<API.Application.Event>.opaque_Job Output(string text);
+        delegate module_Jobs<API.module_Application.opaque_Event>.opaque_Job func_Output(string text);
 
-        struct BehaviorParams : API.Application.icomp_BehaviorParams
+        struct BehaviorParams : API.module_Application.icomp_BehaviorParams
         {
-            public Output outp;
-            public module_Jobs<API.Application.Event>.icomp_Engine eng;
+            public func_Output field_output;
+            public module_Jobs<API.module_Application.opaque_Event>.icomp_Engine field_engine;
             public IahaArray<char> attr_settings() { return new AhaString(""); }
-            public module_Jobs<API.Application.Event>.opaque_Job fattr_output(IahaArray<char> text) { return outp(new string(text.get())); }
-            public module_Jobs<API.Application.Event>.icomp_Engine attr_engine() { return eng; }
+            public module_Jobs<API.module_Application.opaque_Event>.opaque_Job fattr_output(IahaArray<char> text) { return field_output(new string(text.get())); }
+            public module_Jobs<API.module_Application.opaque_Event>.icomp_Engine attr_engine() { return field_engine; }
         }
 
-        private API.Application app = new API.Application();
-        private module_Jobs<API.Application.Event>.iobj_Behavior b;
-        private Engine<API.Application.Event> eng;
+        private API.module_Application app = new API.module_Application();
+        private module_Jobs<API.module_Application.opaque_Event>.iobj_Behavior b;
+        private comp_Engine<API.module_Application.opaque_Event> eng;
         private List<string> messages = new List<string>();
         private ListViewItem[] cache;
         private int firstItem; //stores the index of the first item in the cache
-        private void output(string text) { messages.Add(text); listView1.VirtualListSize = listView1.VirtualListSize + 1; }
+        private void output(string text) { messages.Add(text); listView1.VirtualListSize = listView1.VirtualListSize + 1; listView1.Refresh(); }
         public Console()
         {
             InitializeComponent();
         }
 
-        private void perform() 
-        { 
-            module_Jobs<API.Application.Event>.opaque_Job[] jobs = b.state().get(); 
-            try 
-            { 
-                for (int i = 0; i < jobs.Length; i++) 
-                { 
-                    module_Jobs<API.Application.Event>.opaque_Job job = jobs[i]; 
-                    job(); 
-                } 
-            } 
-            catch (System.Exception) { System.Windows.Forms.Application.Exit(); } 
-        }
-
         private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (e.KeyChar == '\r') { b.action_handle(app.fattr_Receive(new AhaString(((TextBox)sender).Text))); perform(); }
+            if (e.KeyChar == '\r') { b.action_handle(app.fattr_Receive(new AhaString(((TextBox)sender).Text))); eng.perform(); }
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            BehaviorParams bp = new BehaviorParams { outp = delegate(string text) { return delegate() { output(text); }; }, eng = eng };
+            BehaviorParams bp = new BehaviorParams { field_output = delegate(string text) { return delegate() { output(text); }; }, field_engine = eng };
             b = app.fattr_Behavior(bp);
-            eng = new Engine<API.Application.Event>(b, perform);
+            eng = new comp_Engine<API.module_Application.opaque_Event>(b);
             this.Text = new string(app.attr_Title().get());
-            perform();
+            eng.perform();
 
         }
 

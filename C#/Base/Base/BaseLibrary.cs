@@ -51,7 +51,7 @@ namespace BaseLibrary
     }
 
 //doc
-//    Title:   "Rationals"
+//    Title:   "Rational"
 //    Package: "Aha! Base Library"
 //    Purpose: "Rational numbers"
 //    Author:  "Roman Movchan, Melbourne, Australia"
@@ -225,11 +225,27 @@ namespace BaseLibrary
             public double[,] value;
         }
 
-        public opaque_Float op__float_integer(Int64 x) { return new opaque_Float { value = x }; }
-        public opaque_Float op__float_Rational(module_Rational.opaque_Rational x) { return new opaque_Float { value = x.num / x.den }; }
+        public opaque_Float op__float_integer(Int64 x) { return new opaque_Float { value = (double)x }; }
+        public opaque_Float op__float_Rational(module_Rational.opaque_Rational x) { return new opaque_Float { value = (double)x.num / (double)x.den }; }
         public opaque_Float op_Float_Plus_Float(opaque_Float a, opaque_Float b) { return new opaque_Float { value = a.value + b.value }; }
+        public opaque_Float op_Float_Minus_Float(opaque_Float a, opaque_Float b) { return new opaque_Float { value = a.value - b.value }; }
+        public opaque_Float op_Float_Times_Float(opaque_Float a, opaque_Float b) { return new opaque_Float { value = a.value * b.value }; }
+        public opaque_Float op_Float_Div_Float(opaque_Float a, opaque_Float b) { return new opaque_Float { value = a.value / b.value }; }
+        public opaque_Float op_Float_StarStar_integer(opaque_Float a, Int64 b) { return new opaque_Float { value = System.Math.Pow(a.value, (double)b) }; }
+        public opaque_Float op_Float_StarStar_Float(opaque_Float a, opaque_Float b) { return new opaque_Float { value = System.Math.Pow(a.value, b.value) }; }
         public bool op_Float_Less_Float(opaque_Float a, opaque_Float b) { return a.value < b.value; }
+        public bool op_Float_LessEqual_Float(opaque_Float a, opaque_Float b) { return a.value <= b.value; }
+        public bool op_Float_Equal_Float(opaque_Float a, opaque_Float b) { return a.value == b.value; }
+        public bool op_Float_NotEqual_Float(opaque_Float a, opaque_Float b) { return a.value != b.value; }
+        public bool op_Float_GreaterEqual_Float(opaque_Float a, opaque_Float b) { return a.value >= b.value; }
+        public bool op_Float_Greater_Float(opaque_Float a, opaque_Float b) { return a.value > b.value; }
         public opaque_Float fattr_sin(opaque_Float a) { return new opaque_Float { value = System.Math.Sin(a.value) }; }
+        public opaque_Float fattr_cos(opaque_Float a) { return new opaque_Float { value = System.Math.Cos(a.value) }; }
+        public opaque_Float fattr_exp(opaque_Float a) { return new opaque_Float { value = System.Math.Exp(a.value) }; }
+        public opaque_Float fattr_log(opaque_Float a) { return new opaque_Float { value = System.Math.Log(a.value) }; }
+        public opaque_Float fattr_tan(opaque_Float a) { return new opaque_Float { value = System.Math.Tan(a.value) }; }
+        public opaque_Float fattr_sqrt(opaque_Float a) { return new opaque_Float { value = System.Math.Sqrt(a.value) }; }
+        public opaque_Float attr_Pi() { return new opaque_Float { value = System.Math.PI }; }
     }
 
 //doc 
@@ -363,7 +379,7 @@ namespace BaseLibrary
             public bool attr_Sunday() { return value == System.DayOfWeek.Sunday; }
         }
 
-        public icomp_DayOfWeek fattr_DayOfWeek(opaque_Timestamp dt) { return new comp_DayOfWeek { value = (new DateTime(dt.ticks)).DayOfWeek }; }
+        public icomp_DayOfWeek fattr_DayOfWeek(opaque_Timestamp t) { return new comp_DayOfWeek { value = (new DateTime(t.ticks)).DayOfWeek }; }
 
         public opaque_Interval attr_Day() { return new opaque_Interval { ticks = (new TimeSpan(1, 0, 0, 0)).Ticks }; }
 
@@ -378,6 +394,10 @@ namespace BaseLibrary
         public opaque_Interval attr_Tick() { return new opaque_Interval { ticks = 1 }; }
 
         public opaque_Interval attr_Zero() { return new opaque_Interval { ticks = 0 }; }
+
+        public Int64 fattr_TimestampHashFunc(opaque_Timestamp t) { return (new DateTime(t.ticks)).GetHashCode(); }
+
+        public Int64 fattr_IntervalHashFunc(opaque_Interval i) { return (new TimeSpan(i.ticks)).GetHashCode(); }
 
         public opaque_Interval op_Timestamp_Minus_Timestamp(opaque_Timestamp a, opaque_Timestamp b) { return new opaque_Interval { ticks = a.ticks - b.ticks }; }
         public opaque_Timestamp op_Timestamp_Plus_Interval(opaque_Timestamp a, opaque_Interval b) { return new opaque_Timestamp { ticks = a.ticks + b.ticks }; }
@@ -401,7 +421,7 @@ namespace BaseLibrary
         public opaque_Timestamp op__date_DateStruc(icomp_DateStruc date) { return new opaque_Timestamp { ticks = (new DateTime((int)date.attr_year(), (int)date.attr_month(), (int)date.attr_day())).Ticks }; }
         public opaque_Interval op__time_TimeStruc(icomp_TimeStruc time) { return new opaque_Interval { ticks = (new TimeSpan(0, (int)time.attr_hour(), (int)time.attr_min(), (int)time.attr_sec(), (int)time.attr_msec())).Ticks }; }
         public Int64 op__ticks_Interval(opaque_Interval i) { return i.ticks; }
-        public opaque_Interval op__interval_integer(Int64 t) { return new opaque_Interval { ticks = t }; }
+        public opaque_Interval op__interval_integer(Int64 param_ticks) { return new opaque_Interval { ticks = param_ticks }; }
     }
 //doc
 //    Title:   "StrUtils"
@@ -458,7 +478,7 @@ namespace BaseLibrary
 //    (String = String): { String, String } "compare strings"
 //end
     
-    public class module_StrUtils : AhaModule
+    public partial class module_StrUtils : AhaModule
     {
         public interface icomp_Substring
         {
@@ -471,13 +491,11 @@ namespace BaseLibrary
             public string value;
         }
 
-        public delegate bool func_Equality(char a, char b);
-
         public interface icomp_Pattern
         {
             IahaArray<char> attr_string();
             opaque_RegEx attr_regEx();
-            func_Equality attr_equality();
+            bool fattr_equality(char a, char b);
         }
 
         public interface icomp_SearchParams
@@ -523,11 +541,11 @@ namespace BaseLibrary
         {
             struct substring : icomp_Substring
             {
-                public int idx;
-                private int len;
-                public Int64 attr_index() { return idx; }
-                public Int64 attr_length() { return len; }
-                public substring(int i, int l) { idx = i; len = l; }
+                public int field_index;
+                private int field_length;
+                public Int64 attr_index() { return field_index; }
+                public Int64 attr_length() { return field_length; }
+                public substring(int i, int l) { field_index = i; field_length = l; }
             }
 
             private string str;
@@ -537,93 +555,7 @@ namespace BaseLibrary
             public icomp_Substring state() { return new substring(index, sub.Length); }
             public IahaObject<icomp_Substring> copy() { return new obj_SearchSeq(str, sub) { index = index }; }
             public void action_skip() { index = str.IndexOf(sub, index + 1); if (index == -1) throw Failure.One; }
-            public icomp_Substring first(Predicate<icomp_Substring> that, Int64 max) { Int64 j = 0; substring substr = new substring(index, sub.Length); while (index != -1) { if (j == max) break; substr.idx = index; if (that(substr)) return substr; index = str.IndexOf(sub, index + 1); j++; } throw Failure.One; }
-        }
-
-        class fastBuilder : iobj_StringBuilder
-        {
-            const int block = 1024;
-            private List<char[]> list;
-            private int count = 0;
-            private char[] gather()
-            {
-                char[] buf = new char[count];
-                int j = 0;
-                for (int i = 0; i < list.Count - 1; i++) { Array.Copy(list[i], 0, buf, j, block); j += block; }
-                if (j != count) Array.Copy(list[list.Count - 1], 0, buf, j, count - j);
-                return buf;
-            }
-            private void split(char[] buf, int index, int length)
-            {
-                list = new List<char[]>();
-                int j = index; //from position
-                count = length;
-                char[] b;
-                for (int i = 0; i < length / block; i++) { b = new char[block]; Array.Copy(buf, j, b, 0, block); j += block; list.Add(b); }
-                if (j != index + length) { b = new char[block]; Array.Copy(buf, j, b, 0, index + length - j); list.Add(b); }
-            }
-            public fastBuilder() { list = new List<char[]>(); }
-            public IahaArray<char> state() { return new AhaString(gather()); }
-            public IahaObject<IahaArray<char>> copy() { fastBuilder fb = new fastBuilder() { count = count }; for (int i = 0; i < count; i++) { char[] b = new char[block]; list[i].CopyTo(b, 0); fb.list.Add(b); } return fb; }
-            public void action_add(char ch) { if (count == list.Count * block) list.Add(new char[block]); list[count / block][count % block] = ch; }
-            public void action_append(IahaArray<char> str) 
-            { 
-                char[] temp = str.get();
-                int j = list.Count * block - count; //positions in last block
-                if (j > temp.Length) j = temp.Length; //characters to copy into last block
-                if (j != 0) Array.Copy(temp, 0, list[list.Count - 1], count % block, j);
-                char[] b;
-                while (j + block < temp.Length)
-                {
-                    b = new char[block];
-                    Array.Copy(temp, j, b, 0, block);
-                    list.Add(b); 
-                    j += block; // j = number of chars copied
-                }
-                if (j != temp.Length)
-                {
-                    b = new char[block];
-                    Array.Copy(temp, j, b, 0, temp.Length - j); //copy remaining chars
-                    list.Add(b);
-                }
-            }
-            public void action_extract(icomp_Substring sub)
-            {
-                char[] buf = gather();
-                split(buf, (int)sub.attr_index(), (int)sub.attr_length());
-            }
-            public void action_trimSpaces()
-            {
-                char[] buf = gather();
-                int i = 0;
-                while ((i < count) && (buf[i] == ' ')) i++; //count leading spaces
-                int l = count - i;
-                if (i < count) //not all spaces?
-                {
-                    while (buf[i + l - 1] == ' ') l--; //exclude trailing spaces
-                }
-                if (l != 0) split(buf, i, l); else list = new List<char[]>();
-            }
-            public void action_put(icomp_PutParams param) { int at = (int)param.attr_at(); char ch = param.attr_char(); list[at / block][at % block] = ch; }
-            public void action_replace(icomp_ReplaceParams param)
-            {
-                char[] source = gather();
-                char[] with = param.attr_with().get();
-                IahaArray<icomp_Substring> sub = param.attr_substr();
-                int j = 0;
-                IahaSequence<icomp_Substring> seq = sub.sort(delegate(icomp_Substring x, icomp_Substring y) { return x.attr_index() <= y.attr_index(); });
-                for (int i = 0; i < sub.size(); i++) j += (int)seq.state().attr_length() - with.Length;
-                char[] target = new char[source.Length + j];
-                int from = 0;
-                int to = 0;
-                for (int i = 0; i < sub.size(); i++)
-                {
-                    Array.Copy(source, from, target, to, seq.state().attr_index());
-                }
-            }
-            //void padL(IPadParams param);
-            //void padR(IPadParams param);
-            //void apply(Convert conv);
+            public icomp_Substring first(Predicate<icomp_Substring> that, Int64 max) { Int64 j = 0; substring substr = new substring(index, sub.Length); while (index != -1) { if (j == max) break; substr.field_index = index; if (that(substr)) return substr; index = str.IndexOf(sub, index + 1); j++; } throw Failure.One; }
         }
 
         public IahaArray<char> Substr(IahaArray<char> s, icomp_Substring ss) { char[] items = new char[ss.attr_length()]; Array.Copy(s.get(), ss.attr_index(), items, 0, ss.attr_length()); return new AhaString(items); }
@@ -635,7 +567,7 @@ namespace BaseLibrary
             string temp2 = new string(param.attr_in().get());
             return new obj_SearchSeq(temp2, temp1);
         }
-        public iobj_StringBuilder StringBuilder() { return new fastBuilder(); }
+        public iobj_StringBuilder StringBuilder() { return new obj_StringBuilder(); }
         public Int64 StringHashFunc(IahaArray<char> s) { return s.get().GetHashCode(); }
     }
 
