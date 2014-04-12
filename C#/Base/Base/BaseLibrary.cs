@@ -539,36 +539,55 @@ namespace BaseLibrary
 
         class obj_SearchSeq : IahaSequence<icomp_Substring>
         {
-            struct substring : icomp_Substring
+            struct comp_Substring : icomp_Substring
             {
                 public int field_index;
                 private int field_length;
                 public Int64 attr_index() { return field_index; }
                 public Int64 attr_length() { return field_length; }
-                public substring(int i, int l) { field_index = i; field_length = l; }
+                public comp_Substring(int i, int l) { field_index = i; field_length = l; }
             }
 
             private string str;
             private string sub;
             private int index;
             public obj_SearchSeq(string s, string ss) { str = s; sub = ss; index = s.IndexOf(ss); }
-            public icomp_Substring state() { return new substring(index, sub.Length); }
+            public icomp_Substring state() { return new comp_Substring(index, sub.Length); }
             public IahaObject<icomp_Substring> copy() { return new obj_SearchSeq(str, sub) { index = index }; }
             public void action_skip() { index = str.IndexOf(sub, index + 1); if (index == -1) throw Failure.One; }
-            public icomp_Substring first(Predicate<icomp_Substring> that, Int64 max) { Int64 j = 0; substring substr = new substring(index, sub.Length); while (index != -1) { if (j == max) break; substr.field_index = index; if (that(substr)) return substr; index = str.IndexOf(sub, index + 1); j++; } throw Failure.One; }
+            public icomp_Substring first(Predicate<icomp_Substring> that, Int64 max) 
+            { 
+                int i = index; 
+                Int64 j = 0; 
+                comp_Substring substr = new comp_Substring(i, sub.Length); 
+                while (i != -1) 
+                { 
+                    if (j == max) break; 
+                    substr.field_index = i; 
+                    if (that(substr)) return substr; 
+                    i = str.IndexOf(sub, i + 1); 
+                    j++; 
+                } 
+                throw Failure.One; 
+            }
         }
 
-        public IahaArray<char> Substr(IahaArray<char> s, icomp_Substring ss) { char[] items = new char[ss.attr_length()]; Array.Copy(s.get(), ss.attr_index(), items, 0, ss.attr_length()); return new AhaString(items); }
-        public opaque_RegEx RegEx_(IahaArray<char> s) { return new opaque_RegEx { value = new string(s.get()) }; }
-        public IahaSequence<icomp_Substring> Search(icomp_SearchParams param)
+        public IahaArray<char> fattr_Substr(IahaArray<char> s, icomp_Substring ss) { char[] items = new char[ss.attr_length()]; Array.Copy(s.get(), ss.attr_index(), items, 0, ss.attr_length()); return new AhaString(items); }
+        public opaque_RegEx fattr_RegEx(IahaArray<char> s) { return new opaque_RegEx { value = new string(s.get()) }; }
+        public IahaSequence<icomp_Substring> fattr_Search(icomp_SearchParams param)
         {
             IahaArray<char> sub = param.attr_for().attr_string();
             string temp1 = new string(sub.get());
             string temp2 = new string(param.attr_in().get());
             return new obj_SearchSeq(temp2, temp1);
         }
-        public iobj_StringBuilder StringBuilder() { return new obj_StringBuilder(); }
-        public Int64 StringHashFunc(IahaArray<char> s) { return s.get().GetHashCode(); }
+        public iobj_StringBuilder attr_StringBuilder() { return new obj_StringBuilder(); }
+        public Int64 fattr_StringHashFunc(IahaArray<char> s) { return s.get().GetHashCode(); }
+    }
+
+    public class module_Meta<tpar_DataType> : AhaModule
+    {
+        //int attr_DataType() { if (typeof(tpar_DataType).IsInterface) return 1; }
     }
 
 }

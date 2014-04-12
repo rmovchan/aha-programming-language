@@ -11,6 +11,8 @@ namespace Engine
 {
     public class comp_Engine<Event> : module_Jobs<Event>.icomp_Engine
     {
+        public delegate void Terminate();
+
         private struct Today : BaseLibrary.module_Time.icomp_DateStruc
         {
             public Int64 attr_year() { return DateTime.Now.Year; }
@@ -18,6 +20,7 @@ namespace Engine
             public Int64 attr_day() { return DateTime.Now.Day; }
         }
 
+        private Terminate field_terminate;
         private BaseLibrary.module_Time.opaque_Timestamp today;
         private DateTime date = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
         private module_Jobs<Event>.iobj_Behavior behavior;
@@ -38,15 +41,15 @@ namespace Engine
                     job();
                 }
             }
-            catch (System.Exception) { System.Windows.Forms.Application.Exit(); }
+            catch (System.Exception) { field_terminate(); }
         }
         public module_Jobs<Event>.opaque_Job fattr_raise(Event e) { return delegate() { behavior.action_handle(e); perform(); }; }
         public module_Jobs<Event>.opaque_Job fattr_run(module_Jobs<Event>.opaque_Job job) { return delegate() { Thread thread = new Thread(new ThreadStart(job)); thread.Start(); }; }
         public module_Jobs<Event>.opaque_Job fattr_enquireTime(module_Jobs<Event>.func_EnquireTime enq) { return delegate() { behavior.action_handle(enq(curr())); perform(); }; }
         //public Job delay(double interval, Event e) { return delegate() { b.handle(e); }; } //TODO
-        public comp_Engine(module_Jobs<Event>.iobj_Behavior b)
+        public comp_Engine(module_Jobs<Event>.iobj_Behavior param_behavior, Terminate param_terminate)
         {
-            behavior = b; today = nick_Time.op__date_DateStruc(new Today());
+            behavior = param_behavior; today = nick_Time.op__date_DateStruc(new Today()); field_terminate = param_terminate;
         }
     }
 

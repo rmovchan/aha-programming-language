@@ -51,14 +51,25 @@ namespace API
         {
             private icomp_BehaviorParams field_param;
             private AhaArray<module_Jobs<opaque_Event>.opaque_Job> field_jobs;
-            private Int64 op_Exclaim_integer(Int64 param_n) { return (new AhaSegment(1, param_n + 1)).foldl(delegate(Int64 x, Int64 y) { return x * y; }); }
+            private Int64 op_Exclaim_integer(Int64 param_n) { return (new AhaSegment(1, param_n + 1)).foldl(delegate(Int64 x, Int64 y) { return checked(x * y); }); }
             public void action_handle(opaque_Event param_event) 
             { 
-                field_jobs = new AhaArray<module_Jobs<opaque_Event>.opaque_Job>(
-                    new module_Jobs<opaque_Event>.opaque_Job[] 
-                    { 
-                        field_param.fattr_output(new AhaString(op_Exclaim_integer(Convert.ToInt64(new string(param_event.attr_input().get()))).ToString()))
-                    }); 
+                try 
+                { 
+                    field_jobs = new AhaArray<module_Jobs<opaque_Event>.opaque_Job>(
+                        new module_Jobs<opaque_Event>.opaque_Job[] 
+                        { 
+                                field_param.fattr_output(new AhaString(op_Exclaim_integer(Convert.ToInt64(new string(param_event.attr_input().get()))).ToString()))
+                        }); 
+                } 
+                catch(System.Exception)
+                {
+                    field_jobs = new AhaArray<module_Jobs<opaque_Event>.opaque_Job>(
+                        new module_Jobs<opaque_Event>.opaque_Job[] 
+                        { 
+                                field_param.fattr_output(new AhaString("Overflow"))
+                        });
+                }
             }
             public IahaArray<module_Jobs<opaque_Event>.opaque_Job> state() { return field_jobs; }
             public IahaObject<IahaArray<module_Jobs<opaque_Event>.opaque_Job>> copy() { return new obj_Behavior(field_param); }

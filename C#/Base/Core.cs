@@ -23,7 +23,7 @@ namespace AhaCore
 
     public delegate Item Fold<Item>(Item first, Item second);
 
-    public delegate bool Compare<Item>(Item first, Item second);
+    public delegate bool Order<Item>(Item first, Item second);
 
     public interface IahaArray<Item>
     {
@@ -37,7 +37,7 @@ namespace AhaCore
         IahaSequence<Item> enumerate(Predicate<Item> that);
         Item foldl(Fold<Item> rule);
         Item foldr(Fold<Item> rule);
-        IahaSequence<Item> sort(Compare<Item> that);
+        IahaSequence<Item> sort(Order<Item> that);
         Item[] get();
     }
 
@@ -80,7 +80,7 @@ namespace AhaCore
         public Item first(Predicate<Item> that, Int64 max) { throw Failure.One; }
     }
 
-    public class AhaArray<Item> : IahaArray<Item>
+    public struct AhaArray<Item> : IahaArray<Item>
     {
         public delegate Item Rule(Int64 index);
 
@@ -92,9 +92,7 @@ namespace AhaCore
             for (int i = 0; i < join.Length; i++) total += join[i].Length;
             items = new Item[total];
             int k = 0;
-            for (int i = 0; i < join.Length; i++)
-                for (int j = 0; j < join[i].Length; j++)
-                { items[k] = join[i][j]; k++; }
+            for (int i = 0; i < join.Length; i++) { Array.Copy(join[i], 0, items, k, join[i].Length); k += join[i].Length; }
         }
         public AhaArray(IahaSequence<Item> seq, Int64 max)
         {
@@ -110,7 +108,7 @@ namespace AhaCore
         public AhaArray(Rule rule, Int64 max) { items = new Item[max]; for (Int64 i = 0; i < max; i++) items[i] = rule(i); }
         public Int64 size() { return items.LongLength; }
         public Item at(Int64 index) { return items[index]; }
-        public IahaSequence<Item> sort(Compare<Item> that)
+        public IahaSequence<Item> sort(Order<Item> that)
         {
             Item[] clone = (Item[])items.Clone();
             Comparison<Item> comp = delegate(Item x, Item y) { if (that(x, y)) { if (that(y, x)) return 0; else return -1; } else { if (that(y, x)) return 0; else return 1; } };
@@ -132,7 +130,7 @@ namespace AhaCore
         public Item[] get() { return items; }
     }
 
-    public class AhaString : IahaArray<char>
+    public struct AhaString : IahaArray<char>
     {
         public delegate char Rule(Int64 index);
 
@@ -163,7 +161,7 @@ namespace AhaCore
         public AhaString(Rule rule, Int64 max) { char[] temp = new char[max]; for (Int64 i = 0; i < max; i++) temp[i] = rule(i); items = new string(temp); }
         public Int64 size() { return items.Length; }
         public char at(Int64 index) { return items[(int)index]; }
-        public IahaSequence<char> sort(Compare<char> that)
+        public IahaSequence<char> sort(Order<char> that)
         {
             char[] clone = items.ToCharArray();
             Comparison<char> comp = delegate(char x, char y) { if (that(x, y)) { if (that(y, x)) return 0; else return -1; } else { if (that(y, x)) return 0; else return 1; } };
@@ -185,7 +183,7 @@ namespace AhaCore
         public char[] get() { return items.ToCharArray(); }
     }
 
-    public class AhaSegment : IahaArray<Int64>
+    public struct AhaSegment : IahaArray<Int64>
     {
         private Int64 lo;
         private Int64 hi;
@@ -193,7 +191,7 @@ namespace AhaCore
         public AhaSegment(Int64 low, Int64 high) { if (low > high) throw Failure.One; lo = low; hi = high; }
         public Int64 size() { return hi - lo; }
         public Int64 at(Int64 index) { return lo + index; }
-        public IahaSequence<Int64> sort(Compare<Int64> that)
+        public IahaSequence<Int64> sort(Order<Int64> that)
         {
             Int64[] temp = list();
             Comparison<Int64> comp = delegate(Int64 x, Int64 y) { if (that(x, y)) { if (that(y, x)) return 0; else return -1; } else { if (that(y, x)) return 0; else return 1; } };

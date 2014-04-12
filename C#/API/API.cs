@@ -152,12 +152,12 @@ namespace API
     {
         public struct opaque_FilePath
         {
-            string value;
+            public string value;
         }
 
         public struct opaque_DirPath
         {
-            string value;
+            public string value;
         }
 
         public interface icomp_Version
@@ -185,7 +185,7 @@ namespace API
         {
             public IahaArray<char> attr_name() { return new AhaString("Aha! for .NET"); }
             public icomp_Version attr_version() { return new comp_Version(); }
-            public IahaArray<IahaArray<char>> attr_components() { return new AhaArray<IahaArray<char>>(new IahaArray<char>[] { new AhaString("Aha! for .NET") }); }
+            public IahaArray<IahaArray<char>> attr_components() { return new AhaArray<IahaArray<char>>(new IahaArray<char>[] { }); }
         }
 
         public icomp_Framework attr_Framework() { return new comp_Framework(); }
@@ -216,7 +216,7 @@ namespace API
 
         public interface icomp_Locale
         {
-            module_Time.opaque_Interval GMToffset();
+            module_Time.opaque_Interval attr_GMToffset();
             IahaArray<char> attr_country();
             IahaArray<char> attr_language();
             IahaArray<char> attr_currency();
@@ -224,9 +224,34 @@ namespace API
             //format: @Format!Format "formatting routines"
             //deformat: @Format!Deformat "deformatting routines"
             //charCompare: @StrUtils!CharCompare "character comparison function"
-            char fattr_upper(char ch);
-            char fattr_lower(char ch); 
+            IahaArray<char> fattr_upper(IahaArray<char> ch);
+            IahaArray<char> fattr_lower(IahaArray<char> ch);
+            bool fattr_sameText(IahaArray<char> param_first, IahaArray<char> param_second);
         }
+
+        class comp_Locale : icomp_Locale
+        {
+            private module_Time.opaque_Interval field_GMToffset = new module_Time.opaque_Interval { ticks = DateTime.Now.Ticks - DateTime.Now.ToUniversalTime().Ticks };
+            public module_Time.opaque_Interval attr_GMToffset() { return field_GMToffset; }
+            public IahaArray<char> attr_country() { return new AhaString(System.Globalization.CultureInfo.CurrentCulture.EnglishName); }
+            public IahaArray<char> attr_language() { return new AhaString(System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName); }
+            public IahaArray<char> attr_currency() { return new AhaString(System.Globalization.CultureInfo.CurrentCulture.NumberFormat.CurrencySymbol); }
+            public char attr_decimal() { return System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator[0]; }
+            //format: @Format!Format "formatting routines"
+            //deformat: @Format!Deformat "deformatting routines"
+            //charCompare: @StrUtils!CharCompare "character comparison function"
+            public IahaArray<char> fattr_upper(IahaArray<char> param_str) { return new AhaString((new string(param_str.get())).ToUpper(System.Globalization.CultureInfo.CurrentCulture)); }
+            public IahaArray<char> fattr_lower(IahaArray<char> param_str) { return new AhaString((new string(param_str.get())).ToLower(System.Globalization.CultureInfo.CurrentCulture)); }
+            public bool fattr_sameText(IahaArray<char> param_first, IahaArray<char> param_second)
+            {
+                return String.Compare(
+                    new string(param_first.get()),
+                    new string(param_second.get()),
+                    StringComparison.CurrentCultureIgnoreCase) == 0;
+            }
+        }
+
+        public icomp_Locale attr_Locale() { return new comp_Locale(); }
 
         public interface icomp_FileSystem
         {
@@ -237,14 +262,153 @@ namespace API
             opaque_DirPath fattr_subDirPath(opaque_DirPath param_dir, IahaArray<char> param_name);
             opaque_DirPath fattr_parentDirPath(opaque_DirPath param_dir);
             IahaArray<char> fattr_fileName(opaque_FilePath param_path);
-            //fileDir: { FilePath -> DirPath } "get file's directory path"
-            //fileExt: { FilePath -> String } "extract file's extension (empty string if none)"
-            //changeExt: { FilePath, String -> FilePath } "change file's extension"
-            //splitDirPath: { DirPath -> [String] } "split directory path into string components"
-            //buildDirPath: { [String] -> DirPath } "build directory path from string components"
-            //workingDir: DirPath "directory where application can write data"
-            //appDir: DirPath "directory from which application has started"
-            //rootDir: DirPath "file system's root directory"
+            opaque_DirPath fattr_fileDir(opaque_FilePath param_dir);
+            IahaArray<char> fattr_fileExt(opaque_FilePath param_path);
+            opaque_FilePath fattr_changeExt(opaque_FilePath param_dir, IahaArray<char> param_ext);
+            IahaArray<IahaArray<char>> fattr_splitDirPath(opaque_DirPath param_path);
+            opaque_DirPath fattr_buildDirPath(IahaArray<IahaArray<char>> param_parts);
+            opaque_DirPath fattr_workingDir();
+            opaque_DirPath fattr_appDir();
+            opaque_DirPath fattr_rootDir();
+        }
+
+        class comp_FileSystem : icomp_FileSystem
+        {
+            public IahaArray<char> attr_eol() { return new AhaString("\r\n"); }
+            //splitLines: { character* -> String* } "convert sequence of chars to sequence of lines"
+            //joinLines: { String* -> character* } "convert sequence of lines to sequence of chars"
+            public opaque_FilePath fattr_filePath(opaque_DirPath param_dir, IahaArray<char> param_name)
+            { return new opaque_FilePath { value = param_dir.value + System.IO.Path.PathSeparator + (new string(param_name.get())) }; }
+            public opaque_DirPath fattr_subDirPath(opaque_DirPath param_dir, IahaArray<char> param_name)
+            { return new opaque_DirPath { value = param_dir.value + System.IO.Path.PathSeparator + (new string(param_name.get())) }; }
+            public opaque_DirPath fattr_parentDirPath(opaque_DirPath param_dir)
+            { return new opaque_DirPath { value =  System.IO.Path.GetDirectoryName(param_dir.value) }; }
+            public IahaArray<char> fattr_fileName(opaque_FilePath param_path)
+            { return new AhaString(System.IO.Path.GetFileName(param_path.value)); }
+            public opaque_DirPath fattr_fileDir(opaque_FilePath param_path)
+            { return new opaque_DirPath { value =  System.IO.Path.GetDirectoryName(param_path.value) }; }
+            public IahaArray<char> fattr_fileExt(opaque_FilePath param_path)
+            { return new AhaString(System.IO.Path.GetExtension(param_path.value)); }
+            public opaque_FilePath fattr_changeExt(opaque_FilePath param_dir, IahaArray<char> param_ext)
+            { return new opaque_FilePath { value =  System.IO.Path.ChangeExtension(param_dir.value, new string(param_ext.get())) }; }
+            public IahaArray<IahaArray<char>> fattr_splitDirPath(opaque_DirPath param_path)
+            { 
+                List<int> list = new List<int>(); 
+                int j = 0; 
+                while (j != -1) 
+                { 
+                    j = param_path.value.IndexOf(System.IO.Path.PathSeparator, j, param_path.value.Length);
+                    if (j == -1) break;
+                    list.Add(j);
+                    j++;
+                }
+                IahaArray<char>[] temp = new IahaArray<char>[list.Count + 1];
+                j = 0;
+                char[] seg;
+                for (int i = 0; i < temp.Length; i++)
+                {
+                    seg = new char[list[i] - j];
+                    Array.Copy(param_path.value.ToCharArray(), j, seg, 0, list[i] - j);
+                    temp[i] = new AhaString(seg);
+                    j = list[i] + 1;
+                    
+                }
+                seg = new char[param_path.value.Length - j];
+                Array.Copy(param_path.value.ToCharArray(), j, seg, 0, param_path.value.Length - j);
+                temp[list.Count] = new AhaString(seg);
+                return new AhaArray<IahaArray<char>>(temp);
+            }
+            public opaque_DirPath fattr_buildDirPath(IahaArray<IahaArray<char>> param_parts)
+            {
+                string[] paths = new string[param_parts.size()];
+                for (int i = 0; i < param_parts.size(); i++) paths[i] = new string(param_parts.at(i).get());
+                return new opaque_DirPath { value = System.IO.Path.Combine(paths) };
+            }
+            public opaque_DirPath fattr_workingDir() { return new opaque_DirPath { value = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) }; }
+            public opaque_DirPath fattr_appDir() { return new opaque_DirPath { value = System.Reflection.Assembly.GetEntryAssembly().Location }; }
+            public opaque_DirPath fattr_rootDir() { return new opaque_DirPath { value = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) }; }
+        }
+
+        public icomp_FileSystem attr_FileSystem() { return new comp_FileSystem(); }
+
+        //    (~str integer): { integer -> String } "convert integer to string"
+        public IahaArray<char> op__str_integer(Int64 param_int) { return new AhaString(param_int.ToString()); }
+        //    (~str @Float!Float): { @Float!Float -> String } "convert Float to string (local format)"
+        public IahaArray<char> op__str_Float(module_Math.opaque_Float param_float) { return new AhaString(param_float.ToString()); }
+        //    (~str @Time!Timestamp): { @Time!Timestamp -> String } "convert Timestamp to string (local format)"
+        public IahaArray<char> op__str_Timestamp(module_Time.opaque_Timestamp param_timestamp) { DateTime dt = new DateTime(param_timestamp.ticks); return new AhaString(dt.ToString()); }
+        //    (~str @Money!Money): { @Money!Money -> String } "convert Money to string (local format)"
+        //    (~int String): { String -> integer } "convert string to integer"
+        public Int64 op__int_String(IahaArray<char> param_str) { return Convert.ToInt64(new string(param_str.get())); }
+        //    (~float String): { String -> @Float!Float } "convert string (local format) to Float"
+        public module_Math.opaque_Float op__float_String(IahaArray<char> param_str) { return new module_Math.opaque_Float() { value = Convert.ToDouble(new string(param_str.get())) }; }
+        //    (~date String): { String -> @Time!Timestamp } "convert string (local format) to date"
+        public module_Time.opaque_Timestamp op__date_String(IahaArray<char> param_str) { return new module_Time.opaque_Timestamp() { ticks = Convert.ToDateTime(new string(param_str.get())).Date.Ticks }; }
+        //    (~time String): { String -> @Time!Interval } "convert string (local format) to time"
+        public module_Time.opaque_Interval op__time_String(IahaArray<char> param_str) { return new module_Time.opaque_Interval() { ticks = Convert.ToDateTime(new string(param_str.get())).TimeOfDay.Ticks }; }
+        //    (~timestamp String): { String -> @Time!Timestamp } "convert string (local format) to timestamp"
+        //    (~money String): { String -> @Money!Money } "convert string (local format) to Money"
+        //    (String <= String): { String, String } "compare string in local sorting order"
+        public bool op_String_LessEqual_String(IahaArray<char> param_first, IahaArray<char> param_second)
+        {
+            return String.Compare(
+                new string(param_first.get()),
+                new string(param_second.get()),
+                StringComparison.CurrentCulture) <= 0;
+        }
+        //    (String < String): { String, String } "compare string in local sorting order"
+        public bool op_String_Less_String(IahaArray<char> param_first, IahaArray<char> param_second)
+        {
+            return String.Compare(
+                new string(param_first.get()),
+                new string(param_second.get()),
+                StringComparison.CurrentCulture) < 0;
+        }
+        public bool op_String_Equal_String(IahaArray<char> param_first, IahaArray<char> param_second)
+        {
+            return String.Compare(
+                new string(param_first.get()),
+                new string(param_second.get()),
+                StringComparison.CurrentCulture) == 0;
+        }
+        public bool op_String_NotEqual_String(IahaArray<char> param_first, IahaArray<char> param_second)
+        {
+            return String.Compare(
+                new string(param_first.get()),
+                new string(param_second.get()),
+                StringComparison.CurrentCulture) != 0;
+        }
+        //    (String > String): { String, String } "compare string in local sorting order"
+        public bool op_String_Greater_String(IahaArray<char> param_first, IahaArray<char> param_second)
+        {
+            return String.Compare(
+                new string(param_first.get()),
+                new string(param_second.get()),
+                StringComparison.CurrentCulture) > 0;
+        }
+        //    (String >= String): { String, String } "compare string in local sorting order"
+        public bool op_String_GreateEqual_String(IahaArray<char> param_first, IahaArray<char> param_second)
+        {
+            return String.Compare(
+                new string(param_first.get()),
+                new string(param_second.get()),
+                StringComparison.CurrentCulture) >= 0;
+        }
+        //    (FilePath = FilePath): { FilePath, FilePath } "are paths the same?"
+        public bool op_FilePath_Equal_FilePath(opaque_FilePath param_first, opaque_FilePath param_second)
+        {
+            return String.Compare(
+                param_first.value,
+                param_second.value,
+                StringComparison.InvariantCultureIgnoreCase) == 0;
+        }
+        //    (DirPath = DirPath): { DirPath, DirPath } "are paths the same?"
+        public bool op_DirPath_Equal_DirPath(opaque_DirPath param_first, opaque_DirPath param_second)
+        {
+            return String.Compare(
+                param_first.value,
+                param_second.value,
+                StringComparison.InvariantCultureIgnoreCase) == 0;
         }
     }
 }

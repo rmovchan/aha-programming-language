@@ -29,10 +29,8 @@ namespace AhaMain
         private API.module_Application app = new API.module_Application();
         private module_Jobs<API.module_Application.opaque_Event>.iobj_Behavior b;
         private comp_Engine<API.module_Application.opaque_Event> eng;
-        private List<string> messages = new List<string>();
-        private ListViewItem[] cache;
-        private int firstItem; //stores the index of the first item in the cache
-        private void output(string text) { messages.Add(text); listView1.VirtualListSize = listView1.VirtualListSize + 1; listView1.Refresh(); }
+        private bool running;
+        private void output(string text) { listBox1.Items.Add(text); }
         public Console()
         {
             InitializeComponent();
@@ -40,55 +38,35 @@ namespace AhaMain
 
         private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (e.KeyChar == '\r') { b.action_handle(app.fattr_Receive(new AhaString(((TextBox)sender).Text))); eng.perform(); }
+            if (e.KeyChar == '\r') { b.action_handle(app.fattr_Receive(new AhaString(((TextBox)sender).Text))); ((TextBox)sender).Clear(); eng.perform(); }
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
             BehaviorParams bp = new BehaviorParams { field_output = delegate(string text) { return delegate() { output(text); }; }, field_engine = eng };
             b = app.fattr_Behavior(bp);
-            eng = new comp_Engine<API.module_Application.opaque_Event>(b);
             this.Text = new string(app.attr_Title().get());
+
+        }
+
+        private void terminate()
+        {
+            toolStripStatusLabel1.Text = "Terminated";
+            textBox1.ReadOnly = true;
+            running = false;
+        }
+
+        private void runToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            toolStripStatusLabel1.Text = "Running";
+            eng = new comp_Engine<API.module_Application.opaque_Event>(b, terminate);
             eng.perform();
-
+            textBox1.ReadOnly = false;
+            running = true;
         }
 
-        private void listView1_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
+        private void listBox1_MeasureItem(object sender, MeasureItemEventArgs e)
         {
-            if (cache != null && e.ItemIndex >= firstItem && e.ItemIndex < firstItem + cache.Length)
-            {
-                //A cache hit, so get the ListViewItem from the cache instead of making a new one.
-                e.Item = cache[e.ItemIndex - firstItem];
-            }
-            else
-            {
-                //A cache miss, so create a new ListViewItem and pass it back.
-                int x = e.ItemIndex * e.ItemIndex;
-                e.Item = new ListViewItem(x.ToString());
-            }
-        }
-
-        private void listView1_CacheVirtualItems(object sender, CacheVirtualItemsEventArgs e)
-        {
-            //We've gotten a request to refresh the cache.
-            //First check if it's really neccesary.
-            if (cache != null && e.StartIndex >= firstItem && e.EndIndex <= firstItem + cache.Length)
-            {
-                //If the newly requested cache is a subset of the old cache, 
-                //no need to rebuild everything, so do nothing.
-                return;
-            }
-
-            //Now we need to rebuild the cache.
-            firstItem = e.StartIndex;
-            int length = e.EndIndex - e.StartIndex + 1; //indexes are inclusive
-            cache = new ListViewItem[length];
-
-            //Fill the cache with the appropriate ListViewItems.
-            for (int i = 0; i < length; i++)
-            {
-                cache[i] = new ListViewItem(messages[i + firstItem]);
-            }
         }
 
     }
