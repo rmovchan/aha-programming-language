@@ -27,8 +27,8 @@ namespace AhaMain
         }
 
         private API.Application.imod_Application<API.Application.Implementation.opaque_Event> app;
-        private module_Jobs<API.module_Application.opaque_Event>.iobj_Behavior b;
-        private comp_Engine<API.module_Application.opaque_Event> eng;
+        private API.Jobs.iobj_Behavior<API.Application.Implementation.opaque_Event, API.Jobs.Implementation.opaque_Job> b;
+        private Engine.comp_Engine<API.Application.Implementation.opaque_Event> eng;
         private bool running;
         private Queue<string> messages = new Queue<string>();
         private System.Reflection.Assembly assembly;
@@ -45,18 +45,17 @@ namespace AhaMain
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            BehaviorParams bp = new BehaviorParams { field_output = delegate(string text) { return delegate() { output(text); }; }, field_engine = eng };
-            b = app.fattr_Behavior(bp);
-            this.Text = new string(app.attr_Title().get());
 
         }
 
         private void runToolStripMenuItem_Click(object sender, EventArgs e)
         {
             toolStripStatusLabel1.Text = "Running";
-            eng = new comp_Engine<API.module_Application.opaque_Event>(b);
             textBox1.ReadOnly = false;
             running = true;
+            eng.StartExternal(b);
+            runToolStripMenuItem.Enabled = false;
+            stopToolStripMenuItem.Enabled = true;
         }
 
         private void listBox1_MeasureItem(object sender, MeasureItemEventArgs e)
@@ -66,11 +65,13 @@ namespace AhaMain
         private void timer1_Tick(object sender, EventArgs e)
         {
             while (messages.Count > 0) listBox1.Items.Add(messages.Dequeue());
-            if (eng != null && eng.Terminated())
+            if (running && eng.Terminated())
             {
                 toolStripStatusLabel1.Text = "Terminated";
                 textBox1.ReadOnly = true;
                 running = false;
+                runToolStripMenuItem.Enabled = true;
+                stopToolStripMenuItem.Enabled = false;
             }
         }
 
@@ -88,8 +89,33 @@ namespace AhaMain
         {
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
+                eng = null;
                 assembly = System.Reflection.Assembly.LoadFrom(openFileDialog1.FileName);
+                foreach (Type type in assembly.ExportedTypes)
+                {
+                    if (type.IsClass)
+                    {
+                        try
+                        {
+                            app = Activator.CreateInstance(type) as API.Application.imod_Application<API.Application.Implementation.opaque_Event>;
+                            eng = new Engine.comp_Engine<API.Application.Implementation.opaque_Event>();
+                            BehaviorParams bp = new BehaviorParams { field_output = delegate(string text) { return delegate() { output(text); }; }, field_engine = eng };
+                            b = app.fattr_Behavior(bp);
+                            this.Text = new string(app.attr_Title().get());
+                            toolStripStatusLabel1.Text = "Ready";
+                            runToolStripMenuItem.Enabled = true;
+                            return;
+                        }
+                        catch (System.Exception) { }
+                    }
+                }
+                toolStripStatusLabel1.Text = "Assembly doesn't contain an Aha! application";
             }
+        }
+
+        private void clearToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            listBox1.Items.Clear();
         }
 
     }

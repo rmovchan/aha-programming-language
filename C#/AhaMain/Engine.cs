@@ -52,7 +52,7 @@ namespace Engine
             }
             catch (System.Exception) { field_terminate = true; }
         }
-        public void HandleExternal(tpar_Event e) { field_behavior.action_handle(e); recv.Set(); } //handle external event (such as user input)
+        public void HandleExternal(tpar_Event e) { events.Enqueue(e); recv.Set(); } //handle external event (such as user input)
         public bool Terminated() { return field_terminate; }
         public API.Jobs.Implementation.opaque_Job fattr_raise(tpar_Event e) 
         {
@@ -75,13 +75,25 @@ namespace Engine
         { 
             return delegate() { foreach (Thread thread in threads) if (thread.IsAlive) thread.Abort(); threads.Clear(); }; 
         }
-        public void StopExternal() { fattr_stop()(); workthread.Abort(); }
-        public comp_Engine(API.Jobs.iobj_Behavior<tpar_Event, API.Jobs.Implementation.opaque_Job> param_behavior)
+        public void StartExternal(API.Jobs.iobj_Behavior<tpar_Event, API.Jobs.Implementation.opaque_Job> param_behavior)
         {
             field_behavior = param_behavior;
-            today = nick_Time.op__date_DateStruc(new Today());
             workthread = new Thread(new ThreadStart(work));
             workthread.Start();
+            field_terminate = false;
+        }
+        public void StopExternal() 
+        { 
+            fattr_stop()();
+            if (workthread != null)
+            {
+                workthread.Abort();
+                workthread = null;
+            }
+        }
+        public comp_Engine()
+        {
+            today = nick_Time.op__date_DateStruc(new Today());
         }
     }
 
