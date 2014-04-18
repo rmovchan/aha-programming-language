@@ -560,9 +560,8 @@ namespace BaseLibrary
                 int i = index; 
                 Int64 j = 0; 
                 comp_Substring substr = new comp_Substring(i, sub.Length); 
-                while (i != -1) 
+                while (i != -1 && j < max) 
                 { 
-                    if (j == max) break; 
                     substr.field_index = i; 
                     if (that(substr)) return substr; 
                     i = str.IndexOf(sub, i + 1); 

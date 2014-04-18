@@ -15,22 +15,24 @@ namespace AhaMain
 {
     public partial class Console : Form
     {
-        delegate module_Jobs<API.module_Application.opaque_Event>.opaque_Job func_Output(string text);
+        delegate API.Jobs.Implementation.opaque_Job func_Output(string text);
 
-        struct BehaviorParams : API.module_Application.icomp_BehaviorParams
+        struct BehaviorParams : API.Application.icomp_BehaviorParams<API.Application.Implementation.opaque_Event>
         {
             public func_Output field_output;
-            public module_Jobs<API.module_Application.opaque_Event>.icomp_Engine field_engine;
+            public API.Jobs.icomp_Engine<API.Application.Implementation.opaque_Event, API.Jobs.Implementation.opaque_Job> field_engine;
             public IahaArray<char> attr_settings() { return new AhaString(""); }
-            public module_Jobs<API.module_Application.opaque_Event>.opaque_Job fattr_output(IahaArray<char> text) { return field_output(new string(text.get())); }
-            public module_Jobs<API.module_Application.opaque_Event>.icomp_Engine attr_engine() { return field_engine; }
+            public API.Jobs.Implementation.opaque_Job fattr_output(IahaArray<char> text) { return field_output(new string(text.get())); }
+            public API.Jobs.icomp_Engine<API.Application.Implementation.opaque_Event, API.Jobs.Implementation.opaque_Job> attr_engine() { return field_engine; }
         }
 
-        private API.module_Application app = new API.module_Application();
+        private API.Application.imod_Application<API.Application.Implementation.opaque_Event> app;
         private module_Jobs<API.module_Application.opaque_Event>.iobj_Behavior b;
         private comp_Engine<API.module_Application.opaque_Event> eng;
         private bool running;
-        private void output(string text) { listBox1.Items.Add(text); }
+        private Queue<string> messages = new Queue<string>();
+        private System.Reflection.Assembly assembly;
+        private void output(string text) { messages.Enqueue(text); }
         public Console()
         {
             InitializeComponent();
@@ -38,7 +40,7 @@ namespace AhaMain
 
         private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (e.KeyChar == '\r') { b.action_handle(app.fattr_Receive(new AhaString(((TextBox)sender).Text))); ((TextBox)sender).Clear(); eng.perform(); }
+            if (e.KeyChar == '\r') { eng.HandleExternal(app.fattr_Receive(new AhaString(((TextBox)sender).Text))); ((TextBox)sender).Clear(); }
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -49,24 +51,45 @@ namespace AhaMain
 
         }
 
-        private void terminate()
-        {
-            toolStripStatusLabel1.Text = "Terminated";
-            textBox1.ReadOnly = true;
-            running = false;
-        }
-
         private void runToolStripMenuItem_Click(object sender, EventArgs e)
         {
             toolStripStatusLabel1.Text = "Running";
-            eng = new comp_Engine<API.module_Application.opaque_Event>(b, terminate);
-            eng.perform();
+            eng = new comp_Engine<API.module_Application.opaque_Event>(b);
             textBox1.ReadOnly = false;
             running = true;
         }
 
         private void listBox1_MeasureItem(object sender, MeasureItemEventArgs e)
         {
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            while (messages.Count > 0) listBox1.Items.Add(messages.Dequeue());
+            if (eng != null && eng.Terminated())
+            {
+                toolStripStatusLabel1.Text = "Terminated";
+                textBox1.ReadOnly = true;
+                running = false;
+            }
+        }
+
+        private void stopToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            eng.StopExternal();
+        }
+
+        private void Console_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            if (eng != null) eng.StopExternal();
+        }
+
+        private void toolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                assembly = System.Reflection.Assembly.LoadFrom(openFileDialog1.FileName);
+            }
         }
 
     }
