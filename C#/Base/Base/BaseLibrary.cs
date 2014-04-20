@@ -5,10 +5,10 @@
 
 using System;
 using System.Collections.Generic;
-using AhaCore;
+using Aha.Core;
 using Collections;
 
-namespace BaseLibrary
+namespace Aha.Base
 {
 //doc
 //    Title:   "Collections"

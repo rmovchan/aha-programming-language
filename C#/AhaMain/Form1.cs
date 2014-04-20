@@ -6,32 +6,31 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-using API;
-using BaseLibrary;
-using AhaCore;
-using Engine;
+using Aha.API;
+using Aha.Base;
+using Aha.Core;
+using Aha.Engine;
 
 namespace AhaMain
 {
     public partial class Console : Form
     {
-        delegate API.Jobs.Implementation.opaque_Job func_Output(string text);
+        delegate Aha.API.Jobs.Implementation.opaque_Job func_Output(string text);
 
-        struct BehaviorParams : API.Application.icomp_BehaviorParams<API.Application.Implementation.opaque_Event>
+        struct BehaviorParams : Aha.API.Application.icomp_BehaviorParams<Aha.API.Application.Implementation.opaque_Event>
         {
             public func_Output field_output;
-            public API.Jobs.icomp_Engine<API.Application.Implementation.opaque_Event, API.Jobs.Implementation.opaque_Job> field_engine;
+            public Aha.API.Jobs.icomp_Engine<Aha.API.Application.Implementation.opaque_Event, Aha.API.Jobs.Implementation.opaque_Job> field_engine;
             public IahaArray<char> attr_settings() { return new AhaString(""); }
-            public API.Jobs.Implementation.opaque_Job fattr_output(IahaArray<char> text) { return field_output(new string(text.get())); }
-            public API.Jobs.icomp_Engine<API.Application.Implementation.opaque_Event, API.Jobs.Implementation.opaque_Job> attr_engine() { return field_engine; }
+            public Aha.API.Jobs.Implementation.opaque_Job fattr_output(IahaArray<char> text) { return field_output(new string(text.get())); }
+            public Aha.API.Jobs.icomp_Engine<Aha.API.Application.Implementation.opaque_Event, Aha.API.Jobs.Implementation.opaque_Job> attr_engine() { return field_engine; }
         }
 
-        private API.Application.imod_Application<API.Application.Implementation.opaque_Event> app;
-        private API.Jobs.iobj_Behavior<API.Application.Implementation.opaque_Event, API.Jobs.Implementation.opaque_Job> b;
-        private Engine.comp_Engine<API.Application.Implementation.opaque_Event> eng;
+        private Aha.API.Application.imod_Application<Aha.API.Application.Implementation.opaque_Event> app;
+        private Aha.API.Jobs.iobj_Behavior<Aha.API.Application.Implementation.opaque_Event, Aha.API.Jobs.Implementation.opaque_Job> b;
+        private Aha.Engine.comp_Engine<Aha.API.Application.Implementation.opaque_Event> eng;
         private bool running;
         private Queue<string> messages = new Queue<string>();
-        private System.Reflection.Assembly assembly;
         private void output(string text) { messages.Enqueue(text); }
         public Console()
         {
@@ -87,6 +86,7 @@ namespace AhaMain
 
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
+            System.Reflection.Assembly assembly;
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
                 eng = null;
@@ -97,8 +97,8 @@ namespace AhaMain
                     {
                         try
                         {
-                            app = Activator.CreateInstance(type) as API.Application.imod_Application<API.Application.Implementation.opaque_Event>;
-                            eng = new Engine.comp_Engine<API.Application.Implementation.opaque_Event>();
+                            app = Activator.CreateInstance(type) as Aha.API.Application.imod_Application<Aha.API.Application.Implementation.opaque_Event>;
+                            eng = new Aha.Engine.comp_Engine<Aha.API.Application.Implementation.opaque_Event>();
                             BehaviorParams bp = new BehaviorParams { field_output = delegate(string text) { return delegate() { output(text); }; }, field_engine = eng };
                             b = app.fattr_Behavior(bp);
                             this.Text = new string(app.attr_Title().get());

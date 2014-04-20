@@ -8,7 +8,7 @@
     <ProjectGuid>{90E9392E-A82D-49B6-8E58-64D8821A2DC9}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>API</RootNamespace>
+    <RootNamespace>Aha.API</RootNamespace>
     <AssemblyName>API</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

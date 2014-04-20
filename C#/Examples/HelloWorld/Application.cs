@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using API;
-using BaseLibrary;
-using AhaCore;
+using Aha.API;
+using Aha.Base;
+using Aha.Core;
 
-namespace API
+namespace Aha.API
 {
     //doc 
     //    Title: "Application"
@@ -30,8 +30,8 @@ namespace API
         public interface icomp_BehaviorParams
         {
             IahaArray<char> attr_settings();
-            module_Jobs<Event>.opaque_Job fattr_output(IahaArray<char> text);
-            module_Jobs<Event>.icomp_Engine attr_engine();
+            Aha.API.Jobs.Implementation.opaque_Job fattr_output(IahaArray<char> text);
+            Aha.API.Jobs.icomp_Engine attr_engine();
         }
 
         public delegate module_Jobs<Event>.opaque_Job Output(IahaArray<char> output);

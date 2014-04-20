@@ -8,7 +8,7 @@
     <ProjectGuid>{05B3B293-3594-49B4-8675-0C0267D519D1}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>BaseLibrary</RootNamespace>
+    <RootNamespace>Aha.Base</RootNamespace>
     <AssemblyName>Base</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

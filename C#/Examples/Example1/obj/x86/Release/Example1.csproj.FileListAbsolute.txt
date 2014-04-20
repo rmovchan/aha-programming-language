@@ -6,3 +6,6 @@ C:\Users\Roman\aha-programming-language\C#\Examples\Example1\bin\Release\Example
 C:\Users\Roman\aha-programming-language\C#\Examples\Example1\obj\x86\Release\Example1.exe
 C:\Users\Roman\aha-programming-language\C#\Examples\Example1\obj\x86\Release\Example1.pdb
 C:\Users\Roman\aha-programming-language\C#\Examples\Example1\obj\x86\Release\Example1.csprojResolveAssemblyReference.cache
+C:\Users\Roman\aha-programming-language\C#\Examples\Example1\bin\Release\Example1.exe.config
+C:\Users\Roman\aha-programming-language\C#\Examples\Example1\bin\Release\Base.dll
+C:\Users\Roman\aha-programming-language\C#\Examples\Example1\bin\Release\Base.pdb

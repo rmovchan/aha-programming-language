@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using API;
-using BaseLibrary;
-using AhaCore;
+using Aha.API;
+using Aha.Base;
+using Aha.Core;
 
-namespace API
+namespace Aha.API
 {
     namespace Application
     {

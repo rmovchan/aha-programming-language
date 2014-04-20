@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace AhaCore
+namespace Aha.Core
 {
     public interface IahaObject<State>
     {
@@ -69,7 +69,32 @@ namespace AhaCore
         public Item state() { return items[index]; }
         public IahaObject<Item> copy() { return new AhaArraySeq<Item> { items = items, index = index }; }
         public void action_skip() { if (index < items.Length) index++; else throw Failure.One; }
-        public Item first(Predicate<Item> that, Int64 max) { Int64 j = 0; while (j < items.Length) { if (that(items[j])) return items[j]; j++; } throw Failure.One; }
+        public Item first(Predicate<Item> that, Int64 max) { int j = 0; while (j < items.Length && j < max) { if (that(items[j])) return items[j]; j++; } throw Failure.One; }
+    }
+
+    public struct AhaFilteredArraySeq<Item> : IahaSequence<Item>
+    {
+        private Item[] items;
+        private int index;
+        private Predicate<Item> p;
+        public Item state() { return items[index]; }
+        public IahaObject<Item> copy() { return new AhaFilteredArraySeq<Item> { items = items, index = index, p = p }; }
+        public void action_skip() { if (index < items.Length) index++; else throw Failure.One; while (index < items.Length && !p(items[index])) index++; if (index == items.Length) throw Failure.One; }
+        public Item first(Predicate<Item> that, Int64 max) { int j = 0; while (j < items.Length && j < max) { if (p(items[j]) && that(items[j])) return items[j]; j++; } throw Failure.One; }
+        public AhaFilteredArraySeq(Item[] it, int idx, Predicate<Item> pred) { items = it; index = idx; p = pred; while (index < items.Length && !p(items[index])) index++; if (index == items.Length) throw Failure.One; }
+    }
+
+    public struct AhaFilteredSegmentSeq : IahaSequence<Int64>
+    {
+        private Int64 lo;
+        private Int64 hi;
+        private Int64 index;
+        private Predicate<Int64> p;
+        public Int64 state() { return lo + index; }
+        public IahaObject<Int64> copy() { return new AhaFilteredSegmentSeq(lo, hi, index, p); }
+        public void action_skip() { if (lo + index < hi) index++; else throw Failure.One; while (lo + index < hi && !p(lo + index)) index++; if (lo + index == hi) throw Failure.One; }
+        public Int64 first(Predicate<Int64> that, Int64 max) { Int64 j = 0; while (j + lo < hi && j < max) { if (p(lo + j) && that(lo + j)) return lo + j; j++; } throw Failure.One; }
+        public AhaFilteredSegmentSeq(Int64 l, Int64 h, Int64 i, Predicate<Int64> pred) { lo = l; hi = h; index = i; p = pred; while (lo + index < hi && !p(lo + index)) index++; if (lo + index == hi) throw Failure.One; }
     }
 
     public struct AhaEmptySeq<Item> : IahaSequence<Item>
@@ -124,7 +149,7 @@ namespace AhaCore
         public Item[] select(Predicate<Item> that)
         { Item[] sel = Array.FindAll<Item>(items, that); return sel; }
         public IahaSequence<Item> enumerate(Predicate<Item> that)
-        { Item[] sel = Array.FindAll<Item>(items, that); return new AhaArraySeq<Item> { items = sel, index = 0 }; }
+        { try { return new AhaFilteredArraySeq<Item>(items, 0, that); } catch (System.Exception) { return new AhaEmptySeq<Item>(); } }
         public Item foldl(Fold<Item> rule) { if (items.Length == 0) throw Failure.One; Item result = items[0]; for (int i = 1; i < items.Length; i++) result = rule(result, items[i]); return result; }
         public Item foldr(Fold<Item> rule) { if (items.Length == 0) throw Failure.One; Item result = items[items.Length - 1]; for (int i = items.Length - 2; i >= 0; i--) result = rule(items[i], result); return result; }
         public Item[] get() { return items; }
@@ -177,7 +202,7 @@ namespace AhaCore
         public char[] select(Predicate<char> that)
         { char[] sel = Array.FindAll<char>(items.ToCharArray(), that); return sel; }
         public IahaSequence<char> enumerate(Predicate<char> that)
-        { char[] sel = Array.FindAll<char>(items.ToCharArray(), that); return new AhaArraySeq<char> { items = sel, index = 0 }; }
+        { try { return new AhaFilteredArraySeq<char>(items.ToCharArray(), 0, that); } catch (System.Exception) { return new AhaEmptySeq<char>(); } }
         public char foldl(Fold<char> rule) { if (items.Length == 0) throw Failure.One; char result = items[0]; for (int i = 1; i < items.Length; i++) result = rule(result, items[i]); return result; }
         public char foldr(Fold<char> rule) { if (items.Length == 0) throw Failure.One; char result = items[items.Length - 1]; for (int i = items.Length - 2; i >= 0; i--) result = rule(items[i], result); return result; }
         public char[] get() { return items.ToCharArray(); }
@@ -189,7 +214,7 @@ namespace AhaCore
         private Int64 hi;
         private Int64[] list() { Int64[] result = new Int64[hi - lo]; int j = 0; for (Int64 i = lo; i < hi; i++) { result[j] = i; j++; } return result; }
         public AhaSegment(Int64 low, Int64 high) { if (low > high) throw Failure.One; lo = low; hi = high; }
-        public Int64 size() { return hi - lo; }
+        public Int64 size() { return hi - lo; }      
         public Int64 at(Int64 index) { return lo + index; }
         public IahaSequence<Int64> sort(Order<Int64> that)
         {
@@ -205,7 +230,7 @@ namespace AhaCore
         public Int64[] select(Predicate<Int64> that)
         { Int64[] sel = new Int64[hi - lo]; int j = 0; for (Int64 i = lo; i < hi; i++) { if (that(i)) { sel[j] = i; j++; } } Array.Resize<Int64>(ref sel, j); return sel; }
         public IahaSequence<Int64> enumerate(Predicate<Int64> that)
-        { Int64[] sel = new Int64[hi - lo]; int j = 0; for (Int64 i = lo; i < hi; i++) { if (that(i)) { sel[j] = i; j++; } } Array.Resize<Int64>(ref sel, j); return new AhaArraySeq<Int64> { items = sel, index = 0 }; }
+        { try { return new AhaFilteredSegmentSeq(lo, hi, 0, that); } catch(System.Exception) { return new AhaEmptySeq<Int64>(); } }
         public Int64 foldl(Fold<Int64> rule) { if (lo == hi) throw Failure.One; Int64 result = lo; for (Int64 i = 1; i < hi; i++) result = rule(result, lo + i); return result; }
         public Int64 foldr(Fold<Int64> rule) { if (lo == hi) throw Failure.One; Int64 result = hi - 1; for (Int64 i = hi - 2; i >= lo; i--) result = rule(lo + i, result); return result; }
         public Int64[] get() { return list(); }

@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using BaseLibrary;
-using AhaCore;
+using Aha.Base;
+using Aha.Core;
 
-namespace API
+namespace Aha.API
 {
     namespace Jobs
     //doc 

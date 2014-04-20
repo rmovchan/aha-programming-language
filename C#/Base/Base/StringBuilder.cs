@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using AhaCore;
+using Aha.Core;
 
-namespace BaseLibrary
+namespace Aha.Base
 {
     public partial class module_StrUtils : AhaModule
     {
