@@ -11,5 +11,3 @@ C:\Users\Roman\aha-programming-language\C#\AhaMain\obj\x86\Release\AhaMain.exe
 C:\Users\Roman\aha-programming-language\C#\AhaMain\obj\x86\Release\AhaMain.pdb
 C:\Users\Roman\aha-programming-language\C#\AhaMain\obj\x86\Release\AhaMain.Console.resources
 C:\Users\Roman\aha-programming-language\C#\AhaMain\bin\Release\AhaMain.exe.config
-C:\Users\Roman\aha-programming-language\C#\AhaMain\bin\Release\Factorial.dll
-C:\Users\Roman\aha-programming-language\C#\AhaMain\bin\Release\Factorial.pdb

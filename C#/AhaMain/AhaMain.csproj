@@ -91,10 +91,6 @@
       <Project>{05B3B293-3594-49B4-8675-0C0267D519D1}</Project>
       <Name>Base</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Examples\Factorial\Factorial.csproj">
-      <Project>{4a5f78cb-d648-49ea-aa95-464451996c30}</Project>
-      <Name>Factorial</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

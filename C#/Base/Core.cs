@@ -226,13 +226,13 @@ namespace Aha.Core
         public bool forEach(Predicate<Int64> that) { for (Int64 i = lo; i < hi; i++) { if (!that(i)) return false; } return true; }
         public bool forSome(Predicate<Int64> that) { for (Int64 i = lo; i < hi; i++) { if (that(i)) return true; } return false; }
         public Int64 such(Predicate<Int64> that) { for (Int64 i = lo; i < hi; i++) { if (that(i)) return i; } throw Failure.One; }
-        public Int64 count(Predicate<Int64> that) { int j = 0; for (Int64 i = lo; i < hi; i++) { if (that(i)) j++; } return j; }
+        public Int64 count(Predicate<Int64> that) { Int64 j = 0; for (Int64 i = lo; i < hi; i++) { if (that(i)) j++; } return j; }
         public Int64[] select(Predicate<Int64> that)
         { Int64[] sel = new Int64[hi - lo]; int j = 0; for (Int64 i = lo; i < hi; i++) { if (that(i)) { sel[j] = i; j++; } } Array.Resize<Int64>(ref sel, j); return sel; }
         public IahaSequence<Int64> enumerate(Predicate<Int64> that)
         { try { return new AhaFilteredSegmentSeq(lo, hi, 0, that); } catch(System.Exception) { return new AhaEmptySeq<Int64>(); } }
-        public Int64 foldl(Fold<Int64> rule) { if (lo == hi) throw Failure.One; Int64 result = lo; for (Int64 i = 1; i < hi; i++) result = rule(result, lo + i); return result; }
-        public Int64 foldr(Fold<Int64> rule) { if (lo == hi) throw Failure.One; Int64 result = hi - 1; for (Int64 i = hi - 2; i >= lo; i--) result = rule(lo + i, result); return result; }
+        public Int64 foldl(Fold<Int64> rule) { if (lo == hi) throw Failure.One; Int64 result = lo; for (Int64 i = lo + 1; i < hi; i++) result = rule(result, i); return result; }
+        public Int64 foldr(Fold<Int64> rule) { if (lo == hi) throw Failure.One; Int64 result = hi - 1; for (Int64 i = hi - 2; i >= lo; i--) result = rule(i, result); return result; }
         public Int64[] get() { return list(); }
     }
 
