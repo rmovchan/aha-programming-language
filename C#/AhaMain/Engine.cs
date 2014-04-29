@@ -34,7 +34,8 @@ namespace Aha.Engine
         private SortedList<DateTime, tpar_Event> schedule = new SortedList<DateTime, tpar_Event>();
         private System.Timers.Timer scheduler = new System.Timers.Timer();
         private void scheduler_Elapsed(object sender, System.Timers.ElapsedEventArgs e) 
-        { 
+        {
+            trace.Enqueue("ELAPSED");
             tpar_Event evt = schedule.Values[0]; 
             schedule.RemoveAt(0);
             events.Enqueue(evt); 
@@ -54,12 +55,17 @@ namespace Aha.Engine
         }
         private void perform()
         {
-            foreach (Aha.API.Jobs.opaque_Job<tpar_Event> job in field_behavior.state().get()) { trace.Enqueue(job.title); job.execute(); }
+            foreach (Aha.API.Jobs.opaque_Job<tpar_Event> job in field_behavior.state().get()) 
+            { 
+                trace.Enqueue("DO " + job.title); 
+                job.execute(); 
+            }
         }
         private void work() 
         { 
             try
             {
+                trace.Enqueue("<<START>>");
                 perform(); //perform initial jobs
                 while (true) //main event loop
                 { 
@@ -68,14 +74,27 @@ namespace Aha.Engine
                     perform(); //perform new jobs
                 } 
             }
-            catch (System.Exception) { trace.Enqueue("<<STOP>>"); field_terminated = true; }
+            catch (System.Exception) 
+            { 
+                trace.Enqueue("<<FINISH>>"); 
+                field_terminated = true; 
+            }
         }
-        public void HandleExternal(tpar_Event e) { events.Enqueue(e); recv.Set(); } //handle external event (such as user input)
+        public void HandleExternal(tpar_Event e) { trace.Enqueue("INPUT"); events.Enqueue(e); recv.Set(); } //handle external event (such as user input)
         public bool Terminated() { return field_terminated; }
         public Queue<string> Trace() { return trace; }
         public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_raise(tpar_Event e) 
         {
-            return new API.Jobs.opaque_Job<tpar_Event> { title = "raise", execute = delegate() { events.Enqueue(e); recv.Set(); } }; //put event in queue and signal
+            return new API.Jobs.opaque_Job<tpar_Event> 
+            { 
+                title = "raise", 
+                execute = 
+                    delegate() 
+                    { 
+                        events.Enqueue(e); 
+                        recv.Set(); 
+                    } 
+            }; //put event in queue and signal
         }
         //public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_run(Aha.API.Jobs.opaque_Job<tpar_Event> job) 
         //{ 
@@ -83,7 +102,16 @@ namespace Aha.Engine
         //}
         public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_enquireTime(Aha.API.Jobs.func_EnquireTime<tpar_Event> enq) 
         {
-            return new API.Jobs.opaque_Job<tpar_Event> { title = "enquireTime", execute = delegate() { events.Enqueue(enq(curr())); recv.Set(); } }; 
+            return new API.Jobs.opaque_Job<tpar_Event> 
+            { 
+                title = "enquireTime", 
+                execute = 
+                    delegate() 
+                    { 
+                        events.Enqueue(enq(curr())); 
+                        recv.Set(); 
+                    } 
+            }; 
         }
         public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_delay(Aha.Base.Time.opaque_Interval interval, tpar_Event e) 
         {
@@ -103,11 +131,41 @@ namespace Aha.Engine
             return new API.Jobs.opaque_Job<tpar_Event>
             {
                 title = "schedule", //TODO: show time
-                execute = delegate()
-                {
-                    schedule.Add(new DateTime(time.ticks), e);
-                    scheduleNext();
-                }
+                execute = 
+                    delegate()
+                    {
+                        schedule.Add(new DateTime(time.ticks), e);
+                        scheduleNext();
+                    }
+            };
+        }
+        public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_compute(Aha.API.Jobs.icomp_ComputeParams<tpar_Event> param)
+        {
+            return new API.Jobs.opaque_Job<tpar_Event>
+            {
+                title = "compute",
+                execute =
+                    delegate()
+                    {
+                        Thread thread = new Thread(new ThreadStart(
+                            delegate() 
+                            { 
+                                tpar_Event e; 
+                                try 
+                                { 
+                                    e = param.fattr_event();
+                                    trace.Enqueue("COMPUTED");
+                                } 
+                                catch (System.Exception) 
+                                { 
+                                    e = param.attr_fail();
+                                    trace.Enqueue("FAILED");
+                                }
+                                events.Enqueue(e); 
+                            })); 
+                        threads.Add(thread); 
+                        thread.Start();
+                    }
             };
         }
         public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_stop() 
@@ -131,7 +189,6 @@ namespace Aha.Engine
             workthread = new Thread(new ThreadStart(work));
             workthread.Start();
             field_terminated = false;
-            trace.Enqueue("<<START>>"); 
         }
         public void StopExternal() 
         { 

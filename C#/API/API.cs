@@ -49,6 +49,12 @@ namespace Aha.API
 
         public delegate tpar_Event func_EnquireTime<tpar_Event>(Aha.Base.Time.opaque_Timestamp time);
 
+        public interface icomp_ComputeParams<tpar_Event>
+        {
+            tpar_Event fattr_event();
+            tpar_Event attr_fail();
+        }
+
         public interface icomp_Engine<tpar_Event>
         {
             //opaque_Job<tpar_Event> fattr_run(opaque_Job<tpar_Event> job);
@@ -56,6 +62,7 @@ namespace Aha.API
             opaque_Job<tpar_Event> fattr_delay(Aha.Base.Time.opaque_Interval interval, tpar_Event e);
             opaque_Job<tpar_Event> fattr_schedule(Aha.Base.Time.opaque_Timestamp time, tpar_Event e);
             opaque_Job<tpar_Event> fattr_enquireTime(func_EnquireTime<tpar_Event> enq);
+            opaque_Job<tpar_Event> fattr_compute(icomp_ComputeParams<tpar_Event> param);
             opaque_Job<tpar_Event> fattr_stop();
         }
     }
@@ -609,7 +616,7 @@ namespace Aha.API
         public interface icomp_WriteParams<tpar_Event>
         {
             icomp_Position<tpar_Event> attr_position();
-            IahaArray<Aha.Base.Bits.opaque_BitString> attr_data();
+            Aha.Base.Bits.opaque_BitString attr_data();
             tpar_Event attr_written();
         }
 
@@ -620,7 +627,7 @@ namespace Aha.API
             bool attr3_next();
         }
 
-        public delegate tpar_Event func_Result<tpar_Event>(IahaArray<Aha.Base.Bits.opaque_BitString> result); 
+        public delegate tpar_Event func_Result<tpar_Event>(Aha.Base.Bits.opaque_BitString result); 
 
         public interface icomp_ReaderCommand<tpar_Event>
         {
@@ -630,7 +637,7 @@ namespace Aha.API
 
         public interface icomp_WriterCommand<tpar_Event>
         {
-            icomp_WriteParams<tpar_Event> attr1_read();
+            icomp_WriteParams<tpar_Event> attr1_write();
             tpar_Event attr2_close();
         }
 
@@ -641,7 +648,7 @@ namespace Aha.API
         public interface imod_FileIO<tpar_Event>
         {
             Jobs.opaque_Job<tpar_Event> fattr_CreateReader(icomp_CreateReaderParam<tpar_Event> param);
-            //Jobs.opaque_Job<tpar_Event> fattr_CreateWriter(icomp_CreateWriterParam<tpar_Event> param);
+            Jobs.opaque_Job<tpar_Event> fattr_CreateWriter(icomp_CreateWriterParam<tpar_Event> param);
         }
 
         public interface icomp_CreateReaderParam<tpar_Event>
@@ -656,7 +663,7 @@ namespace Aha.API
         {
             Aha.API.Environment.opaque_FilePath attr_path();
             Aha.API.Jobs.icomp_Engine<tpar_Event> attr_engine();
-            func_ReaderCreated<tpar_Event> attr_success();
+            func_WriterCreated<tpar_Event> attr_success();
             func_Error<tpar_Event> attr_error();
         }
 
@@ -671,12 +678,12 @@ namespace Aha.API
             class ErrorInfo : Aha.API.FileIOtypes.icomp_ErrorKind, Aha.API.FileIOtypes.icomp_ErrorInfo
             {
                 private System.Exception field_ex;
-                public bool attr1_access() { return field_ex is System.IO.FileNotFoundException; }
+                public bool attr1_access() { return field_ex is System.Security.SecurityException || field_ex is System.UnauthorizedAccessException; }
                 public bool attr2_permanent() { return field_ex is System.IO.IOException; }
                 public bool attr3_notFound() { return field_ex is System.IO.FileNotFoundException || field_ex is System.IO.DirectoryNotFoundException; }
-                public bool attr4_nameClash() { return false; } //TODO
+                public bool attr4_nameClash() { return field_ex is System.IO.IOException; } //TODO
                 public bool attr6_outOfMemory() { return field_ex is System.OutOfMemoryException; }
-                public bool attr7_other() { return !(field_ex is System.IO.FileNotFoundException || field_ex is System.IO.IOException || field_ex is System.IO.FileNotFoundException || field_ex is System.IO.DirectoryNotFoundException || field_ex is System.OutOfMemoryException); }
+                public bool attr7_other() { return !(field_ex is System.Security.SecurityException || field_ex is System.UnauthorizedAccessException || field_ex is System.IO.IOException || field_ex is System.IO.FileNotFoundException || field_ex is System.IO.DirectoryNotFoundException || field_ex is System.OutOfMemoryException); }
                 public FileIOtypes.icomp_ErrorKind attr_kind() { return this; }
                 public IahaArray<char> attr_message() { return new AhaString(field_ex.Message); }
                 public ErrorInfo(System.Exception param_ex)
@@ -686,50 +693,136 @@ namespace Aha.API
             }
             class Reader
             {
-                private string field_path;
-                private System.IO.StreamReader 
+                private icomp_CreateReaderParam<tpar_Event> field_param;
+                private System.IO.FileStream stream = null;
+                icomp_ReadParams<tpar_Event> p;
+                private async void read()
+                {
+                    try
+                    {
+                        if (stream == null)
+                        {
+                            stream = new System.IO.FileStream(field_param.attr_path().value, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read);
+                        }
+                        byte[] data = new byte[p.attr_bytes()];
+                        int byteCount = await stream.ReadAsync(data, 0, (int)p.attr_bytes());
+                        if (byteCount != p.attr_bytes()) { Array.Resize<byte>(ref data, byteCount); }
+                        Aha.Base.Bits.opaque_BitString bits = new Base.Bits.opaque_BitString { bytes = data, bits = byteCount * 8 };
+                        field_param.attr_engine().fattr_raise(p.attr_result()(bits)).execute();
+                    }
+                    catch(System.Exception ex)
+                    {
+                        field_param.attr_engine().fattr_raise(field_param.attr_error()(new ErrorInfo(ex))).execute();
+                    }
+                }
+                private void close()
+                {
+                    stream.Dispose();
+                    stream = null;
+                }
                 public Jobs.opaque_Job<tpar_Event> func_Reader(icomp_ReaderCommand<tpar_Event> cmd)
                 {
                     try
                     {
-                        icomp_ReadParams<tpar_Event> p = cmd.attr1_read();
+                        p = cmd.attr1_read();                       
                         return new Jobs.opaque_Job<tpar_Event>
                         {
                             title = "Reader.read",
-                            execute = delegate()
-                            {
-                            }
+                            execute = read
                         };
                     }
                     catch(System.Exception)
                     {
-                        tpar_Event e = cmd.attr2_close();
-
+                        return new Jobs.opaque_Job<tpar_Event>
+                        {
+                            title = "Reader.close",
+                            execute = close
+                        };
                     }
                 }
-                public Reader(string param_path)
+                public Reader(icomp_CreateReaderParam<tpar_Event> param)
                 {
-                    field_path = param_path;
+                    field_param = param;
+                }
+            }
+            class Writer
+            {
+                private icomp_CreateWriterParam<tpar_Event> field_param;
+                private System.IO.FileStream stream = null;
+                icomp_WriteParams<tpar_Event> p;
+                private async void write()
+                {
+                    try
+                    {
+                        if (stream == null)
+                        {
+                            stream = new System.IO.FileStream(field_param.attr_path().value, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.Write, System.IO.FileShare.None);
+                        }
+                        byte[] data = p.attr_data().bytes;
+                        await stream.WriteAsync(data, 0, data.Length);
+                        field_param.attr_engine().fattr_raise(p.attr_written()).execute();
+                    }
+                    catch (System.Exception ex)
+                    {
+                        field_param.attr_engine().fattr_raise(field_param.attr_error()(new ErrorInfo(ex))).execute();
+                    }
+                }
+                private void close()
+                {
+                    stream.Dispose();
+                    stream = null;
+                }
+                public Jobs.opaque_Job<tpar_Event> func_Writer(icomp_WriterCommand<tpar_Event> cmd)
+                {
+                    try
+                    {
+                        p = cmd.attr1_write();
+                        return new Jobs.opaque_Job<tpar_Event>
+                        {
+                            title = "Writer.write",
+                            execute = write
+                        };
+                    }
+                    catch (System.Exception)
+                    {
+                        return new Jobs.opaque_Job<tpar_Event>
+                        {
+                            title = "Writer.close",
+                            execute = close
+                        };
+                    }
+                }
+                public Writer(icomp_CreateWriterParam<tpar_Event> param)
+                {
+                    field_param = param;
                 }
             }
             public Jobs.opaque_Job<tpar_Event> fattr_CreateReader(icomp_CreateReaderParam<tpar_Event> param)
             {
-                Reader reader = new Reader(param.attr_path().value);
-                tpar_Event e;
-                try
-                {
-                    e = param.attr_success()(reader.func_Reader);
-                }
-                catch(System.Exception ex)
-                {
-                    e = param.attr_error()(new ErrorInfo(ex));
-                }
-                return param.attr_engine().fattr_raise(e);
+                Reader reader = new Reader(param);
+                return new Jobs.opaque_Job<tpar_Event>
+                    {
+                        title = "CreateReader",
+                        execute =
+                            delegate()
+                            {
+                                param.attr_engine().fattr_raise(param.attr_success()(reader.func_Reader)).execute();
+                            }
+                    };
             }
-            //public Jobs.opaque_Job<tpar_Event> fattr_CreateWriter(icomp_CreateWriterParam<tpar_Event> param)
-            //{
-
-            //}
+            public Jobs.opaque_Job<tpar_Event> fattr_CreateWriter(icomp_CreateWriterParam<tpar_Event> param)
+            {
+                Writer writer = new Writer(param);
+                return new Jobs.opaque_Job<tpar_Event>
+                {
+                    title = "CreateWriter",
+                    execute =
+                        delegate()
+                        {
+                            param.attr_engine().fattr_raise(param.attr_success()(writer.func_Writer)).execute();
+                        }
+                };
+            }
         }
 
     }
