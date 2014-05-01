@@ -168,7 +168,7 @@ namespace Aha.Engine
                     }
             };
         }
-        public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_stop() 
+        public Aha.API.Jobs.opaque_Job<tpar_Event> attr_stop() 
         {
             return new API.Jobs.opaque_Job<tpar_Event>
             {
@@ -192,7 +192,7 @@ namespace Aha.Engine
         }
         public void StopExternal() 
         { 
-            fattr_stop().execute();
+            attr_stop().execute();
             if (workthread != null)
             {
                 workthread.Abort();

@@ -63,7 +63,7 @@ namespace Aha.API
             opaque_Job<tpar_Event> fattr_schedule(Aha.Base.Time.opaque_Timestamp time, tpar_Event e);
             opaque_Job<tpar_Event> fattr_enquireTime(func_EnquireTime<tpar_Event> enq);
             opaque_Job<tpar_Event> fattr_compute(icomp_ComputeParams<tpar_Event> param);
-            opaque_Job<tpar_Event> fattr_stop();
+            opaque_Job<tpar_Event> attr_stop();
         }
     }
 
@@ -493,8 +493,8 @@ namespace Aha.API
             bool attr2_permanent();
             bool attr3_notFound();
             bool attr4_nameClash();
-            bool attr6_outOfMemory();
-            bool attr7_other();
+            bool attr5_outOfMemory();
+            bool attr6_other();
         }
 
         public interface icomp_ErrorInfo
@@ -502,11 +502,21 @@ namespace Aha.API
             icomp_ErrorKind attr_kind();
             IahaArray<char> attr_message();
         }
+
+        public interface icomp_Encoding
+        {
+            bool attr1_ASCII();
+            bool attr2_UTF8();
+            bool attr3_UCS2LE();
+            bool attr4_UCS2BE();
+            bool attr5_auto();
+        }
+
     }
 
     namespace FileIO
 //doc 
-//    Title: "FileAccess"
+//    Title: "FileIO"
 //    Purpose: "File I/O (binary and text) and file/directory management"
 //    Package: "Application Program Interface"
 //    Author: "Roman Movchan, Melbourne, Australia"
@@ -527,12 +537,12 @@ namespace Aha.API
 //    [ 
 //        position: [ top: integer | bottom: integer | next: ] "position: from top (bytes), bottom (bytes) or current"
 //        bytes: integer "number of bytes" 
-//        result: { [Bits] -> Event } "event that receives bytes read"
+//        result: { Bits -> Event } "event that receives bytes read"
 //    ] "read given number of bytes at given position" 
 //type WriteParams:
 //    [ 
 //        position: [ top: integer | bottom: integer | next: ] "position: from top (bytes), bottom (bytes) or current"
-//        data: [Bits] "data to write (must be whole number of bytes)" 
+//        data: Bits "data to write (must be whole number of bytes)" 
 //        written: Event "event raised upon writing"
 //    ] "write data at given position" 
 //type ReaderCommand:
@@ -610,7 +620,7 @@ namespace Aha.API
         {
             icomp_Position<tpar_Event> attr_position();
             Int64 attr_bytes();
-            func_Result<tpar_Event> attr_result();
+            tpar_Event fattr_result(Aha.Base.Bits.opaque_BitString result);
         }
 
         public interface icomp_WriteParams<tpar_Event>
@@ -626,8 +636,6 @@ namespace Aha.API
             Int64 attr2_bottom();
             bool attr3_next();
         }
-
-        public delegate tpar_Event func_Result<tpar_Event>(Aha.Base.Bits.opaque_BitString result); 
 
         public interface icomp_ReaderCommand<tpar_Event>
         {
@@ -649,29 +657,52 @@ namespace Aha.API
         {
             Jobs.opaque_Job<tpar_Event> fattr_CreateReader(icomp_CreateReaderParam<tpar_Event> param);
             Jobs.opaque_Job<tpar_Event> fattr_CreateWriter(icomp_CreateWriterParam<tpar_Event> param);
+            Jobs.opaque_Job<tpar_Event> fattr_ReadText(icomp_ReadTextParam<tpar_Event> param);
+            Jobs.opaque_Job<tpar_Event> fattr_WriteText(icomp_WriteTextParam<tpar_Event> param);
         }
 
         public interface icomp_CreateReaderParam<tpar_Event>
         {
             Aha.API.Environment.opaque_FilePath attr_path();
             Aha.API.Jobs.icomp_Engine<tpar_Event> attr_engine();
-            func_ReaderCreated<tpar_Event> attr_success();
-            func_Error<tpar_Event> attr_error();
+            tpar_Event fattr_success(func_Reader<tpar_Event> reader);
+            tpar_Event fattr_error(FileIOtypes.icomp_ErrorInfo error);
         }
 
         public interface icomp_CreateWriterParam<tpar_Event>
         {
             Aha.API.Environment.opaque_FilePath attr_path();
             Aha.API.Jobs.icomp_Engine<tpar_Event> attr_engine();
-            func_WriterCreated<tpar_Event> attr_success();
-            func_Error<tpar_Event> attr_error();
+            tpar_Event fattr_success(func_Writer<tpar_Event> writer);
+            tpar_Event fattr_error(FileIOtypes.icomp_ErrorInfo error);
         }
 
-        public delegate tpar_Event func_Error<tpar_Event>(FileIOtypes.icomp_ErrorInfo error);
+        public interface icomp_ReadTextParam<tpar_Event>
+        {
+            Aha.API.Environment.opaque_FilePath attr_path();
+            Aha.API.Jobs.icomp_Engine<tpar_Event> attr_engine();
+            FileIOtypes.icomp_Encoding attr_encoding();
+            tpar_Event fattr_success(icomp_TextReadParams<tpar_Event> result);
+            tpar_Event fattr_error(FileIOtypes.icomp_ErrorInfo error);
+        }
 
-        public delegate tpar_Event func_ReaderCreated<tpar_Event>(func_Reader<tpar_Event> reader);
+        public interface icomp_TextReadParams<tpar_Event>
+        {
+            IahaSequence<char> attr_content();
+            Int64 attr_size();
+            FileIOtypes.icomp_Encoding attr_encoding();
+        }
 
-        public delegate tpar_Event func_WriterCreated<tpar_Event>(func_Writer<tpar_Event> writer);
+        public interface icomp_WriteTextParam<tpar_Event>
+        {
+            Aha.API.Environment.opaque_FilePath attr_path();
+            Aha.API.Jobs.icomp_Engine<tpar_Event> attr_engine();
+            IahaSequence<char> attr_content();
+            Int64 attr_size();
+            FileIOtypes.icomp_Encoding attr_encoding();
+            tpar_Event attr_success();
+            tpar_Event fattr_error(FileIOtypes.icomp_ErrorInfo error);
+        }
 
         public class module_FileIO<tpar_Event> : AhaModule, imod_FileIO<tpar_Event>
         {
@@ -682,8 +713,8 @@ namespace Aha.API
                 public bool attr2_permanent() { return field_ex is System.IO.IOException; }
                 public bool attr3_notFound() { return field_ex is System.IO.FileNotFoundException || field_ex is System.IO.DirectoryNotFoundException; }
                 public bool attr4_nameClash() { return field_ex is System.IO.IOException; } //TODO
-                public bool attr6_outOfMemory() { return field_ex is System.OutOfMemoryException; }
-                public bool attr7_other() { return !(field_ex is System.Security.SecurityException || field_ex is System.UnauthorizedAccessException || field_ex is System.IO.IOException || field_ex is System.IO.FileNotFoundException || field_ex is System.IO.DirectoryNotFoundException || field_ex is System.OutOfMemoryException); }
+                public bool attr5_outOfMemory() { return field_ex is System.OutOfMemoryException; }
+                public bool attr6_other() { return !(field_ex is System.Security.SecurityException || field_ex is System.UnauthorizedAccessException || field_ex is System.IO.IOException || field_ex is System.IO.FileNotFoundException || field_ex is System.IO.DirectoryNotFoundException || field_ex is System.OutOfMemoryException); }
                 public FileIOtypes.icomp_ErrorKind attr_kind() { return this; }
                 public IahaArray<char> attr_message() { return new AhaString(field_ex.Message); }
                 public ErrorInfo(System.Exception param_ex)
@@ -704,15 +735,32 @@ namespace Aha.API
                         {
                             stream = new System.IO.FileStream(field_param.attr_path().value, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read);
                         }
+                        try
+                        {
+                            Int64 pos = p.attr_position().attr1_top();
+                            stream.Position = pos;
+                        }
+                        catch(Failure)
+                        {
+                            try
+                            {
+                                Int64 pos = p.attr_position().attr2_bottom();
+                                stream.Position = stream.Length - pos;
+                            }
+                            catch(Failure)
+                            {
+                                // next
+                            }
+                        }
                         byte[] data = new byte[p.attr_bytes()];
                         int byteCount = await stream.ReadAsync(data, 0, (int)p.attr_bytes());
                         if (byteCount != p.attr_bytes()) { Array.Resize<byte>(ref data, byteCount); }
                         Aha.Base.Bits.opaque_BitString bits = new Base.Bits.opaque_BitString { bytes = data, bits = byteCount * 8 };
-                        field_param.attr_engine().fattr_raise(p.attr_result()(bits)).execute();
+                        field_param.attr_engine().fattr_raise(p.fattr_result(bits)).execute();
                     }
                     catch(System.Exception ex)
                     {
-                        field_param.attr_engine().fattr_raise(field_param.attr_error()(new ErrorInfo(ex))).execute();
+                        field_param.attr_engine().fattr_raise(field_param.fattr_error(new ErrorInfo(ex))).execute();
                     }
                 }
                 private void close()
@@ -727,7 +775,7 @@ namespace Aha.API
                         p = cmd.attr1_read();                       
                         return new Jobs.opaque_Job<tpar_Event>
                         {
-                            title = "Reader.read",
+                            title = "Reader.read " + field_param.attr_path().value,
                             execute = read
                         };
                     }
@@ -735,7 +783,7 @@ namespace Aha.API
                     {
                         return new Jobs.opaque_Job<tpar_Event>
                         {
-                            title = "Reader.close",
+                            title = "Reader.close " + field_param.attr_path().value,
                             execute = close
                         };
                     }
@@ -758,13 +806,30 @@ namespace Aha.API
                         {
                             stream = new System.IO.FileStream(field_param.attr_path().value, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.Write, System.IO.FileShare.None);
                         }
+                        try
+                        {
+                            Int64 pos = p.attr_position().attr1_top();
+                            stream.Position = pos;
+                        }
+                        catch (Failure)
+                        {
+                            try
+                            {
+                                Int64 pos = p.attr_position().attr2_bottom();
+                                stream.Position = stream.Length - pos;
+                            }
+                            catch (Failure)
+                            {
+                                // next
+                            }
+                        }
                         byte[] data = p.attr_data().bytes;
                         await stream.WriteAsync(data, 0, data.Length);
                         field_param.attr_engine().fattr_raise(p.attr_written()).execute();
                     }
                     catch (System.Exception ex)
                     {
-                        field_param.attr_engine().fattr_raise(field_param.attr_error()(new ErrorInfo(ex))).execute();
+                        field_param.attr_engine().fattr_raise(field_param.fattr_error(new ErrorInfo(ex))).execute();
                     }
                 }
                 private void close()
@@ -779,7 +844,7 @@ namespace Aha.API
                         p = cmd.attr1_write();
                         return new Jobs.opaque_Job<tpar_Event>
                         {
-                            title = "Writer.write",
+                            title = "Writer.write " + field_param.attr_path().value,
                             execute = write
                         };
                     }
@@ -787,7 +852,7 @@ namespace Aha.API
                     {
                         return new Jobs.opaque_Job<tpar_Event>
                         {
-                            title = "Writer.close",
+                            title = "Writer.close " + field_param.attr_path().value,
                             execute = close
                         };
                     }
@@ -797,16 +862,25 @@ namespace Aha.API
                     field_param = param;
                 }
             }
+            private struct comp_TextReadParam : icomp_TextReadParams<tpar_Event>
+            {
+                public IahaSequence<char> field_content;
+                public Int64 field_size;
+                public FileIOtypes.icomp_Encoding field_encoding;
+                public IahaSequence<char> attr_content() { return field_content; }
+                public Int64 attr_size() { return field_size; }
+                public FileIOtypes.icomp_Encoding attr_encoding() { return field_encoding; }
+            }
             public Jobs.opaque_Job<tpar_Event> fattr_CreateReader(icomp_CreateReaderParam<tpar_Event> param)
             {
                 Reader reader = new Reader(param);
                 return new Jobs.opaque_Job<tpar_Event>
                     {
-                        title = "CreateReader",
+                        title = "CreateReader " + param.attr_path().value,
                         execute =
                             delegate()
                             {
-                                param.attr_engine().fattr_raise(param.attr_success()(reader.func_Reader)).execute();
+                                param.attr_engine().fattr_raise(param.fattr_success(reader.func_Reader)).execute();
                             }
                     };
             }
@@ -815,11 +889,132 @@ namespace Aha.API
                 Writer writer = new Writer(param);
                 return new Jobs.opaque_Job<tpar_Event>
                 {
-                    title = "CreateWriter",
+                    title = "CreateWriter " + param.attr_path().value,
                     execute =
                         delegate()
                         {
-                            param.attr_engine().fattr_raise(param.attr_success()(writer.func_Writer)).execute();
+                            param.attr_engine().fattr_raise(param.fattr_success(writer.func_Writer)).execute();
+                        }
+                };
+            }
+            struct Text : IahaSequence<char>
+            {
+                public List<string> list;
+                int index = 0;
+                int block = 0;
+                public char state() { return list[block][index]; }
+                public IahaObject<char> copy() { Text clone = new Text { list = list, index = index, block = block }; return clone; }
+                public void action_skip() { if (index == list[block].Length) { index = 0; block++; } else index++; }
+                public char first(Predicate<char> that, Int64 max) 
+                { 
+                    Int64 j = 0; 
+                    int i = index; 
+                    int b = block; 
+                    char item = list[block][index]; 
+                    while (j < max) 
+                    { 
+                        item = list[b][i]; 
+                        if (that(item)) return item;
+                        if (i == list[b].Length) { i = 0; b++; } else i++;
+                        j++; 
+                    } 
+                    throw Failure.One; 
+                }
+            }
+            public Jobs.opaque_Job<tpar_Event> fattr_ReadText(icomp_ReadTextParam<tpar_Event> param)
+            {
+
+                return new Jobs.opaque_Job<tpar_Event>
+                {
+                    title = "ReadText " + param.attr_path().value,
+                    execute =
+                        async delegate ()
+                        {
+                            try
+                            {
+                                System.IO.FileStream stream = new System.IO.FileStream(param.attr_path().value, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read);
+                                const int block = 8192;
+                                System.Text.Encoding encoding;
+                                Text text = new Text() { list = new List<string>() };
+                                if (param.attr_encoding().attr1_ASCII()) 
+                                { encoding = Encoding.ASCII; }
+                                else
+                                if (param.attr_encoding().attr2_UTF8()) 
+                                { encoding = Encoding.UTF8; }
+                                else
+                                if (param.attr_encoding().attr3_UCS2LE()) 
+                                { encoding = Encoding.Unicode; }
+                                else
+                                if (param.attr_encoding().attr4_UCS2BE())
+                                { encoding = Encoding.BigEndianUnicode; }
+                                else
+                                { encoding = Encoding.Default; } //TODO: detect encoding from file
+                                while (stream.Position < stream.Length)
+                                {
+                                    byte[] data = new byte[block];
+                                    int byteCount = await stream.ReadAsync(data, 0, block);
+                                    if (byteCount != block) { Array.Resize<byte>(ref data, byteCount); }
+                                    text.list.Add(encoding.GetString(data));
+                                }
+                                comp_TextReadParam p = new comp_TextReadParam() { field_encoding = param.attr_encoding(), field_size = stream.Length, field_content = text };
+                                param.attr_engine().fattr_raise(param.fattr_success(p)).execute();
+                            }
+                            catch (System.Exception ex)
+                            {
+                                param.attr_engine().fattr_raise(param.fattr_error(new ErrorInfo(ex))).execute();
+                            }
+                        }
+                };
+            }
+            public Jobs.opaque_Job<tpar_Event> fattr_WriteText(icomp_WriteTextParam<tpar_Event> param)
+            {
+
+                return new Jobs.opaque_Job<tpar_Event>
+                {
+                    title = "WriteText " + param.attr_path().value,
+                    execute =
+                        async delegate()
+                        {
+                            try
+                            {
+                                System.IO.FileStream stream = new System.IO.FileStream(param.attr_path().value, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.Write, System.IO.FileShare.None);
+                                const int block = 4096;
+                                System.Text.Encoding encoding;
+                                if (param.attr_encoding().attr1_ASCII()) 
+                                { encoding = Encoding.ASCII; }
+                                else
+                                if (param.attr_encoding().attr2_UTF8()) 
+                                { encoding = Encoding.UTF8; }
+                                else
+                                if (param.attr_encoding().attr3_UCS2LE()) 
+                                { encoding = Encoding.Unicode; }
+                                else
+                                if (param.attr_encoding().attr4_UCS2BE())
+                                { encoding = Encoding.BigEndianUnicode; }
+                                else
+                                { encoding = Encoding.Default; }
+                                char[] data = new char[block];
+                                Int64 left = param.attr_size();
+                                int size = block;
+                                IahaSequence<char> seq = (IahaSequence<char>)param.attr_content().copy();
+                                while (left > 0)
+                                {
+                                    if (left < block) size = (int)left;
+                                    for (int i = 0; i < size; i++)
+                                    {
+                                        data[i] = seq.state();
+                                        try { seq.action_skip(); }
+                                        catch (System.Exception) { left = size; }
+                                    }
+                                    await stream.WriteAsync(encoding.GetBytes(data), 0, size * sizeof(char));
+                                    left -= size;
+                                }
+                                param.attr_engine().fattr_raise(param.attr_success()).execute();
+                            }
+                            catch (System.Exception ex)
+                            {
+                                param.attr_engine().fattr_raise(param.fattr_error(new ErrorInfo(ex))).execute();
+                            }
                         }
                 };
             }
