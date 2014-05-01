@@ -26,7 +26,7 @@ namespace Aha.API
             class obj_Behavior : Jobs.iobj_Behavior<opaque_Event>
             {
                 private icomp_BehaviorParams field_param;
-                private AhaArray<Jobs.opaque_Job<opaque_Event>> field_jobs;
+                private IahaArray<Jobs.opaque_Job<opaque_Event>> field_jobs;
                 private Int64 op_Exclaim_integer(Int64 param_n) { return (new AhaSegment(1, param_n + 1)).foldl(delegate(Int64 x, Int64 y) { return checked(x * y); }); }
                 public void action_handle(opaque_Event param_event)
                 {

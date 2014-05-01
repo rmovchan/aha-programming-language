@@ -765,8 +765,11 @@ namespace Aha.API
                 }
                 private void close()
                 {
-                    stream.Dispose();
-                    stream = null;
+                    if (stream != null)
+                    {
+                        stream.Dispose();
+                        stream = null;
+                    }
                 }
                 public Jobs.opaque_Job<tpar_Event> func_Reader(icomp_ReaderCommand<tpar_Event> cmd)
                 {
@@ -834,8 +837,11 @@ namespace Aha.API
                 }
                 private void close()
                 {
-                    stream.Dispose();
-                    stream = null;
+                    if (stream != null)
+                    {
+                        stream.Dispose();
+                        stream = null;
+                    }
                 }
                 public Jobs.opaque_Job<tpar_Event> func_Writer(icomp_WriterCommand<tpar_Event> cmd)
                 {
@@ -897,13 +903,13 @@ namespace Aha.API
                         }
                 };
             }
-            struct Text : IahaSequence<char>
+            struct FileText : IahaSequence<char>
             {
                 public List<string> list;
-                int index = 0;
-                int block = 0;
+                public int index;
+                public int block;
                 public char state() { return list[block][index]; }
-                public IahaObject<char> copy() { Text clone = new Text { list = list, index = index, block = block }; return clone; }
+                public IahaObject<char> copy() { FileText clone = new FileText { list = list, index = index, block = block }; return clone; }
                 public void action_skip() { if (index == list[block].Length) { index = 0; block++; } else index++; }
                 public char first(Predicate<char> that, Int64 max) 
                 { 
@@ -921,6 +927,34 @@ namespace Aha.API
                     throw Failure.One; 
                 }
             }
+            struct FileEncoding : FileIOtypes.icomp_Encoding
+            {
+                public Encoding field_encoding;
+                bool FileIOtypes.icomp_Encoding.attr1_ASCII()
+                {
+                    return field_encoding.Equals(Encoding.ASCII);
+                }
+
+                bool FileIOtypes.icomp_Encoding.attr2_UTF8()
+                {
+                    return field_encoding.Equals(Encoding.UTF8);
+                }
+
+                bool FileIOtypes.icomp_Encoding.attr3_UCS2LE()
+                {
+                    return field_encoding.Equals(Encoding.Unicode);
+                }
+
+                bool FileIOtypes.icomp_Encoding.attr4_UCS2BE()
+                {
+                    return field_encoding.Equals(Encoding.BigEndianUnicode);
+                }
+
+                bool FileIOtypes.icomp_Encoding.attr5_auto()
+                {
+                    return field_encoding.Equals(Encoding.Default);
+                }
+            }
             public Jobs.opaque_Job<tpar_Event> fattr_ReadText(icomp_ReadTextParam<tpar_Event> param)
             {
 
@@ -930,38 +964,57 @@ namespace Aha.API
                     execute =
                         async delegate ()
                         {
+                            System.IO.FileStream stream = null;
+                            const int block = 8192;
+                            System.Text.Encoding encoding;
                             try
                             {
-                                System.IO.FileStream stream = new System.IO.FileStream(param.attr_path().value, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read);
-                                const int block = 8192;
-                                System.Text.Encoding encoding;
-                                Text text = new Text() { list = new List<string>() };
-                                if (param.attr_encoding().attr1_ASCII()) 
+                                stream = new System.IO.FileStream(param.attr_path().value, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read);
+                                FileText text = new FileText() { list = new List<string>(), block = 0, index = 0 };
+                                if (param.attr_encoding().attr1_ASCII())
                                 { encoding = Encoding.ASCII; }
                                 else
-                                if (param.attr_encoding().attr2_UTF8()) 
-                                { encoding = Encoding.UTF8; }
-                                else
-                                if (param.attr_encoding().attr3_UCS2LE()) 
-                                { encoding = Encoding.Unicode; }
-                                else
-                                if (param.attr_encoding().attr4_UCS2BE())
-                                { encoding = Encoding.BigEndianUnicode; }
-                                else
-                                { encoding = Encoding.Default; } //TODO: detect encoding from file
+                                    if (param.attr_encoding().attr2_UTF8())
+                                    { encoding = Encoding.UTF8; }
+                                    else
+                                        if (param.attr_encoding().attr3_UCS2LE())
+                                        { encoding = Encoding.Unicode; }
+                                        else
+                                            if (param.attr_encoding().attr4_UCS2BE())
+                                            { encoding = Encoding.BigEndianUnicode; }
+                                            else
+                                            { encoding = null; } 
                                 while (stream.Position < stream.Length)
                                 {
                                     byte[] data = new byte[block];
                                     int byteCount = await stream.ReadAsync(data, 0, block);
                                     if (byteCount != block) { Array.Resize<byte>(ref data, byteCount); }
+                                    if (encoding == null)
+                                    {
+                                        if (byteCount > 2 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF)
+                                            encoding = Encoding.UTF8;
+                                        else
+                                            if (byteCount > 1 && data[0] == 0xFE && data[1] == 0xFF)
+                                                encoding = Encoding.BigEndianUnicode;
+                                            else
+                                                if (byteCount > 1 && data[0] == 0xFF && data[1] == 0xFE)
+                                                    encoding = Encoding.Unicode;
+                                                else
+                                                    encoding = Encoding.Default;
+                                        text.index = encoding.GetCharCount(encoding.GetPreamble());
+                                    }
                                     text.list.Add(encoding.GetString(data));
                                 }
-                                comp_TextReadParam p = new comp_TextReadParam() { field_encoding = param.attr_encoding(), field_size = stream.Length, field_content = text };
+                                comp_TextReadParam p = new comp_TextReadParam() { field_encoding = new FileEncoding { field_encoding = encoding }, field_size = stream.Length, field_content = text };
                                 param.attr_engine().fattr_raise(param.fattr_success(p)).execute();
                             }
                             catch (System.Exception ex)
                             {
                                 param.attr_engine().fattr_raise(param.fattr_error(new ErrorInfo(ex))).execute();
+                            }
+                            finally
+                            {
+                                if (stream != null) stream.Dispose();
                             }
                         }
                 };
@@ -975,24 +1028,30 @@ namespace Aha.API
                     execute =
                         async delegate()
                         {
+                            System.IO.FileStream stream = null;
+                            const int block = 4096;
+                            System.Text.Encoding encoding;
                             try
                             {
-                                System.IO.FileStream stream = new System.IO.FileStream(param.attr_path().value, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.Write, System.IO.FileShare.None);
-                                const int block = 4096;
-                                System.Text.Encoding encoding;
-                                if (param.attr_encoding().attr1_ASCII()) 
+                                stream = new System.IO.FileStream(param.attr_path().value, System.IO.FileMode.CreateNew, System.IO.FileAccess.Write, System.IO.FileShare.None);
+                                if (param.attr_encoding().attr1_ASCII())
                                 { encoding = Encoding.ASCII; }
                                 else
-                                if (param.attr_encoding().attr2_UTF8()) 
-                                { encoding = Encoding.UTF8; }
-                                else
-                                if (param.attr_encoding().attr3_UCS2LE()) 
-                                { encoding = Encoding.Unicode; }
-                                else
-                                if (param.attr_encoding().attr4_UCS2BE())
-                                { encoding = Encoding.BigEndianUnicode; }
-                                else
-                                { encoding = Encoding.Default; }
+                                    if (param.attr_encoding().attr2_UTF8())
+                                    { encoding = Encoding.UTF8; }
+                                    else
+                                        if (param.attr_encoding().attr3_UCS2LE())
+                                        { encoding = Encoding.Unicode; }
+                                        else
+                                            if (param.attr_encoding().attr4_UCS2BE())
+                                            { encoding = Encoding.BigEndianUnicode; }
+                                            else
+                                            { encoding = Encoding.Default; }
+                                byte[] BOM = encoding.GetPreamble();
+                                if (BOM.Length > 0)
+                                {
+                                    await stream.WriteAsync(BOM, 0, BOM.Length);
+                                }
                                 char[] data = new char[block];
                                 Int64 left = param.attr_size();
                                 int size = block;
@@ -1002,11 +1061,17 @@ namespace Aha.API
                                     if (left < block) size = (int)left;
                                     for (int i = 0; i < size; i++)
                                     {
-                                        data[i] = seq.state();
-                                        try { seq.action_skip(); }
-                                        catch (System.Exception) { left = size; }
+                                        try
+                                        {
+                                            data[i] = seq.state();
+                                            try { seq.action_skip(); }
+                                            catch (Failure) { size = i + 1; left = size; }
+                                        }
+                                        catch (Failure) { size = i; left = size; }
                                     }
-                                    await stream.WriteAsync(encoding.GetBytes(data), 0, size * sizeof(char));
+                                    if (size != block) Array.Resize<char>(ref data, size);
+                                    byte[] buf = encoding.GetBytes(data);
+                                    await stream.WriteAsync(buf, 0, buf.Length);
                                     left -= size;
                                 }
                                 param.attr_engine().fattr_raise(param.attr_success()).execute();
@@ -1014,6 +1079,10 @@ namespace Aha.API
                             catch (System.Exception ex)
                             {
                                 param.attr_engine().fattr_raise(param.fattr_error(new ErrorInfo(ex))).execute();
+                            }
+                            finally
+                            {
+                                if (stream != null) stream.Dispose();
                             }
                         }
                 };
@@ -1035,8 +1104,7 @@ namespace Aha.API
     //use Jobs: API/Jobs(Event: Event)
     //the Title: [character]  "application title"
     //the Signature: [character]  "vendor's signature"
-    //the Permit: { [character] } "verify supplied password"
-    //the Behavior: { [ input: [character] output: { [character] -> @Jobs!Job } engine: @Jobs!Engine ] -> @Jobs!Behavior } "application behavior"
+    //the Behavior: { [ settings: [character] password: [character] output: { [character] -> @Jobs!Job } engine: @Jobs!Engine ] -> @Jobs!Behavior } "application behavior"
     //the Receive: { [character] -> Event } "convert user input to events"
     {
         public interface opaque_Event { }
@@ -1044,6 +1112,7 @@ namespace Aha.API
         public interface icomp_BehaviorParams
         {
             IahaArray<char> attr_settings();
+            IahaArray<char> attr_password();
             Jobs.opaque_Job<opaque_Event> fattr_output(IahaArray<char> text);
             Jobs.icomp_Engine<opaque_Event> attr_engine();
         }

@@ -35,7 +35,7 @@ namespace Aha.Engine
         private System.Timers.Timer scheduler = new System.Timers.Timer();
         private void scheduler_Elapsed(object sender, System.Timers.ElapsedEventArgs e) 
         {
-            trace.Enqueue("ELAPSED");
+            trace.Enqueue("TIMER");
             tpar_Event evt = schedule.Values[0]; 
             schedule.RemoveAt(0);
             events.Enqueue(evt); 
@@ -57,24 +57,41 @@ namespace Aha.Engine
         {
             foreach (Aha.API.Jobs.opaque_Job<tpar_Event> job in field_behavior.state().get()) 
             { 
-                trace.Enqueue("DO " + job.title); 
-                job.execute(); 
+                trace.Enqueue("DO " + job.title);
+                //System.Windows.Forms.Cursor.Current = System.Windows.Forms.Cursors.WaitCursor;
+                try
+                {
+                    job.execute();
+                }
+                catch(System.Threading.ThreadAbortException)
+                {
+                    throw;
+                }
+                catch(System.Exception ex)
+                {
+                    trace.Enqueue("EXCEPTION " + ex.Message + " IN " + job.title);
+                }
+                finally
+                {
+                    //System.Windows.Forms.Cursor.Current = System.Windows.Forms.Cursors.Default;
+                }
             }
         }
         private void work() 
-        { 
+        {
             try
             {
                 trace.Enqueue("<<START>>");
                 perform(); //perform initial jobs
                 while (true) //main event loop
-                { 
+                {
                     recv.WaitOne(); //wait events
-                    field_behavior.action_handle(events.Dequeue()); //handle events
+                    field_behavior.action_handle(events.Dequeue()); //handle event
                     perform(); //perform new jobs
-                } 
+                }
             }
-            catch (System.Exception) 
+            catch (System.Exception) { }
+            finally
             { 
                 trace.Enqueue("<<FINISH>>"); 
                 field_terminated = true; 
@@ -154,12 +171,10 @@ namespace Aha.Engine
                                 try 
                                 { 
                                     e = param.fattr_event();
-                                    trace.Enqueue("COMPUTED");
                                 } 
                                 catch (System.Exception) 
                                 { 
                                     e = param.attr_fail();
-                                    trace.Enqueue("FAILED");
                                 }
                                 events.Enqueue(e); 
                             })); 
@@ -191,7 +206,8 @@ namespace Aha.Engine
             field_terminated = false;
         }
         public void StopExternal() 
-        { 
+        {
+            trace.Enqueue("ABORT");
             attr_stop().execute();
             if (workthread != null)
             {

@@ -26,6 +26,7 @@ namespace AhaMain
             public string field_settings;
             public icomp_Engine<opaque_Event> field_engine;
             public IahaArray<char> attr_settings() { return new AhaString(field_settings); }
+            public IahaArray<char> attr_password() { return new AhaString(""); } //TODO
             public opaque_Job<opaque_Event> fattr_output(IahaArray<char> text) { return field_output(new string(text.get())); }
             public icomp_Engine<opaque_Event> attr_engine() { return field_engine; }
         }

@@ -614,24 +614,11 @@ namespace Aha.Base
             Int64 attr_to();
         }
 
-        public interface iobj_StringBuilder : IahaObject<IahaArray<char>>
-        {
-            void action_add(char ch);
-            void action_put(icomp_PutParams param);
-            void action_append(IahaArray<char> str);
-            void action_replace(icomp_ReplaceParams param);
-            void action_extract(icomp_Substring sub);
-            //void action_padL(IPadParams param);
-            //void action_padR(IPadParams param);
-            void action_trimSpaces();
-        }
-
         public interface imod_StrUtils
         {
             IahaArray<char> fattr_Substr(IahaArray<char> s, icomp_Substring ss);
             opaque_RegEx fattr_RegEx(IahaArray<char> s);
             IahaSequence<icomp_Substring> fattr_Search(icomp_SearchParams param);
-            iobj_StringBuilder attr_StringBuilder();
             Int64 fattr_StringHashFunc(IahaArray<char> s);
         }
 
@@ -685,7 +672,6 @@ namespace Aha.Base
                 string temp2 = new string(param.attr_in().get());
                 return new obj_SearchSeq(temp2, temp1);
             }
-            public iobj_StringBuilder attr_StringBuilder() { return new obj_StringBuilder(); }
             public Int64 fattr_StringHashFunc(IahaArray<char> s) { return s.get().GetHashCode(); }
         }
     }
