@@ -12,11 +12,11 @@ namespace Aha.API
 {
     namespace Application
     {
-        struct comp_Event : opaque_Event
+        public partial struct opaque_Event
         {
             private IahaArray<char> field_input;
             public IahaArray<char> attr_input() { return field_input; }
-            public comp_Event(IahaArray<char> param_input) { field_input = param_input; }
+            public opaque_Event(IahaArray<char> param_input) { field_input = param_input; }
         }
 
         public class module_Application : AhaModule, imod_Application
@@ -44,7 +44,7 @@ namespace Aha.API
                                                             (
                                                                 Convert.ToInt64
                                                                     (
-                                                                        new string(((comp_Event)param_event).attr_input().get())
+                                                                        new string((param_event).attr_input().get())
                                                                     )
                                                             ).ToString()
                                                     )

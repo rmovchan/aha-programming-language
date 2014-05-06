@@ -43,6 +43,22 @@ namespace AhaMain
             InitializeComponent();
         }
 
+        private void PopulateApplications()
+        {
+            Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("Software").OpenSubKey("Aha! for .NET").OpenSubKey("ConsoleApp");
+            string[] names = key.GetSubKeyNames();
+            foreach (string name in names)
+            {
+                ToolStripDropDownItem item = new ToolStripDropDownButton(name, null, item_Click); //new string[3] { name, (string)key.OpenSubKey("Path").GetValue(name), (string)key.OpenSubKey("Settings").GetValue(name) });
+                toolStripMenuItem1.DropDownItems.Add(item);
+            }
+        }
+
+        private void item_Click(Object sender, EventArgs e)
+        {
+
+        }
+
         private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (e.KeyChar == '\r') { eng.HandleExternal(app.fattr_Receive(new AhaString(((TextBox)sender).Text))); ((TextBox)sender).Clear(); }

@@ -42,6 +42,7 @@
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.clearToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.clearTraceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.textBox2 = new System.Windows.Forms.TextBox();
@@ -49,7 +50,6 @@
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.listBox2 = new System.Windows.Forms.ListBox();
-            this.clearTraceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             statusStrip1 = new System.Windows.Forms.StatusStrip();
             statusStrip1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
@@ -131,7 +131,7 @@
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(103, 22);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(152, 22);
             this.toolStripMenuItem1.Text = "Open";
             this.toolStripMenuItem1.Click += new System.EventHandler(this.toolStripMenuItem1_Click);
             // 
@@ -139,7 +139,7 @@
             // 
             this.runToolStripMenuItem.Enabled = false;
             this.runToolStripMenuItem.Name = "runToolStripMenuItem";
-            this.runToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
+            this.runToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.runToolStripMenuItem.Text = "Start";
             this.runToolStripMenuItem.Click += new System.EventHandler(this.runToolStripMenuItem_Click);
             // 
@@ -147,14 +147,14 @@
             // 
             this.stopToolStripMenuItem.Enabled = false;
             this.stopToolStripMenuItem.Name = "stopToolStripMenuItem";
-            this.stopToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
+            this.stopToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.stopToolStripMenuItem.Text = "Stop";
             this.stopToolStripMenuItem.Click += new System.EventHandler(this.stopToolStripMenuItem_Click);
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.exitToolStripMenuItem.Text = "Exit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
@@ -170,9 +170,16 @@
             // clearToolStripMenuItem
             // 
             this.clearToolStripMenuItem.Name = "clearToolStripMenuItem";
-            this.clearToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.clearToolStripMenuItem.Size = new System.Drawing.Size(140, 22);
             this.clearToolStripMenuItem.Text = "Clear output";
             this.clearToolStripMenuItem.Click += new System.EventHandler(this.clearToolStripMenuItem_Click);
+            // 
+            // clearTraceToolStripMenuItem
+            // 
+            this.clearTraceToolStripMenuItem.Name = "clearTraceToolStripMenuItem";
+            this.clearTraceToolStripMenuItem.Size = new System.Drawing.Size(140, 22);
+            this.clearTraceToolStripMenuItem.Text = "Clear trace";
+            this.clearTraceToolStripMenuItem.Click += new System.EventHandler(this.clearTraceToolStripMenuItem_Click);
             // 
             // timer1
             // 
@@ -233,13 +240,6 @@
             this.listBox2.Name = "listBox2";
             this.listBox2.Size = new System.Drawing.Size(563, 433);
             this.listBox2.TabIndex = 0;
-            // 
-            // clearTraceToolStripMenuItem
-            // 
-            this.clearTraceToolStripMenuItem.Name = "clearTraceToolStripMenuItem";
-            this.clearTraceToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.clearTraceToolStripMenuItem.Text = "Clear trace";
-            this.clearTraceToolStripMenuItem.Click += new System.EventHandler(this.clearTraceToolStripMenuItem_Click);
             // 
             // Console
             // 
