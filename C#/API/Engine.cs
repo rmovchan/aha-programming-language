@@ -22,6 +22,7 @@ namespace Aha.Engine
         }
 
         private bool field_terminated;
+        private bool field_shutdown;
         private Aha.Base.Time.opaque_Timestamp today;
         private DateTime midnight = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
         private Aha.API.Jobs.iobj_Behavior<tpar_Event> field_behavior;
@@ -31,15 +32,14 @@ namespace Aha.Engine
         private AutoResetEvent recv = new AutoResetEvent(false);
         private Queue<tpar_Event> events = new Queue<tpar_Event>();
         private Queue<string> trace = new Queue<string>();
-        private SortedList<DateTime, tpar_Event> schedule = new SortedList<DateTime, tpar_Event>();
+        private SortedList<DateTime, Aha.API.Jobs.opaque_Job<tpar_Event>> schedule = new SortedList<DateTime, Aha.API.Jobs.opaque_Job<tpar_Event>>();
         private System.Timers.Timer scheduler = new System.Timers.Timer();
         private void scheduler_Elapsed(object sender, System.Timers.ElapsedEventArgs e) 
         {
-            trace.Enqueue("TIMER");
-            tpar_Event evt = schedule.Values[0]; 
+            Aha.API.Jobs.opaque_Job<tpar_Event> job = schedule.Values[0]; 
             schedule.RemoveAt(0);
-            events.Enqueue(evt); 
-            recv.Set();
+            trace.Enqueue("-->> " + job.title);
+            job.execute(); 
             if (schedule.Count > 0) scheduleNext(); 
         }
         private void scheduleNext() 
@@ -64,7 +64,7 @@ namespace Aha.Engine
                 }
                 catch(System.Threading.ThreadAbortException)
                 {
-                    throw;
+                    trace.Enqueue("ABORTED");
                 }
                 catch(System.Exception ex)
                 {
@@ -77,25 +77,36 @@ namespace Aha.Engine
             try
             {
                 trace.Enqueue("<<START>>");
-                perform(); //perform initial jobs
-                while (true) //main event loop
+                field_shutdown = false;
+                try
                 {
-                    if (events.Count == 0)
+                    perform(); //perform initial jobs
+                }
+                catch (System.Threading.ThreadAbortException)
+                {
+                    trace.Enqueue("ABORTED");
+                }
+                while (!field_shutdown) //main event loop
+                {
+                    try
                     {
-                        trace.Enqueue("IDLE");
+                        if (events.Count == 0)
+                        {
+                            trace.Enqueue("IDLE");
+                        }
+                        recv.WaitOne(); //wait events
+                        field_behavior.action_handle(events.Dequeue()); //handle event
+                        perform(); //perform new jobs
                     }
-                    recv.WaitOne(); //wait events
-                    field_behavior.action_handle(events.Dequeue()); //handle event
-                    perform(); //perform new jobs
+                    catch (System.Threading.ThreadAbortException)
+                    {
+                        trace.Enqueue("ABORTED");
+                    }
                 }
             }
             catch (Failure) 
             {
                 trace.Enqueue("FAILED");
-            }
-            catch (System.Threading.ThreadAbortException)
-            {
-                trace.Enqueue("ABORTED");
             }
             catch (System.Exception ex) 
             {
@@ -103,8 +114,8 @@ namespace Aha.Engine
             }
             finally
             { 
-                trace.Enqueue("<<FINISH>>"); 
-                field_terminated = true; 
+                trace.Enqueue("<<FINISH>>");
+                field_terminated = true;
             }
         }
         public void HandleExternal(tpar_Event e) { trace.Enqueue("INPUT"); events.Enqueue(e); recv.Set(); } //handle external event (such as user input)
@@ -140,7 +151,7 @@ namespace Aha.Engine
                     } 
             }; 
         }
-        public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_delay(Aha.Base.Time.opaque_Interval interval, tpar_Event e) 
+        public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_delay(Aha.Base.Time.opaque_Interval interval, Aha.API.Jobs.opaque_Job<tpar_Event> job) 
         {
             return new API.Jobs.opaque_Job<tpar_Event>
             {
@@ -148,12 +159,12 @@ namespace Aha.Engine
                 execute =
                     delegate()
                     {
-                        schedule.Add(new DateTime(DateTime.Now.Ticks + interval.ticks), e);
+                        schedule.Add(new DateTime(DateTime.Now.Ticks + interval.ticks), job);
                         scheduleNext();
                     }
             };
         }
-        public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_schedule(Aha.Base.Time.opaque_Timestamp time, tpar_Event e)
+        public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_schedule(Aha.Base.Time.opaque_Timestamp time, Aha.API.Jobs.opaque_Job<tpar_Event> job)
         {
             return new API.Jobs.opaque_Job<tpar_Event>
             {
@@ -161,7 +172,7 @@ namespace Aha.Engine
                 execute = 
                     delegate()
                     {
-                        schedule.Add(new DateTime(time.ticks), e);
+                        schedule.Add(new DateTime(time.ticks), job);
                         scheduleNext();
                     }
             };
@@ -193,11 +204,11 @@ namespace Aha.Engine
                     }
             };
         }
-        public Aha.API.Jobs.opaque_Job<tpar_Event> attr_stop() 
+        public Aha.API.Jobs.opaque_Job<tpar_Event> attr_break() 
         {
             return new API.Jobs.opaque_Job<tpar_Event>
             {
-                title = "stop",
+                title = "break",
                 execute =
                     delegate()
                     {
@@ -205,8 +216,21 @@ namespace Aha.Engine
                         scheduler.Enabled = false;
                         foreach (Thread thread in threads) if (thread.IsAlive) thread.Abort();
                         threads.Clear();
+                        workthread.Abort();
                     }
             }; 
+        }
+        public Aha.API.Jobs.opaque_Job<tpar_Event> attr_shutdown()
+        {
+            return new API.Jobs.opaque_Job<tpar_Event>
+            {
+                title = "shutdown",
+                execute =
+                    delegate()
+                    {
+                        field_shutdown = true;
+                    }
+            };
         }
         public void StartExternal(Aha.API.Jobs.iobj_Behavior<tpar_Event> param_behavior)
         {
@@ -218,7 +242,7 @@ namespace Aha.Engine
         public void StopExternal() 
         {
             //trace.Enqueue("ABORT");
-            attr_stop().execute();
+            attr_break().execute();
             if (workthread != null)
             {
                 workthread.Abort();

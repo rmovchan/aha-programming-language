@@ -12,11 +12,11 @@ namespace Aha.API
 {
     namespace Application
     {
-        public partial struct opaque_Event
+        public class impl_Event : opaque_Event
         {
             private IahaArray<char> field_input;
             public IahaArray<char> attr_input() { return field_input; }
-            public opaque_Event(IahaArray<char> param_input) { field_input = param_input; }
+            public impl_Event(IahaArray<char> param_input) { field_input = param_input; }
         }
 
         public class module_Application : AhaModule, imod_Application
@@ -44,7 +44,7 @@ namespace Aha.API
                                                             (
                                                                 Convert.ToInt64
                                                                     (
-                                                                        new string((param_event).attr_input().get())
+                                                                        new string(((impl_Event)param_event).attr_input().get())
                                                                     )
                                                             ).ToString()
                                                     )
@@ -71,7 +71,7 @@ namespace Aha.API
             public IahaArray<char> attr_Title() { return new AhaString("Factorial"); }
             public IahaArray<char> attr_Signature() { return new AhaString("Demo"); }
             public Jobs.iobj_Behavior<opaque_Event> fattr_Behavior(icomp_BehaviorParams param_param) { return new obj_Behavior(param_param); }
-            public opaque_Event fattr_Receive(IahaArray<char> param_input) { return new comp_Event(param_input); }
+            public opaque_Event fattr_Receive(IahaArray<char> param_input) { return new impl_Event(param_input); }
         }
     }
 }

@@ -55,13 +55,13 @@ namespace Aha.API
 
         public interface icomp_Engine<tpar_Event>
         {
-            //opaque_Job<tpar_Event> fattr_run(opaque_Job<tpar_Event> job);
             opaque_Job<tpar_Event> fattr_raise(tpar_Event e);
-            opaque_Job<tpar_Event> fattr_delay(Aha.Base.Time.opaque_Interval interval, tpar_Event e);
-            opaque_Job<tpar_Event> fattr_schedule(Aha.Base.Time.opaque_Timestamp time, tpar_Event e);
+            opaque_Job<tpar_Event> fattr_delay(Aha.Base.Time.opaque_Interval interval, opaque_Job<tpar_Event> job);
+            opaque_Job<tpar_Event> fattr_schedule(Aha.Base.Time.opaque_Timestamp time, opaque_Job<tpar_Event> job);
             opaque_Job<tpar_Event> fattr_enquireTime(func_EnquireTime<tpar_Event> enq);
             opaque_Job<tpar_Event> fattr_compute(icomp_ComputeParams<tpar_Event> param);
-            opaque_Job<tpar_Event> attr_stop();
+            opaque_Job<tpar_Event> attr_break();
+            opaque_Job<tpar_Event> attr_shutdown();
         }
     }
 
@@ -1104,7 +1104,7 @@ namespace Aha.API
     //the Behavior: { [ settings: [character] password: [character] output: { [character] -> @Jobs!Job } engine: @Jobs!Engine ] -> @Jobs!Behavior } "application behavior"
     //the Receive: { [character] -> Event } "convert user input to events"
     {
-        public partial struct opaque_Event { }
+        public class opaque_Event { }
 
         public interface icomp_BehaviorParams
         {
@@ -1149,36 +1149,43 @@ namespace Aha.API
 
         public interface imod_Process<tpar_Settings, tpar_Output, tpar_Event>
         {
-            Aha.API.Jobs.opaque_Job<tpar_Event> fattr_CreateProcess(icomp_ProcessParam<tpar_Settings, tpar_Output, tpar_Event> param);
+            Aha.API.Jobs.opaque_Job<tpar_Event> fattr_Create(icomp_ProcessParam<tpar_Settings, tpar_Output, tpar_Event> param);
         }
 
         public class module_Process<tpar_Settings, tpar_Output, tpar_Event> : AhaModule, imod_Process<tpar_Settings, tpar_Output, tpar_Event>
         {
             delegate tpar_Event func_Output(tpar_Output output);
 
-            class comp_BehaviorParams<opaque_Event> : ProcessDef.icomp_BehaviorParams
+            class comp_BehaviorParams : ProcessDef.icomp_BehaviorParams
             {
-                private tpar_Settings field_settings;
+                private ProcessDef.base_Settings field_settings;
                 private IahaArray<char> field_password;
                 private func_Output field_output;
                 private Aha.API.Jobs.icomp_Engine<tpar_Event> field_engine;
-                private Aha.API.Jobs.icomp_Engine<opaque_Event> field_engine2;
-                public tpar_Settings attr_settings() { return field_settings; }
+                private Aha.Engine.comp_Engine<ProcessDef.base_Event> field_engine2;
+                public ProcessDef.base_Settings attr_settings() { return field_settings; }
                 public IahaArray<char> attr_password() { return field_password; }
-                public Jobs.opaque_Job<opaque_Event> fattr_output(tpar_Output output) 
+                public Jobs.opaque_Job<ProcessDef.base_Event> fattr_output(tpar_Output output) 
                 {
-                    return new Jobs.opaque_Job<opaque_Event>
+                    return new Jobs.opaque_Job<ProcessDef.base_Event>
                     {
                         title = "output",
                         execute =
                             delegate()
                             {
-                                field_engine.fattr_raise(field_output(output)).execute();
+                                field_engine2.HandleExternal (field_output(output)).execute();
                             }
                     };
                 }
-                public Jobs.icomp_Engine<opaque_Event> attr_engine() { return field_engine2; }
-                public comp_BehaviorParams(tpar_Settings param_settings, IahaArray<char> param_password, func_Output param_output, Aha.API.Jobs.icomp_Engine<tpar_Event> param_engine, Aha.API.Jobs.icomp_Engine<opaque_Event> param_engine2) 
+                public Jobs.icomp_Engine<ProcessDef.base_Event> attr_engine() { return field_engine2; }
+                public comp_BehaviorParams
+                    (
+                        ProcessDef.base_Settings param_settings, 
+                        IahaArray<char> param_password, 
+                        func_Output param_output, 
+                        Aha.API.Jobs.icomp_Engine<tpar_Event> param_engine,
+                        Aha.Engine.comp_Engine<ProcessDef.base_Event> param_engine2
+                    ) 
                 {
                     field_settings = param_settings;
                     field_password = param_password;
@@ -1188,12 +1195,12 @@ namespace Aha.API
                 }
             }
 
-            public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_CreateProcess(icomp_ProcessParam<tpar_Settings, tpar_Output, tpar_Event> param)
+            public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_Create(icomp_ProcessParam<tpar_Settings, tpar_Output, tpar_Event> param)
             {
                 string classname = new string(param.attr_classname().get());
                 return new Jobs.opaque_Job<tpar_Event>
                 {
-                    title = "CreateProcess " + classname,
+                    title = "Create " + classname,
                     execute =
                         delegate()
                         {
@@ -1206,9 +1213,8 @@ namespace Aha.API
                                     Type eventType = assembly.GetType("opaque_Event", true, false);
                                     Type engType = typeof(Aha.Engine.comp_Engine<>).MakeGenericType(new Type[] { eventType });
                                     Object eng = Activator.CreateInstance(engType);
-                                    Type bpType = typeof(comp_BehaviorParams<>).MakeGenericType(new Type[] { eventType });
                                     func_Output output = param.fattr_output;
-                                    Object bp = Activator.CreateInstance(bpType, new Object[] { param.attr_settings(), param.attr_password(), output, param.attr_engine(), eng  });
+                                    comp_BehaviorParams bp = new comp_BehaviorParams(param.attr_settings(), param.attr_password(), output, param.attr_engine(), eng);
                                     foreach (Type type in assembly.ExportedTypes)
                                     {
                                         if (type.IsClass)
@@ -1218,7 +1224,14 @@ namespace Aha.API
                                                 ProcessDef.imod_ProcessDef proc = Activator.CreateInstance(type) as ProcessDef.imod_ProcessDef;
                                                 if (proc != null)
                                                 {
-                                                    engType.InvokeMember("StartExternal", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod, null, eng, new Object[] { bp });
+                                                    engType.InvokeMember
+                                                        (
+                                                            "StartExternal", 
+                                                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod, 
+                                                            null, 
+                                                            eng,
+                                                            new Object[] { proc.fattr_Behavior(bp) }
+                                                        );
                                                     return;
                                                 }
                                             }
@@ -1250,25 +1263,25 @@ namespace Aha.API
 //the Title: [character] "component's title"  
 //the Behavior: { [ settings: Settings password: [character] output: { Output -> @Jobs!Job } engine: @Jobs!Engine ] -> @Jobs!Behavior } "component's behavior"
         {
-            public partial struct opaque_Settings { }
+            public class base_Settings { }
 
-            public partial struct opaque_Output { }
+            public class base_Output { }
 
-            public partial struct opaque_Event { }
+            public class base_Event { }
 
             public interface icomp_BehaviorParams
             {
-                opaque_Settings attr_settings();
+                base_Settings attr_settings();
                 IahaArray<char> attr_password();
-                Jobs.opaque_Job<opaque_Event> fattr_output(opaque_Output text);
-                Jobs.icomp_Engine<opaque_Event> attr_engine();
+                Jobs.opaque_Job<base_Event> fattr_output(base_Output text);
+                Jobs.icomp_Engine<base_Event> attr_engine();
             }
 
             public interface imod_ProcessDef
             {
                 IahaArray<char> attr_Title();
                 IahaArray<char> attr_Signature();
-                Jobs.iobj_Behavior<opaque_Event> fattr_Behavior(icomp_BehaviorParams param_param);
+                Jobs.iobj_Behavior<base_Event> fattr_Behavior(icomp_BehaviorParams param_param);
             }
         }
 
