@@ -5,14 +5,14 @@ namespace Aha.Core
 {
     public interface IahaObject<State>
     {
-        State state();
+        bool state(out State result);
         IahaObject<State> copy();
     }
 
     public interface IahaSequence<Item> : IahaObject<Item>
     {
-        void action_skip();
-        Item first(Predicate<Item> that, Int64 max);
+        bool action_skip();
+        bool first(Predicate<Item> that, long max, out Item result);
     }
 
     public class Failure : System.Exception
@@ -21,55 +21,106 @@ namespace Aha.Core
         public static readonly Failure One = new Failure();
     }
 
-    public delegate Item Fold<Item>(Item first, Item second);
+    public delegate bool Fold<Item>(Item first, Item second, out Item result);
 
     public delegate bool Order<Item>(Item first, Item second);
 
     public interface IahaArray<Item>
     {
-        Int64 size();
-        Item at(Int64 index);
+        long size();
+        bool at(long index, out Item result);
         bool forEach(Predicate<Item> that);
         bool forSome(Predicate<Item> that);
-        Item such(Predicate<Item> that);
-        Int64 count(Predicate<Item> that);
-        Item[] select(Predicate<Item> that);
-        IahaSequence<Item> enumerate(Predicate<Item> that);
-        Item foldl(Fold<Item> rule);
-        Item foldr(Fold<Item> rule);
-        IahaSequence<Item> sort(Order<Item> that);
+        bool such(Predicate<Item> that, out Item result);
+        bool count(Predicate<Item> that, out long result);
+        bool select(Predicate<Item> that, out Item[] result);
+        bool enumerate(Predicate<Item> that, out IahaSequence<Item> result);
+        bool foldl(Fold<Item> rule, out Item result);
+        bool foldr(Fold<Item> rule, out Item result);
+        bool sort(Order<Item> that, out IahaSequence<Item> result);
         Item[] get();
     }
 
     public struct AhaSeq<Item> : IahaSequence<Item>
     {
-        public delegate Item Rule(Item prev);
+        public delegate bool Rule(Item prev, out Item result);
 
         public Item curr;
         public Rule rule;
-        public Item state() { return curr; }
+        public bool state(out Item result) { result = curr; return true; }
         public IahaObject<Item> copy() { AhaSeq<Item> clone = new AhaSeq<Item> { curr = curr, rule = rule }; return clone; }
-        public void action_skip() { curr = rule(curr); }
-        public Item first(Predicate<Item> that, Int64 max) { Int64 j = 0; Item item = curr; while (j < max) { if (that(item)) return item; item = rule(item); j++; } throw Failure.One; }
+        public bool action_skip() { return rule(curr, out curr); }
+        public bool first(Predicate<Item> that, long max, out Item result) 
+        { 
+            long j = 0; 
+            Item item = curr; 
+            while (j < max) 
+            { 
+                if (that(item)) { result = item; return true; }
+                if (!rule(item, out item)) break; 
+                j++; 
+            } 
+            result = default(Item); 
+            return false; 
+        }
     }
 
     public struct AhaObjSeq<Item> : IahaSequence<Item>
     {
         public IahaSequence<Item> obj;
-        public Item state() { return obj.state(); }
+        public bool state(out Item result) { return obj.state(out result); }
         public IahaObject<Item> copy() { AhaObjSeq<Item> clone = new AhaObjSeq<Item> { obj = obj }; return clone; }
-        public void action_skip() { obj.action_skip(); }
-        public Item first(Predicate<Item> that, Int64 max) { IahaSequence<Item> clone = (IahaSequence<Item>)obj.copy(); Int64 j = 0; Item item = clone.state(); while (j < max) { if (that(item)) return item; clone.action_skip(); item = clone.state(); j++; } throw Failure.One; }
+        public bool action_skip() { return obj.action_skip(); }
+        public bool first(Predicate<Item> that, long max, out Item result) 
+        { 
+            IahaSequence<Item> clone = (IahaSequence<Item>)obj.copy(); 
+            long j = 0; 
+            Item item; 
+            if (clone.state(out item)) 
+                while (j < max) 
+                { 
+                    if (that(item)) { result = item; return true; }
+                    if (!(clone.action_skip() && clone.state(out item))) break;
+                    j++; 
+                } 
+            result = default(Item); 
+            return false; 
+        }
     }
 
     public struct AhaArraySeq<Item> : IahaSequence<Item>
     {
         public Item[] items;
         public int index;
-        public Item state() { return items[index]; }
+        public bool state(out Item result) 
+        { 
+            if (index < items.Length) 
+            { 
+                result = items[index]; 
+                return true; 
+            } 
+            result = default(Item); 
+            return false; 
+        }
         public IahaObject<Item> copy() { return new AhaArraySeq<Item> { items = items, index = index }; }
-        public void action_skip() { if (index < items.Length) index++; else throw Failure.One; }
-        public Item first(Predicate<Item> that, Int64 max) { int j = 0; while (j < items.Length && j < max) { if (that(items[j])) return items[j]; j++; } throw Failure.One; }
+        public bool action_skip() 
+        {
+            if (index < items.Length) 
+            { index++; return true; }
+            else 
+            { return false; } 
+        }
+        public bool first(Predicate<Item> that, long max, out Item result) 
+        { 
+            int j = 0; 
+            while (j < items.Length && j < max) 
+            {
+                if (that(items[j])) { result = items[j]; return true; }
+                j++; 
+            }
+            result = default(Item); 
+            return false; 
+        }
     }
 
     public struct AhaFilteredArraySeq<Item> : IahaSequence<Item>
@@ -77,37 +128,98 @@ namespace Aha.Core
         private Item[] items;
         private int index;
         private Predicate<Item> p;
-        public Item state() { return items[index]; }
+        public bool state(out Item result) { result = items[index]; return true; }
         public IahaObject<Item> copy() { return new AhaFilteredArraySeq<Item> { items = items, index = index, p = p }; }
-        public void action_skip() { if (index < items.Length) index++; else throw Failure.One; while (index < items.Length && !p(items[index])) index++; if (index == items.Length) throw Failure.One; }
-        public Item first(Predicate<Item> that, Int64 max) { int j = 0; while (j < items.Length && j < max) { if (p(items[j]) && that(items[j])) return items[j]; j++; } throw Failure.One; }
-        public AhaFilteredArraySeq(Item[] it, int idx, Predicate<Item> pred) { items = it; index = idx; p = pred; while (index < items.Length && !p(items[index])) index++; if (index == items.Length) throw Failure.One; }
+        public bool action_skip() 
+        { 
+            if (index < items.Length) 
+                index++; 
+            else 
+                return false; 
+            while (index < items.Length && !p(items[index])) 
+                index++; 
+            return index < items.Length; 
+        }
+        public bool first(Predicate<Item> that, long max, out Item result) 
+        { 
+            int j = 0; 
+            while (j < items.Length && j < max) 
+            {
+                if (p(items[j]) && that(items[j])) { result = items[j]; return true; }
+                j++; 
+            }
+            result = default(Item);
+            return false; 
+        }
+        public AhaFilteredArraySeq(Item[] it, int idx, Predicate<Item> pred) 
+        { 
+            items = it; 
+            index = idx; 
+            p = pred; 
+            while (index < items.Length && !p(items[index])) 
+                index++; 
+            if (index == items.Length) 
+                throw Failure.One; 
+        }
     }
 
-    public struct AhaFilteredSegmentSeq : IahaSequence<Int64>
+    public struct AhaFilteredSegmentSeq : IahaSequence<long>
     {
-        private Int64 lo;
-        private Int64 hi;
-        private Int64 index;
-        private Predicate<Int64> p;
-        public Int64 state() { return lo + index; }
-        public IahaObject<Int64> copy() { return new AhaFilteredSegmentSeq(lo, hi, index, p); }
-        public void action_skip() { if (lo + index < hi) index++; else throw Failure.One; while (lo + index < hi && !p(lo + index)) index++; if (lo + index == hi) throw Failure.One; }
-        public Int64 first(Predicate<Int64> that, Int64 max) { Int64 j = 0; while (j + lo < hi && j < max) { if (p(lo + j) && that(lo + j)) return lo + j; j++; } throw Failure.One; }
-        public AhaFilteredSegmentSeq(Int64 l, Int64 h, Int64 i, Predicate<Int64> pred) { lo = l; hi = h; index = i; p = pred; while (lo + index < hi && !p(lo + index)) index++; if (lo + index == hi) throw Failure.One; }
+        private long lo;
+        private long hi;
+        private long index;
+        private Predicate<long> p;
+        public bool state(out long result) { result = lo + index; return true; }
+        public IahaObject<long> copy() { return new AhaFilteredSegmentSeq(lo, hi, index, p); }
+        public bool action_skip() 
+        { 
+            if (lo + index < hi) 
+                index++; 
+            else 
+                return false; 
+            while (lo + index < hi && !p(lo + index)) 
+                index++;
+            return lo + index < hi;
+        }
+        public bool first(Predicate<long> that, long max, out long result) 
+        { 
+            long j = 0; 
+            while (j + lo < hi && j < max) 
+            {
+                if (p(lo + j) && that(lo + j))
+                {
+                    result = lo + j;
+                    return true;
+                }
+                j++; 
+            }
+            result = 0;
+            return false; 
+        }
+        public AhaFilteredSegmentSeq(long l, long h, long i, Predicate<long> pred) 
+        { 
+            lo = l; 
+            hi = h; 
+            index = i; 
+            p = pred; 
+            while (lo + index < hi && !p(lo + index)) 
+                index++; 
+            if (lo + index == hi) 
+                throw Failure.One; 
+        }
     }
 
     public struct AhaEmptySeq<Item> : IahaSequence<Item>
     {
-        public Item state() { throw Failure.One; }
+        public bool state(out Item result) { result = default(Item); return false; }
         public IahaObject<Item> copy() { return new AhaEmptySeq<Item>(); }
-        public void action_skip() { throw Failure.One; }
-        public Item first(Predicate<Item> that, Int64 max) { throw Failure.One; }
+        public bool action_skip() { return false; }
+        public bool first(Predicate<Item> that, long max, out Item result) { result = default(Item); return false; }
     }
 
     public struct AhaArray<Item> : IahaArray<Item>
     {
-        public delegate Item Rule(Int64 index);
+        public delegate bool Rule(long index, out Item result);
 
         private Item[] items;
         public AhaArray(Item[] list) { items = list; }
@@ -119,45 +231,169 @@ namespace Aha.Core
             int k = 0;
             for (int i = 0; i < join.Length; i++) { Array.Copy(join[i], 0, items, k, join[i].Length); k += join[i].Length; }
         }
-        public AhaArray(IahaSequence<Item> seq, Int64 max)
+        public AhaArray(IahaSequence<Item> seq, long max)
         {
+            Item item;
             items = new Item[max];
             IahaSequence<Item> s = (IahaSequence<Item>)seq.copy();
             for (int i = 0; i < max; i++)
             {
-                items[i] = s.state();
-                try { s.action_skip(); }
-                catch (System.Exception) { Array.Resize<Item>(ref items, i + 1); break; }
+                if (s.state(out item))
+                {
+                    items[i] = item;
+                    if (!s.action_skip())
+                    {
+                        Array.Resize<Item>(ref items, i + 1);
+                        break;
+                    }
+                }
+                else
+                {
+                    Array.Resize<Item>(ref items, i);
+                    break;
+                }
             }
         }
-        public AhaArray(Rule rule, Int64 max) { items = new Item[max]; for (Int64 i = 0; i < max; i++) items[i] = rule(i); }
-        public Int64 size() { return items.LongLength; }
-        public Item at(Int64 index) { return items[index]; }
-        public IahaSequence<Item> sort(Order<Item> that)
+        public AhaArray(Rule rule, long max) 
+        { 
+            items = new Item[max]; 
+            for (long i = 0; i < max; i++)  
+                if (!rule(i, out items[i])) 
+                    throw Failure.One; 
+        }
+        public long size() { return items.LongLength; }
+        public bool at(long index, out Item result) 
+        { 
+            if (index >= 0 && index < items.Length) 
+            { 
+                result = items[index]; 
+                return true; 
+            } 
+            else 
+            { 
+                result = default(Item); 
+                return false; 
+            } 
+        }
+        public bool sort(Order<Item> that, out IahaSequence<Item> result)
         {
-            Item[] clone = (Item[])items.Clone();
-            Comparison<Item> comp = delegate(Item x, Item y) { if (that(x, y)) { if (that(y, x)) return 0; else return -1; } else { if (that(y, x)) return 0; else return 1; } };
-            Array.Sort<Item>(clone, comp);
-            return new AhaArraySeq<Item> { items = clone, index = 0 };
+            try
+            {
+                Item[] clone = (Item[])items.Clone();
+                Comparison<Item> comp = 
+                    delegate(Item x, Item y) 
+                    { 
+                        if (that(x, y)) 
+                        { 
+                            if (that(y, x)) 
+                                return 0; 
+                            else 
+                                return -1; 
+                        } 
+                        else 
+                            return 1; 
+                    };
+                Array.Sort<Item>(clone, comp);
+                result = new AhaArraySeq<Item> { items = clone, index = 0 };
+                return true;
+            }
+            catch(System.Exception)
+            { 
+                result = default(IahaSequence<Item>);
+                return false;
+            }
         }
         public bool forEach(Predicate<Item> that) { return Array.TrueForAll(items, that); }
         public bool forSome(Predicate<Item> that) { return Array.Exists(items, that); }
-        public Item such(Predicate<Item> that)
-        { int index = Array.FindIndex<Item>(items, that); if (index >= 0) return items[index]; else throw Failure.One; }
-        public Int64 count(Predicate<Item> that)
-        { int j = 0; for (int i = 0; i < items.Length; i++) { if (that(items[i])) j++; } return j; }
-        public Item[] select(Predicate<Item> that)
-        { Item[] sel = Array.FindAll<Item>(items, that); return sel; }
-        public IahaSequence<Item> enumerate(Predicate<Item> that)
-        { try { return new AhaFilteredArraySeq<Item>(items, 0, that); } catch (System.Exception) { return new AhaEmptySeq<Item>(); } }
-        public Item foldl(Fold<Item> rule) { if (items.Length == 0) throw Failure.One; Item result = items[0]; for (int i = 1; i < items.Length; i++) result = rule(result, items[i]); return result; }
-        public Item foldr(Fold<Item> rule) { if (items.Length == 0) throw Failure.One; Item result = items[items.Length - 1]; for (int i = items.Length - 2; i >= 0; i--) result = rule(items[i], result); return result; }
+        public bool such(Predicate<Item> that, out Item result)
+        { 
+            int index = Array.FindIndex<Item>(items, that);
+            if (index >= 0)
+            {
+                result = items[index];
+                return true;
+            }
+            else
+            {
+                result = default(Item);
+                return false;
+            }
+        }
+        public bool count(Predicate<Item> that, out long result)
+        { 
+            int j = 0; 
+            for (int i = 0; i < items.Length; i++) 
+            { 
+                if (that(items[i])) 
+                    j++; 
+            } 
+            result = j;
+            return true;
+        }
+        public bool select(Predicate<Item> that, out Item[] result)
+        {
+            try
+            {
+                result = Array.FindAll<Item>(items, that);
+                return true;
+            }
+            catch (System.Exception)
+            {
+                result = default(Item[]);
+                return false;
+            }
+        }
+        public bool enumerate(Predicate<Item> that, out IahaSequence<Item> result)
+        { 
+            try 
+            { 
+                result = new AhaFilteredArraySeq<Item>(items, 0, that);
+                return true;
+            } 
+            catch (System.Exception) 
+            {
+                result = default(IahaSequence<Item>);
+                return false;
+            } 
+        }
+        public bool foldl(Fold<Item> rule, out Item result) 
+        {
+            if (items.Length == 0)
+            {
+                result = default(Item);
+                return false;
+            }
+            result = items[0]; 
+            for (int i = 1; i < items.Length; i++) 
+                if (!rule(result, items[i], out result))
+                {
+                    result = default(Item);
+                    return false;
+                }
+            return true; 
+        }
+        public bool foldr(Fold<Item> rule, out Item result) 
+        {
+            if (items.Length == 0)
+            {
+                result = default(Item);
+                return false;
+            }
+            result = items[items.Length - 1]; 
+            for (int i = items.Length - 2; i >= 0; i--) 
+                if (!rule(items[i], result, out result))
+                {
+                    result = default(Item);
+                    return false;
+                }
+            return true; 
+        }
         public Item[] get() { return items; }
     }
 
     public struct AhaString : IahaArray<char>
     {
-        public delegate char Rule(Int64 index);
+        public delegate char Rule(long index);
 
         private string items;
         public AhaString(char[] list) { items = new string(list); }
@@ -171,69 +407,229 @@ namespace Aha.Core
             for (int i = 0; i < join.Length; i++) { Array.Copy(join[i], 0, buf, j, join[i].Length); j += join[i].Length; }
             items = new string(buf);
         }
-        public AhaString(IahaSequence<char> seq, Int64 max)
+        public AhaString(IahaSequence<char> seq, long max)
         {
             char[]temp = new char[max];
             IahaSequence<char> s = (IahaSequence<char>)seq.copy();
             for (int i = 0; i < max; i++)
             {
-                temp[i] = s.state();
-                try { s.action_skip(); }
-                catch (System.Exception) { Array.Resize<char>(ref temp, i + 1); break; }
+                if (s.state(out temp[i]))
+                {
+                    if (!s.action_skip())
+                    {
+                        Array.Resize<char>(ref temp, i + 1);
+                        break;
+                    }
+                }
+                else
+                {
+                    Array.Resize<char>(ref temp, i);
+                    break;
+                }
             }
             items = new string(temp);
         }
-        public AhaString(Rule rule, Int64 max) { char[] temp = new char[max]; for (Int64 i = 0; i < max; i++) temp[i] = rule(i); items = new string(temp); }
-        public Int64 size() { return items.Length; }
-        public char at(Int64 index) { return items[(int)index]; }
-        public IahaSequence<char> sort(Order<char> that)
+        public AhaString(Rule rule, long max) 
+        { 
+            char[] temp = new char[max]; 
+            for (long i = 0; i < max; i++) 
+                temp[i] = rule(i); 
+            items = new string(temp); 
+        }
+        public long size() { return items.Length; }
+        public bool at(long index, out char result) 
+        { 
+            if (index >= 0 && index < items.Length) 
+            { 
+                result = items[(int)index]; 
+                return true; 
+            } 
+            else 
+            { 
+                result = default(char); 
+                return false; 
+            } 
+        }
+        public bool sort(Order<char> that, out IahaSequence<char> result)
         {
-            char[] clone = items.ToCharArray();
-            Comparison<char> comp = delegate(char x, char y) { if (that(x, y)) { if (that(y, x)) return 0; else return -1; } else { if (that(y, x)) return 0; else return 1; } };
-            Array.Sort<char>(clone, comp);
-            return new AhaArraySeq<char> { items = clone, index = 0 };
+            try
+            {
+                char[] clone = items.ToCharArray();
+                Comparison<char> comp = delegate(char x, char y) { if (that(x, y)) { if (that(y, x)) return 0; else return -1; } else return 1; };
+                Array.Sort<char>(clone, comp);
+                result = new AhaArraySeq<char> { items = clone, index = 0 };
+                return true;
+            }
+            catch(System.Exception)
+            {
+                result = default(IahaSequence<char>);
+                return false;
+            }
         }
         public bool forEach(Predicate<char> that) { return Array.TrueForAll(items.ToCharArray(), that); }
         public bool forSome(Predicate<char> that) { return Array.Exists(items.ToCharArray(), that); }
-        public char such(Predicate<char> that)
-        { int index = Array.FindIndex<char>(items.ToCharArray(), that); if (index >= 0) return items[index]; else throw Failure.One; }
-        public Int64 count(Predicate<char> that)
-        { int j = 0; for (int i = 0; i < items.Length; i++) { if (that(items[i])) j++; } return j; }
-        public char[] select(Predicate<char> that)
-        { char[] sel = Array.FindAll<char>(items.ToCharArray(), that); return sel; }
-        public IahaSequence<char> enumerate(Predicate<char> that)
-        { try { return new AhaFilteredArraySeq<char>(items.ToCharArray(), 0, that); } catch (System.Exception) { return new AhaEmptySeq<char>(); } }
-        public char foldl(Fold<char> rule) { if (items.Length == 0) throw Failure.One; char result = items[0]; for (int i = 1; i < items.Length; i++) result = rule(result, items[i]); return result; }
-        public char foldr(Fold<char> rule) { if (items.Length == 0) throw Failure.One; char result = items[items.Length - 1]; for (int i = items.Length - 2; i >= 0; i--) result = rule(items[i], result); return result; }
+        public bool such(Predicate<char> that, out char result)
+        { 
+            int index = Array.FindIndex<char>(items.ToCharArray(), that);
+            if (index >= 0)
+            {
+                result = items[index];
+                return true;
+            }
+            result = default(char);
+            return false;
+        }
+        public bool count(Predicate<char> that, out long result)
+        { 
+            int j = 0; 
+            for (int i = 0; i < items.Length; i++) 
+            { 
+                if (that(items[i])) 
+                    j++; 
+            } 
+            result = j;
+            return true;
+        }
+        public bool select(Predicate<char> that, out char[] result)
+        { 
+            char[] sel = Array.FindAll<char>(items.ToCharArray(), that); 
+            result = sel;
+            return true;
+        }
+        public bool enumerate(Predicate<char> that, out IahaSequence<char> result)
+        { 
+            try 
+            { 
+                result = new AhaFilteredArraySeq<char>(items.ToCharArray(), 0, that);
+                return true;
+            } 
+            catch (System.Exception) 
+            {
+                result = default(IahaSequence<char>);
+                return false;
+            } 
+        }
+        public bool foldl(Fold<char> rule, out char result) 
+        { 
+            if (items.Length == 0)
+            {
+                result = default(char);
+                return false;
+            }
+            result = items[0]; 
+            for (int i = 1; i < items.Length; i++) 
+                if (!rule(result, items[i], out result))
+                {
+                    result = default(char);
+                    return false;
+                }
+            return true; 
+        }
+        public bool foldr(Fold<char> rule, out char result)
+        { 
+            if (items.Length == 0)
+            {
+                result = default(char);
+                return false;
+            }
+            result = items[items.Length - 1]; 
+            for (int i = items.Length - 2; i >= 0; i--) 
+                if (!rule(items[i], result, out result))
+                {
+                    result = default(char);
+                    return false;
+                }
+            return true; 
+        }
         public char[] get() { return items.ToCharArray(); }
     }
 
-    public struct AhaSegment : IahaArray<Int64>
+    public struct AhaSegment : IahaArray<long>
     {
-        private Int64 lo;
-        private Int64 hi;
-        private Int64[] list() { Int64[] result = new Int64[hi - lo]; int j = 0; for (Int64 i = lo; i < hi; i++) { result[j] = i; j++; } return result; }
-        public AhaSegment(Int64 low, Int64 high) { if (low > high) throw Failure.One; lo = low; hi = high; }
-        public Int64 size() { return hi - lo; }      
-        public Int64 at(Int64 index) { return lo + index; }
-        public IahaSequence<Int64> sort(Order<Int64> that)
+        private long lo;
+        private long hi;
+        private long[] list() { long[] result = new long[hi - lo]; int j = 0; for (long i = lo; i < hi; i++) { result[j] = i; j++; } return result; }
+        public AhaSegment(long low, long high) { if (low > high) throw Failure.One; lo = low; hi = high; }
+        public long size() { return hi - lo; }
+        public bool at(long index, out long result) { result = lo + index; return index >= 0 && index < hi - lo; }
+        public bool sort(Order<long> that, out IahaSequence<long> result)
         {
-            Int64[] temp = list();
-            Comparison<Int64> comp = delegate(Int64 x, Int64 y) { if (that(x, y)) { if (that(y, x)) return 0; else return -1; } else { if (that(y, x)) return 0; else return 1; } };
-            Array.Sort<Int64>(temp, comp);
-            return new AhaArraySeq<Int64> { items = temp, index = 0 };
+            try
+            {
+                long[] temp = list();
+                Comparison<long> comp = delegate(long x, long y) { if (that(x, y)) { if (that(y, x)) return 0; else return -1; } else return 1; };
+                Array.Sort<long>(temp, comp);
+                result = new AhaArraySeq<long> { items = temp, index = 0 };
+                return true;
+            }
+            catch(System.Exception)
+            {
+                result = default(IahaSequence<long>);
+                return false;
+            }
         }
-        public bool forEach(Predicate<Int64> that) { for (Int64 i = lo; i < hi; i++) { if (!that(i)) return false; } return true; }
-        public bool forSome(Predicate<Int64> that) { for (Int64 i = lo; i < hi; i++) { if (that(i)) return true; } return false; }
-        public Int64 such(Predicate<Int64> that) { for (Int64 i = lo; i < hi; i++) { if (that(i)) return i; } throw Failure.One; }
-        public Int64 count(Predicate<Int64> that) { Int64 j = 0; for (Int64 i = lo; i < hi; i++) { if (that(i)) j++; } return j; }
-        public Int64[] select(Predicate<Int64> that)
-        { Int64[] sel = new Int64[hi - lo]; int j = 0; for (Int64 i = lo; i < hi; i++) { if (that(i)) { sel[j] = i; j++; } } Array.Resize<Int64>(ref sel, j); return sel; }
-        public IahaSequence<Int64> enumerate(Predicate<Int64> that)
-        { try { return new AhaFilteredSegmentSeq(lo, hi, 0, that); } catch(System.Exception) { return new AhaEmptySeq<Int64>(); } }
-        public Int64 foldl(Fold<Int64> rule) { if (lo == hi) throw Failure.One; Int64 result = lo; for (Int64 i = lo + 1; i < hi; i++) result = rule(result, i); return result; }
-        public Int64 foldr(Fold<Int64> rule) { if (lo == hi) throw Failure.One; Int64 result = hi - 1; for (Int64 i = hi - 2; i >= lo; i--) result = rule(i, result); return result; }
-        public Int64[] get() { return list(); }
+        public bool forEach(Predicate<long> that) { for (long i = lo; i < hi; i++) { if (!that(i)) return false; } return true; }
+        public bool forSome(Predicate<long> that) { for (long i = lo; i < hi; i++) { if (that(i)) return true; } return false; }
+        public bool such(Predicate<long> that, out long result) { for (long i = lo; i < hi; i++) { if (that(i)) return i; } throw Failure.One; }
+        public bool count(Predicate<long> that, out long result) { long j = 0; for (long i = lo; i < hi; i++) { if (that(i)) j++; } return j; }
+        public bool select(Predicate<long> that, out long[] result)
+        {
+            try
+            {
+                long[] sel = new long[hi - lo];
+                int j = 0;
+                for (long i = lo; i < hi; i++)
+                {
+                    if (that(i))
+                    {
+                        sel[j] = i;
+                        j++;
+                    }
+                }
+                Array.Resize<long>(ref sel, j);
+                result = sel;
+                return true;
+            }
+            catch(System.Exception)
+            {
+                result = default(long[]);
+                return false;
+            }
+        }
+        public bool enumerate(Predicate<long> that, out IahaSequence<long> result)
+        { 
+            try 
+            { 
+                result = new AhaFilteredSegmentSeq(lo, hi, 0, that);
+                return true;
+            } 
+            catch(System.Exception) 
+            {
+                result = default(IahaSequence<long>);
+                return false;
+            } 
+        }
+        public bool foldl(Fold<long> rule, out long result) 
+        {
+            result = lo;
+            if (lo == hi) 
+                return false; 
+            for (long i = lo + 1; i < hi; i++) 
+                 if (!rule(result, i, out result))
+                     return false;
+            return true; 
+        }
+        public bool foldr(Fold<long> rule, out long result)
+        {
+            result = hi - 1;
+            if (lo == hi)
+                return false;
+            for (long i = hi - 2; i >= lo; i--)
+                if (!rule(i, result, out result))
+                    return false;
+            return true;
+        }
+        public long[] get() { return list(); }
     }
 
     public class AhaModule

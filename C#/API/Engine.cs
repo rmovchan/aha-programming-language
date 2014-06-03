@@ -31,14 +31,15 @@ namespace Aha.Engine
         private Thread workthread;
         private AutoResetEvent recv = new AutoResetEvent(false);
         private Queue<tpar_Event> events = new Queue<tpar_Event>();
-        private Queue<string> trace = new Queue<string>();
+        private Queue<string> field_trace = new Queue<string>();
+        private void trace(string s) { field_trace.Enqueue(s); }
         private SortedList<DateTime, Aha.API.Jobs.opaque_Job<tpar_Event>> schedule = new SortedList<DateTime, Aha.API.Jobs.opaque_Job<tpar_Event>>();
         private System.Timers.Timer scheduler = new System.Timers.Timer();
         private void scheduler_Elapsed(object sender, System.Timers.ElapsedEventArgs e) 
         {
             Aha.API.Jobs.opaque_Job<tpar_Event> job = schedule.Values[0]; 
             schedule.RemoveAt(0);
-            trace.Enqueue("-->> " + job.title);
+            trace("-->> " + job.title);
             job.execute(); 
             if (schedule.Count > 0) scheduleNext(); 
         }
@@ -57,18 +58,14 @@ namespace Aha.Engine
         {
             foreach (Aha.API.Jobs.opaque_Job<tpar_Event> job in field_behavior.state().get()) 
             { 
-                trace.Enqueue("JOB " + job.title);
+                trace("JOB " + job.title);
                 try
                 {
                     job.execute();
                 }
-                catch(System.Threading.ThreadAbortException)
-                {
-                    trace.Enqueue("ABORTED");
-                }
                 catch(System.Exception ex)
                 {
-                    trace.Enqueue("EXCEPTION " + ex.Message + " IN " + job.title);
+                    trace("EXCEPTION " + ex.Message + " IN " + job.title);
                 }
             }
         }
@@ -76,51 +73,51 @@ namespace Aha.Engine
         {
             try
             {
-                trace.Enqueue("<<START>>");
+                trace("<<START>>");
                 field_shutdown = false;
                 try
                 {
                     perform(); //perform initial jobs
+                    while (!field_shutdown) //main event loop
+                    {
+                        try
+                        {
+                            if (events.Count == 0)
+                            {
+                                trace("IDLE");
+                            }
+                            recv.WaitOne(); //wait events
+                            field_behavior.action_handle(events.Dequeue()); //handle event
+                            perform(); //perform new jobs
+                        }
+                        catch (System.Threading.ThreadAbortException)
+                        {
+                            trace("ABORTED");
+                        }
+                    }
                 }
                 catch (System.Threading.ThreadAbortException)
                 {
-                    trace.Enqueue("ABORTED");
-                }
-                while (!field_shutdown) //main event loop
-                {
-                    try
-                    {
-                        if (events.Count == 0)
-                        {
-                            trace.Enqueue("IDLE");
-                        }
-                        recv.WaitOne(); //wait events
-                        field_behavior.action_handle(events.Dequeue()); //handle event
-                        perform(); //perform new jobs
-                    }
-                    catch (System.Threading.ThreadAbortException)
-                    {
-                        trace.Enqueue("ABORTED");
-                    }
+                    trace("ABORTED");
                 }
             }
             catch (Failure) 
             {
-                trace.Enqueue("FAILED");
+                trace("FAILED");
             }
             catch (System.Exception ex) 
             {
-                trace.Enqueue("ERROR " + ex.Message);
+                trace("ERROR " + ex.Message);
             }
             finally
             { 
-                trace.Enqueue("<<FINISH>>");
+                trace("<<FINISH>>");
                 field_terminated = true;
             }
         }
-        public void HandleExternal(tpar_Event e) { trace.Enqueue("INPUT"); events.Enqueue(e); recv.Set(); } //handle external event (such as user input)
+        public void HandleExternal(tpar_Event e) { trace("INPUT"); events.Enqueue(e); recv.Set(); } //handle external event (such as user input)
         public bool Terminated() { return field_terminated; }
-        public Queue<string> Trace() { return trace; }
+        public Queue<string> Trace() { return field_trace; }
         public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_raise(tpar_Event e) 
         {
             return new API.Jobs.opaque_Job<tpar_Event> 

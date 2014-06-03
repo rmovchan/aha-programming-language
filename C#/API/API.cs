@@ -236,6 +236,7 @@ namespace Aha.API
         {
             icomp_Framework attr_Framework();
             icomp_Platform attr_Platform();
+            icomp_Locale attr_Locale();
             icomp_FileSystem attr_FileSystem();
         }
 
@@ -272,7 +273,7 @@ namespace Aha.API
 
             class comp_Locale : icomp_Locale
             {
-                private Aha.Base.Time.opaque_Interval field_GMToffset = new Aha.Base.Time.opaque_Interval { ticks = DateTime.Now.Ticks - DateTime.Now.ToUniversalTime().Ticks };
+                private Aha.Base.Time.opaque_Interval field_GMToffset;
                 public Aha.Base.Time.opaque_Interval attr_GMToffset() { return field_GMToffset; }
                 public IahaArray<char> attr_country() { return new AhaString(System.Globalization.CultureInfo.CurrentCulture.EnglishName); }
                 public IahaArray<char> attr_language() { return new AhaString(System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName); }
@@ -289,6 +290,11 @@ namespace Aha.API
                         new string(param_first.get()),
                         new string(param_second.get()),
                         StringComparison.CurrentCultureIgnoreCase) == 0;
+                }
+                public comp_Locale() 
+                { 
+                    DateTime now = DateTime.Now; 
+                    field_GMToffset = new Aha.Base.Time.opaque_Interval { ticks = now.Ticks - now.ToUniversalTime().Ticks }; 
                 }
             }
 
@@ -1147,12 +1153,18 @@ namespace Aha.API
             tpar_Event fattr_output(tpar_Output output);
         }
 
-        public interface imod_Process<tpar_Settings, tpar_Output, tpar_Event>
+        public interface imod_Process<tpar_Settings, tpar_Output, tpar_Event> 
+            where tpar_Event : ProcessDef.base_Event
+            where tpar_Output : ProcessDef.base_Output
+            where tpar_Settings : ProcessDef.base_Settings
         {
             Aha.API.Jobs.opaque_Job<tpar_Event> fattr_Create(icomp_ProcessParam<tpar_Settings, tpar_Output, tpar_Event> param);
         }
 
         public class module_Process<tpar_Settings, tpar_Output, tpar_Event> : AhaModule, imod_Process<tpar_Settings, tpar_Output, tpar_Event>
+            where tpar_Event : ProcessDef.base_Event
+            where tpar_Output : ProcessDef.base_Output
+            where tpar_Settings : ProcessDef.base_Settings
         {
             delegate tpar_Event func_Output(tpar_Output output);
 
@@ -1165,7 +1177,7 @@ namespace Aha.API
                 private Aha.Engine.comp_Engine<ProcessDef.base_Event> field_engine2;
                 public ProcessDef.base_Settings attr_settings() { return field_settings; }
                 public IahaArray<char> attr_password() { return field_password; }
-                public Jobs.opaque_Job<ProcessDef.base_Event> fattr_output(tpar_Output output) 
+                public Jobs.opaque_Job<ProcessDef.base_Event> fattr_output(ProcessDef.base_Output output) 
                 {
                     return new Jobs.opaque_Job<ProcessDef.base_Event>
                     {
@@ -1173,7 +1185,7 @@ namespace Aha.API
                         execute =
                             delegate()
                             {
-                                field_engine2.HandleExternal (field_output(output)).execute();
+                                field_engine.fattr_raise(field_output((tpar_Output)output)).execute();
                             }
                     };
                 }
@@ -1210,35 +1222,48 @@ namespace Aha.API
                                 try
                                 {
                                     System.Reflection.Assembly assembly = System.Reflection.Assembly.LoadFrom(path);
-                                    Type eventType = assembly.GetType("opaque_Event", true, false);
-                                    Type engType = typeof(Aha.Engine.comp_Engine<>).MakeGenericType(new Type[] { eventType });
-                                    Object eng = Activator.CreateInstance(engType);
-                                    func_Output output = param.fattr_output;
-                                    comp_BehaviorParams bp = new comp_BehaviorParams(param.attr_settings(), param.attr_password(), output, param.attr_engine(), eng);
-                                    foreach (Type type in assembly.ExportedTypes)
+                                    Type settingsType = assembly.GetType("opaque_Settings", true, false);
+                                    Type outputType = assembly.GetType("opaque_Output", true, false);
+                                    if (settingsType.IsAssignableFrom(typeof(tpar_Settings)) && typeof(tpar_Output).IsAssignableFrom(outputType))
                                     {
-                                        if (type.IsClass)
+                                        Type eventType = assembly.GetType("opaque_Event", true, false);
+                                        Type engType = typeof(Aha.Engine.comp_Engine<>).MakeGenericType(new Type[] { eventType });
+                                        Object eng = Activator.CreateInstance(engType);
+                                        func_Output output = param.fattr_output;
+                                        comp_BehaviorParams bp = new comp_BehaviorParams
+                                            (
+                                                param.attr_settings(),
+                                                param.attr_password(),
+                                                output, 
+                                                param.attr_engine(),
+                                                (Aha.Engine.comp_Engine<ProcessDef.base_Event>)eng
+                                            );
+                                        foreach (Type type in assembly.ExportedTypes)
                                         {
-                                            try
+                                            if (type.IsClass)
                                             {
-                                                ProcessDef.imod_ProcessDef proc = Activator.CreateInstance(type) as ProcessDef.imod_ProcessDef;
-                                                if (proc != null)
+                                                try
                                                 {
-                                                    engType.InvokeMember
-                                                        (
-                                                            "StartExternal", 
-                                                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod, 
-                                                            null, 
-                                                            eng,
-                                                            new Object[] { proc.fattr_Behavior(bp) }
-                                                        );
-                                                    return;
+                                                    ProcessDef.imod_ProcessDef proc = Activator.CreateInstance(type) as ProcessDef.imod_ProcessDef;
+                                                    if (proc != null)
+                                                    {
+                                                        engType.InvokeMember
+                                                            (
+                                                                "StartExternal",
+                                                                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                                                                null,
+                                                                eng,
+                                                                new Object[] { proc.fattr_Behavior(bp) }
+                                                            );
+                                                        return;
+                                                    }
                                                 }
+                                                catch (System.Exception) { }
                                             }
-                                            catch (System.Exception) { }
                                         }
+                                        // "Error: assembly doesn't contain an Aha! component";
                                     }
-                                    // "Error: assembly doesn't contain an Aha! component";
+                                    //Error: type parameters mismatch
                                 }
                                 catch (System.Exception) { } //Error: type parameters don't match
                             }
