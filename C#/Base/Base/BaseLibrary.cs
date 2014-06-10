@@ -46,35 +46,35 @@ namespace Aha.Base
     {
         public interface icomp_ReplaceParam<Item>
         {
-            Int64 attr_index();
-            Item attr_item();
+            bool attr_index(out long result);
+            bool attr_item(out Item result);
         }
 
         public interface icomp_InsertParam<Item>
         {
-            Int64 attr_index();
-            Item attr_item();
+            bool attr_index(out long result);
+            bool attr_item(out Item result);
         }
 
         public interface iobj_DynamicArray<Item> : IahaObject<IahaArray<Item>>
         {
-            void action_add(Item item);
-            void action_replace(icomp_ReplaceParam<Item> param);
-            void action_insert(icomp_InsertParam<Item> param);
-            void action_delete(Int64 index);
+            bool action_add(Item item);
+            bool action_replace(icomp_ReplaceParam<Item> param);
+            bool action_insert(icomp_InsertParam<Item> param);
+            bool action_delete(long index);
         }
 
         public interface iobj_DynamicSequence<Item> : IahaObject<Item>
         {
-            void action_push(Item item);
-            void action_pop();
+            bool action_push(Item item);
+            bool action_pop();
         }
 
         public interface imod_Collections<Item>
         {
-            iobj_DynamicArray<Item> attr_DynamicArray();
-            iobj_DynamicSequence<Item> attr_Stack();
-            iobj_DynamicSequence<Item> attr_Queue();
+            bool attr_DynamicArray(out iobj_DynamicArray<Item> result);
+            bool attr_Stack(out iobj_DynamicSequence<Item> result);
+            bool attr_Queue(out iobj_DynamicSequence<Item> result);
         }
     }
 
@@ -113,21 +113,21 @@ namespace Aha.Base
     {
         public struct opaque_Rational
         {
-            public Int64 num;
-            public Int64 den;
+            public long num;
+            public long den;
         }
 
         public interface icomp_RatioStruc
         {
-            Int64 attr_num();
-            Int64 attr_den();
+            bool attr_num(out long result);
+            bool attr_den(out long result);
         }
 
         public interface imod_Rational<opaque_Rational>
         {
-            opaque_Rational op_integer_Slash_integer(Int64 num, Int64 den);
-            icomp_RatioStruc op__struc(opaque_Rational x);
-            opaque_Rational op_Rational_Plus_Rational(opaque_Rational a, opaque_Rational b);
+            bool op_integer_Slash_integer(long num, long den, out opaque_Rational result);
+            bool op__struc(opaque_Rational x, out icomp_RatioStruc result);
+            bool op_Rational_Plus_Rational(opaque_Rational a, opaque_Rational b, out opaque_Rational result);
             bool op_Rational_Less_Rational(opaque_Rational a, opaque_Rational b);
         }
 
@@ -135,17 +135,39 @@ namespace Aha.Base
         {
             class comp_RatioStruc : icomp_RatioStruc
             {
-                private Int64 num;
-                private Int64 den;
-                public comp_RatioStruc(Int64 n, Int64 d) { num = n; den = d; }
-                public Int64 attr_num() { return num; }
-                public Int64 attr_den() { return den; }
+                private long num;
+                private long den;
+                public comp_RatioStruc(long n, long d) { num = n; den = d; }
+                public bool attr_num(out long result) { result = num; return true; }
+                public bool attr_den(out long result) { result = den; return true; }
             }
 
-            public opaque_Rational op_integer_Slash_integer(Int64 num, Int64 den) { return new opaque_Rational { num = num, den = den }; }
-            public icomp_RatioStruc op__struc(opaque_Rational x) { return new comp_RatioStruc(x.num, x.den); }
-            public opaque_Rational op_Rational_Plus_Rational(opaque_Rational a, opaque_Rational b) { return new opaque_Rational { num = a.num * b.den + a.den * b.num, den = a.den * b.den }; }
-            public bool op_Rational_Less_Rational(opaque_Rational a, opaque_Rational b) { return a.num * b.den < a.den * b.num; }
+            public bool op_integer_Slash_integer(long num, long den, out opaque_Rational result) { result = new opaque_Rational { num = num, den = den }; return true; }
+            public bool op__struc(opaque_Rational x, out icomp_RatioStruc result) { result = new comp_RatioStruc(x.num, x.den); return true; }
+            public bool op_Rational_Plus_Rational(opaque_Rational a, opaque_Rational b, out opaque_Rational result) 
+            {
+                try
+                {
+                    result = new opaque_Rational { num = checked(a.num * b.den + a.den * b.num), den = checked(a.den * b.den) };
+                    return true;
+                }
+                catch(System.Exception)
+                { 
+                    result = default(opaque_Rational);
+                    return false;
+                }
+            }
+            public bool op_Rational_Less_Rational(opaque_Rational a, opaque_Rational b) 
+            {
+                try
+                {
+                    return checked(a.num * b.den < a.den * b.num);
+                }
+                catch(System.Exception)
+                {
+                    return false;
+                }
+            }
         }
     }
 
@@ -244,75 +266,99 @@ namespace Aha.Base
 
         public interface icomp_GeneralFormatParams
         {
-            char attr_period();
+            bool attr_period(out char result);
         }
 
         public interface icomp_FixedFormatParams
         {
-            char attr_period();
-            Int64 attr_decimals();
+            bool attr_period(out char result);
+            bool attr_decimals(out long result);
         }
 
         public interface icomp_ExponentFormatParams
         {
-            char attr_period();
+            bool attr_period(out char result);
         }
 
         public interface icomp_FormatParams
         {
-            icomp_GeneralFormatParams attr_general();
-            icomp_FixedFormatParams attr_fixed();
-            icomp_ExponentFormatParams attr_exponent();
+            bool attr_general(out icomp_GeneralFormatParams result);
+            bool attr_fixed(out icomp_FixedFormatParams result);
+            bool attr_exponent(out icomp_ExponentFormatParams result);
         }
 
         public interface imod_Math
         {
-            opaque_Float op__float_integer(Int64 x);
-            opaque_Float op__float_Rational(Rational.opaque_Rational x);
-            opaque_Float op_Float_Plus_Float(opaque_Float a, opaque_Float b);
-            opaque_Float op_Float_Minus_Float(opaque_Float a, opaque_Float b);
-            opaque_Float op_Float_Times_Float(opaque_Float a, opaque_Float b);
-            opaque_Float op_Float_Div_Float(opaque_Float a, opaque_Float b);
-            opaque_Float op_Float_StarStar_integer(opaque_Float a, Int64 b);
-            opaque_Float op_Float_StarStar_Float(opaque_Float a, opaque_Float b);
+            bool op__float_integer(long x, out opaque_Float result);
+            bool op__float_Rational(Rational.opaque_Rational x, out opaque_Float result);
+            bool op_Float_Plus_Float(opaque_Float a, opaque_Float b, out opaque_Float result);
+            bool op_Float_Minus_Float(opaque_Float a, opaque_Float b, out opaque_Float result);
+            bool op_Float_Times_Float(opaque_Float a, opaque_Float b, out opaque_Float result);
+            bool op_Float_Div_Float(opaque_Float a, opaque_Float b, out opaque_Float result);
+            bool op_Float_StarStar_integer(opaque_Float a, long b, out opaque_Float result);
+            bool op_Float_StarStar_Float(opaque_Float a, opaque_Float b, out opaque_Float result);
             bool op_Float_Less_Float(opaque_Float a, opaque_Float b);
             bool op_Float_LessEqual_Float(opaque_Float a, opaque_Float b);
             bool op_Float_Equal_Float(opaque_Float a, opaque_Float b);
             bool op_Float_NotEqual_Float(opaque_Float a, opaque_Float b);
             bool op_Float_GreaterEqual_Float(opaque_Float a, opaque_Float b);
             bool op_Float_Greater_Float(opaque_Float a, opaque_Float b);
-            opaque_Float fattr_sin(opaque_Float a);
-            opaque_Float fattr_cos(opaque_Float a);
-            opaque_Float fattr_exp(opaque_Float a);
-            opaque_Float fattr_log(opaque_Float a);
-            opaque_Float fattr_tan(opaque_Float a);
-            opaque_Float fattr_sqrt(opaque_Float a);
-            opaque_Float attr_Pi();
+            bool fattr_sin(opaque_Float a, out opaque_Float result);
+            bool fattr_cos(opaque_Float a, out opaque_Float result);
+            bool fattr_exp(opaque_Float a, out opaque_Float result);
+            bool fattr_log(opaque_Float a, out opaque_Float result);
+            bool fattr_tan(opaque_Float a, out opaque_Float result);
+            bool fattr_sqrt(opaque_Float a, out opaque_Float result);
+            bool attr_Pi(out opaque_Float result);
         }
 
         public class module_Math : AhaModule, imod_Math
         {
-            public opaque_Float op__float_integer(Int64 x) { return new opaque_Float { value = (double)x }; }
-            public opaque_Float op__float_Rational(Rational.opaque_Rational x) { return new opaque_Float { value = (double)x.num / (double)x.den }; }
-            public opaque_Float op_Float_Plus_Float(opaque_Float a, opaque_Float b) { return new opaque_Float { value = a.value + b.value }; }
-            public opaque_Float op_Float_Minus_Float(opaque_Float a, opaque_Float b) { return new opaque_Float { value = a.value - b.value }; }
-            public opaque_Float op_Float_Times_Float(opaque_Float a, opaque_Float b) { return new opaque_Float { value = a.value * b.value }; }
-            public opaque_Float op_Float_Div_Float(opaque_Float a, opaque_Float b) { return new opaque_Float { value = a.value / b.value }; }
-            public opaque_Float op_Float_StarStar_integer(opaque_Float a, Int64 b) { return new opaque_Float { value = System.Math.Pow(a.value, (double)b) }; }
-            public opaque_Float op_Float_StarStar_Float(opaque_Float a, opaque_Float b) { return new opaque_Float { value = System.Math.Pow(a.value, b.value) }; }
+            public bool op__float_integer(long x, out opaque_Float result) { result = new opaque_Float { value = (double)x }; return true; }
+            public bool op__float_Rational(Rational.opaque_Rational x, out opaque_Float result) { result = new opaque_Float { value = (double)x.num / (double)x.den }; return true; }
+            public bool op_Float_Plus_Float(opaque_Float a, opaque_Float b, out opaque_Float result) { result = new opaque_Float { value = a.value + b.value }; return true; }
+            public bool op_Float_Minus_Float(opaque_Float a, opaque_Float b, out opaque_Float result) { result = new opaque_Float { value = a.value - b.value }; return true; }
+            public bool op_Float_Times_Float(opaque_Float a, opaque_Float b, out opaque_Float result) { result = new opaque_Float { value = a.value * b.value }; return true; }
+            public bool op_Float_Div_Float(opaque_Float a, opaque_Float b, out opaque_Float result) { result = new opaque_Float { value = a.value / b.value }; return true; }
+            public bool op_Float_StarStar_integer(opaque_Float a, long b, out opaque_Float result) 
+            { 
+                try 
+                { 
+                    result = new opaque_Float { value = System.Math.Pow(a.value, (double)b) }; 
+                    return true; 
+                } 
+                catch (System.Exception) 
+                {
+                    result = default(opaque_Float);
+                    return false;
+                } 
+            }
+            public bool op_Float_StarStar_Float(opaque_Float a, opaque_Float b, out opaque_Float result) 
+            { 
+                try 
+                { 
+                    result = new opaque_Float { value = System.Math.Pow(a.value, b.value) }; 
+                    return true; 
+                } 
+                catch (System.Exception) 
+                {
+                    result = default(opaque_Float);
+                    return false;
+                } 
+            }
             public bool op_Float_Less_Float(opaque_Float a, opaque_Float b) { return a.value < b.value; }
             public bool op_Float_LessEqual_Float(opaque_Float a, opaque_Float b) { return a.value <= b.value; }
             public bool op_Float_Equal_Float(opaque_Float a, opaque_Float b) { return a.value == b.value; }
             public bool op_Float_NotEqual_Float(opaque_Float a, opaque_Float b) { return a.value != b.value; }
             public bool op_Float_GreaterEqual_Float(opaque_Float a, opaque_Float b) { return a.value >= b.value; }
             public bool op_Float_Greater_Float(opaque_Float a, opaque_Float b) { return a.value > b.value; }
-            public opaque_Float fattr_sin(opaque_Float a) { return new opaque_Float { value = System.Math.Sin(a.value) }; }
-            public opaque_Float fattr_cos(opaque_Float a) { return new opaque_Float { value = System.Math.Cos(a.value) }; }
-            public opaque_Float fattr_exp(opaque_Float a) { return new opaque_Float { value = System.Math.Exp(a.value) }; }
-            public opaque_Float fattr_log(opaque_Float a) { return new opaque_Float { value = System.Math.Log(a.value) }; }
-            public opaque_Float fattr_tan(opaque_Float a) { return new opaque_Float { value = System.Math.Tan(a.value) }; }
-            public opaque_Float fattr_sqrt(opaque_Float a) { return new opaque_Float { value = System.Math.Sqrt(a.value) }; }
-            public opaque_Float attr_Pi() { return new opaque_Float { value = System.Math.PI }; }
+            public bool fattr_sin(opaque_Float a, out opaque_Float result) { result = new opaque_Float { value = System.Math.Sin(a.value) }; return true; }
+            public bool fattr_cos(opaque_Float a, out opaque_Float result) { result = new opaque_Float { value = System.Math.Cos(a.value) }; return true; }
+            public bool fattr_exp(opaque_Float a, out opaque_Float result) { result = new opaque_Float { value = System.Math.Exp(a.value) }; return true; }
+            public bool fattr_log(opaque_Float a, out opaque_Float result) { result = new opaque_Float { value = System.Math.Log(a.value) }; return true; }
+            public bool fattr_tan(opaque_Float a, out opaque_Float result) { result = new opaque_Float { value = System.Math.Tan(a.value) }; return true; }
+            public bool fattr_sqrt(opaque_Float a, out opaque_Float result) { result = new opaque_Float { value = System.Math.Sqrt(a.value) }; return true; }
+            public bool attr_Pi(out opaque_Float result) { result = new opaque_Float { value = System.Math.PI }; return true; }
         }
     }
 
@@ -386,33 +432,33 @@ namespace Aha.Base
     {
         public struct opaque_Timestamp
         {
-            public Int64 ticks;
+            public long ticks;
         }
 
         public struct opaque_Interval
         {
-            public Int64 ticks;
+            public long ticks;
         }
 
         public interface icomp_DateStruc
         {
-            Int64 attr_year();
-            Int64 attr_month();
-            Int64 attr_day();
+            bool attr_year(out long result);
+            bool attr_month(out long result);
+            bool attr_day(out long result);
         }
 
         public interface icomp_TimeStruc
         {
-            Int64 attr_hour();
-            Int64 attr_min();
-            Int64 attr_sec();
-            Int64 attr_msec();
+            bool attr_hour(out long result);
+            bool attr_min(out long result);
+            bool attr_sec(out long result);
+            bool attr_msec(out long result);
         }
 
         public interface icomp_TimestampStruc
         {
-            icomp_DateStruc attr_date();
-            icomp_TimeStruc attr_time();
+            bool attr_date(out icomp_DateStruc result);
+            bool attr_time(out icomp_TimeStruc result);
         }
 
         public interface icomp_DayOfWeek
@@ -428,23 +474,23 @@ namespace Aha.Base
 
         public interface imod_Time
         {
-            icomp_DayOfWeek fattr_DayOfWeek(opaque_Timestamp t);
-            opaque_Interval attr_Day();
-            opaque_Interval attr_Hour();
-            opaque_Interval attr_Minute();
-            opaque_Interval attr_Second();
-            opaque_Interval attr_Millisecond();
-            opaque_Interval attr_Tick();
-            opaque_Interval attr_Zero();
-            Int64 fattr_TimestampHashFunc(opaque_Timestamp t);
-            Int64 fattr_IntervalHashFunc(opaque_Interval i);
-            opaque_Interval op_Timestamp_Minus_Timestamp(opaque_Timestamp a, opaque_Timestamp b);
-            opaque_Timestamp op_Timestamp_Plus_Interval(opaque_Timestamp a, opaque_Interval b);
-            opaque_Timestamp op_Timestamp_Minus_Interval(opaque_Timestamp a, opaque_Interval b);
-            opaque_Interval op_Interval_Plus_Interval(opaque_Interval a, opaque_Interval b);
-            opaque_Interval op_Interval_Minus_Interval(opaque_Interval a, opaque_Interval b);
-            opaque_Interval op_integer_Times_Interval(Int64 a, opaque_Interval i);
-            opaque_Interval op_Interval_Div_integer(opaque_Interval i, Int64 a);
+            bool fattr_DayOfWeek(opaque_Timestamp t, out icomp_DayOfWeek result);
+            bool attr_Day(out opaque_Interval result);
+            bool attr_Hour(out opaque_Interval result);
+            bool attr_Minute(out opaque_Interval result);
+            bool attr_Second(out opaque_Interval result);
+            bool attr_Millisecond(out opaque_Interval result);
+            bool attr_Tick(out opaque_Interval result);
+            bool attr_Zero(out opaque_Interval result);
+            bool fattr_TimestampHashFunc(opaque_Timestamp t, out long result);
+            bool fattr_IntervalHashFunc(opaque_Interval i, out long result);
+            bool op_Timestamp_Minus_Timestamp(opaque_Timestamp a, opaque_Timestamp b, out opaque_Interval result);
+            bool op_Timestamp_Plus_Interval(opaque_Timestamp a, opaque_Interval b, out opaque_Timestamp result);
+            bool op_Timestamp_Minus_Interval(opaque_Timestamp a, opaque_Interval b, out opaque_Timestamp result);
+            bool op_Interval_Plus_Interval(opaque_Interval a, opaque_Interval b, out opaque_Interval result);
+            bool op_Interval_Minus_Interval(opaque_Interval a, opaque_Interval b, out opaque_Interval result);
+            bool op_integer_Times_Interval(long a, opaque_Interval i, out opaque_Interval result);
+            bool op_Interval_Div_integer(opaque_Interval i, long a, out opaque_Interval result);
             bool op_Timestamp_LessEqual_Timestamp(opaque_Timestamp a, opaque_Timestamp b);
             bool op_Timestamp_Less_Timestamp(opaque_Timestamp a, opaque_Timestamp b);
             bool op_Timestamp_Equal_Timestamp(opaque_Timestamp a, opaque_Timestamp b);
@@ -457,10 +503,10 @@ namespace Aha.Base
             bool op_Interval_NotEqual_Interval(opaque_Interval a, opaque_Interval b);
             bool op_Interval_Greater_Interval(opaque_Interval a, opaque_Interval b);
             bool op_Interval_GreaterEqual_Interval(opaque_Interval a, opaque_Interval b);
-            opaque_Timestamp op__date_DateStruc(icomp_DateStruc date);
-            opaque_Interval op__time_TimeStruc(icomp_TimeStruc time);
-            Int64 op__ticks_Interval(opaque_Interval i);
-            opaque_Interval op__interval_integer(Int64 param_ticks);
+            bool op__date_DateStruc(icomp_DateStruc date, out opaque_Timestamp result);
+            bool op__time_TimeStruc(icomp_TimeStruc time, out opaque_Interval result);
+            bool op__ticks_Interval(opaque_Interval i, out long result);
+            bool op__interval_integer(long param_ticks, out opaque_Interval result);
         }
 
         public class module_Time : AhaModule
@@ -468,9 +514,9 @@ namespace Aha.Base
             struct comp_DateStruc : icomp_DateStruc
             {
                 public DateTime dt;
-                public Int64 attr_year() { return dt.Year; }
-                public Int64 attr_month() { return dt.Month; }
-                public Int64 attr_day() { return dt.Day; }
+                public bool attr_year(out long result) { result = dt.Year; return true; }
+                public bool attr_month(out long result) { result = dt.Month; return true; }
+                public bool attr_day(out long result) { result = dt.Day; return true; }
             }
 
             struct comp_DayOfWeek : icomp_DayOfWeek
@@ -485,23 +531,23 @@ namespace Aha.Base
                 public bool attr_Sunday() { return value == System.DayOfWeek.Sunday; }
             }
 
-            public icomp_DayOfWeek fattr_DayOfWeek(opaque_Timestamp t) { return new comp_DayOfWeek { value = (new DateTime(t.ticks)).DayOfWeek }; }
-            public opaque_Interval attr_Day() { return new opaque_Interval { ticks = (new TimeSpan(1, 0, 0, 0)).Ticks }; }
-            public opaque_Interval attr_Hour() { return new opaque_Interval { ticks = 14400000000 }; }
-            public opaque_Interval attr_Minute() { return new opaque_Interval { ticks = 600000000 }; }
-            public opaque_Interval attr_Second() { return new opaque_Interval { ticks = 10000000 }; }
-            public opaque_Interval attr_Millisecond() { return new opaque_Interval { ticks = 10000 }; }
-            public opaque_Interval attr_Tick() { return new opaque_Interval { ticks = 1 }; }
-            public opaque_Interval attr_Zero() { return new opaque_Interval { ticks = 0 }; }
-            public Int64 fattr_TimestampHashFunc(opaque_Timestamp t) { return (new DateTime(t.ticks)).GetHashCode(); }
-            public Int64 fattr_IntervalHashFunc(opaque_Interval i) { return (new TimeSpan(i.ticks)).GetHashCode(); }
-            public opaque_Interval op_Timestamp_Minus_Timestamp(opaque_Timestamp a, opaque_Timestamp b) { return new opaque_Interval { ticks = a.ticks - b.ticks }; }
-            public opaque_Timestamp op_Timestamp_Plus_Interval(opaque_Timestamp a, opaque_Interval b) { return new opaque_Timestamp { ticks = a.ticks + b.ticks }; }
-            public opaque_Timestamp op_Timestamp_Minus_Interval(opaque_Timestamp a, opaque_Interval b) { return new opaque_Timestamp { ticks = a.ticks - b.ticks }; }
-            public opaque_Interval op_Interval_Plus_Interval(opaque_Interval a, opaque_Interval b) { return new opaque_Interval { ticks = a.ticks + b.ticks }; }
-            public opaque_Interval op_Interval_Minus_Interval(opaque_Interval a, opaque_Interval b) { return new opaque_Interval { ticks = a.ticks - b.ticks }; }
-            public opaque_Interval op_integer_Times_Interval(Int64 a, opaque_Interval i) { return new opaque_Interval { ticks = a * i.ticks }; }
-            public opaque_Interval op_Interval_Div_integer(opaque_Interval i, Int64 a) { return new opaque_Interval { ticks = i.ticks / a }; }
+            public bool fattr_DayOfWeek(opaque_Timestamp t, out icomp_DayOfWeek result) { result = new comp_DayOfWeek { value = (new DateTime(t.ticks)).DayOfWeek }; return true; }
+            public bool attr_Day(out opaque_Interval result) { result = new opaque_Interval { ticks = (new TimeSpan(1, 0, 0, 0)).Ticks }; return true; }
+            public bool attr_Hour(out opaque_Interval result) { result = new opaque_Interval { ticks = 14400000000 }; return true; }
+            public bool attr_Minute(out opaque_Interval result) { result = new opaque_Interval { ticks = 600000000 }; return true; }
+            public bool attr_Second(out opaque_Interval result) { result = new opaque_Interval { ticks = 10000000 }; return true; }
+            public bool attr_Millisecond(out opaque_Interval result) { result = new opaque_Interval { ticks = 10000 }; return true; }
+            public bool attr_Tick(out opaque_Interval result) { result = new opaque_Interval { ticks = 1 }; return true; }
+            public bool attr_Zero(out opaque_Interval result) { result = new opaque_Interval { ticks = 0 }; return true; }
+            public bool fattr_TimestampHashFunc(opaque_Timestamp t, out long result) { result = (new DateTime(t.ticks)).GetHashCode(); return true; }
+            public bool fattr_IntervalHashFunc(opaque_Interval i, out long result) { result = (new TimeSpan(i.ticks)).GetHashCode(); return true; }
+            public bool op_Timestamp_Minus_Timestamp(opaque_Timestamp a, opaque_Timestamp b, out opaque_Interval result) { result = new opaque_Interval { ticks = a.ticks - b.ticks }; return true; }
+            public bool op_Timestamp_Plus_Interval(opaque_Timestamp a, opaque_Interval b, out opaque_Timestamp result) { result = new opaque_Timestamp { ticks = a.ticks + b.ticks }; return true; }
+            public bool op_Timestamp_Minus_Interval(opaque_Timestamp a, opaque_Interval b, out opaque_Timestamp result) { result = new opaque_Timestamp { ticks = a.ticks - b.ticks }; return true; }
+            public bool op_Interval_Plus_Interval(opaque_Interval a, opaque_Interval b, out opaque_Interval result) { result = new opaque_Interval { ticks = a.ticks + b.ticks }; return true; }
+            public bool op_Interval_Minus_Interval(opaque_Interval a, opaque_Interval b, out opaque_Interval result) { result = new opaque_Interval { ticks = a.ticks - b.ticks }; return true; }
+            public bool op_integer_Times_Interval(long a, opaque_Interval i, out opaque_Interval result) { result = new opaque_Interval { ticks = a * i.ticks }; return true; }
+            public bool op_Interval_Div_integer(opaque_Interval i, long a, out opaque_Interval result) { result = new opaque_Interval { ticks = i.ticks / a }; return true; }
             public bool op_Timestamp_LessEqual_Timestamp(opaque_Timestamp a, opaque_Timestamp b) { return a.ticks <= b.ticks; }
             public bool op_Timestamp_Less_Timestamp(opaque_Timestamp a, opaque_Timestamp b) { return a.ticks < b.ticks; }
             public bool op_Timestamp_Equal_Timestamp(opaque_Timestamp a, opaque_Timestamp b) { return a.ticks == b.ticks; }
@@ -514,10 +560,41 @@ namespace Aha.Base
             public bool op_Interval_NotEqual_Interval(opaque_Interval a, opaque_Interval b) { return a.ticks != b.ticks; }
             public bool op_Interval_Greater_Interval(opaque_Interval a, opaque_Interval b) { return a.ticks > b.ticks; }
             public bool op_Interval_GreaterEqual_Interval(opaque_Interval a, opaque_Interval b) { return a.ticks >= b.ticks; }
-            public opaque_Timestamp op__date_DateStruc(icomp_DateStruc date) { return new opaque_Timestamp { ticks = (new DateTime((int)date.attr_year(), (int)date.attr_month(), (int)date.attr_day())).Ticks }; }
-            public opaque_Interval op__time_TimeStruc(icomp_TimeStruc time) { return new opaque_Interval { ticks = (new TimeSpan(0, (int)time.attr_hour(), (int)time.attr_min(), (int)time.attr_sec(), (int)time.attr_msec())).Ticks }; }
-            public Int64 op__ticks_Interval(opaque_Interval i) { return i.ticks; }
-            public opaque_Interval op__interval_integer(Int64 param_ticks) { return new opaque_Interval { ticks = param_ticks }; }
+            public bool op__date_DateStruc(icomp_DateStruc date, out opaque_Timestamp result) 
+            {
+                long y;
+                long m;
+                long d;
+                if (date.attr_year(out y) && date.attr_month(out m) && date.attr_day(out d))
+                {
+                    result = new opaque_Timestamp { ticks = (new DateTime((int)y, (int)m, (int)d)).Ticks };
+                    return true;
+                }
+                else
+                {
+                    result = default(opaque_Timestamp);
+                    return false; 
+                }
+            }
+            public bool op__time_TimeStruc(icomp_TimeStruc time, out opaque_Interval result) 
+            {
+                long h;
+                long m;
+                long s;
+                long msec;
+                if (time.attr_hour(out h) && time.attr_min(out m) && time.attr_sec(out s) && time.attr_msec(out msec))
+                {
+                    result = new opaque_Interval { ticks = (new TimeSpan(0, (int)h, (int)m, (int)s, (int)msec)).Ticks };
+                    return true;
+                }
+                else
+                {
+                    result = default(opaque_Interval);
+                    return false;
+                }
+            }
+            public bool op__ticks_Interval(opaque_Interval i, out long result) { result = i.ticks; return true; }
+            public bool op__interval_integer(long param_ticks, out opaque_Interval result) { result = new opaque_Interval { ticks = param_ticks }; return true; }
         }
     }
 
@@ -579,100 +656,207 @@ namespace Aha.Base
     {
         public interface icomp_Substring
         {
-            Int64 attr_index();
-            Int64 attr_length();
+            bool attr_index(out long result);
+            bool attr_length(out long result);
         }
 
         public interface icomp_Pattern
         {
-            IahaArray<char> attr_string();
-            opaque_RegEx attr_regEx();
-            bool fattr_equality(char a, char b);
+            bool attr_string(out IahaArray<char> result);
+            bool attr_regEx(out opaque_RegEx result);
         }
 
         public interface icomp_SearchParams
         {
-            icomp_Pattern attr_for();
-            IahaArray<char> attr_in();
+            bool attr_for(out icomp_Pattern result);
+            bool attr_in(out IahaArray<char> result);
         }
 
         public interface icomp_PutParams
         {
-            Int64 attr_at();
-            char attr_char();
+            bool attr_at(out long result);
+            bool attr_char(out char result);
         }
 
         public interface icomp_ReplaceParams
         {
-            IahaArray<icomp_Substring> attr_substr();
-            IahaArray<char> attr_with();
+            bool attr_substr(out IahaArray<icomp_Substring> result);
+            bool attr_with(out IahaArray<char> result);
         }
 
         public interface icomp_PadParams
         {
-            char attr_with();
-            Int64 attr_to();
+            bool attr_with(out char result);
+            bool attr_to(out long result);
         }
 
         public interface imod_StrUtils
         {
-            IahaArray<char> fattr_Substr(IahaArray<char> s, icomp_Substring ss);
-            opaque_RegEx fattr_RegEx(IahaArray<char> s);
-            IahaSequence<icomp_Substring> fattr_Search(icomp_SearchParams param);
-            Int64 fattr_StringHashFunc(IahaArray<char> s);
+            bool fattr_Substr(IahaArray<char> s, icomp_Substring ss, out IahaArray<char> result);
+            bool fattr_RegEx(IahaArray<char> s, out opaque_RegEx result);
+            bool fattr_Search(icomp_SearchParams param, out IahaSequence<icomp_Substring> result);
+            bool fattr_StringHashFunc(IahaArray<char> s, out long result);
         }
 
         public struct opaque_RegEx
         {
-            public string value;
+            public System.Text.RegularExpressions.Regex value;
         }
 
         public class module_StrUtils : AhaModule, imod_StrUtils
         {
+            struct comp_Substring : icomp_Substring
+            {
+                public int field_index;
+                public int field_length;
+                public bool attr_index(out long result) { result = field_index; return true; }
+                public bool attr_length(out long result) { result = field_length; return true; }
+                public comp_Substring(int i, int l) { field_index = i; field_length = l; }
+            }
+
             class obj_SearchSeq : IahaSequence<icomp_Substring>
             {
-                struct comp_Substring : icomp_Substring
-                {
-                    public int field_index;
-                    private int field_length;
-                    public Int64 attr_index() { return field_index; }
-                    public Int64 attr_length() { return field_length; }
-                    public comp_Substring(int i, int l) { field_index = i; field_length = l; }
-                }
-
                 private string str;
                 private string sub;
                 private int index;
                 public obj_SearchSeq(string s, string ss) { str = s; sub = ss; index = s.IndexOf(ss); }
-                public icomp_Substring state() { return new comp_Substring(index, sub.Length); }
+                public bool state(out icomp_Substring result)
+                {
+                    if (index >= 0)
+                    {
+                        result = new comp_Substring(index, sub.Length);
+                        return true;
+                    }
+                    else
+                    {
+                        result = default(icomp_Substring);
+                        return false;
+                    }
+                }
                 public IahaObject<icomp_Substring> copy() { return new obj_SearchSeq(str, sub) { index = index }; }
-                public void action_skip() { index = str.IndexOf(sub, index + 1); if (index == -1) throw Failure.One; }
-                public icomp_Substring first(Predicate<icomp_Substring> that, Int64 max)
+                public bool action_skip() 
+                { 
+                    if (index >= 0)
+                    {
+                        index = str.IndexOf(sub, index + 1); 
+                        return index >= 0;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                public bool first(Predicate<icomp_Substring> that, long max, out icomp_Substring result)
                 {
                     int i = index;
-                    Int64 j = 0;
+                    long j = 0;
                     comp_Substring substr = new comp_Substring(i, sub.Length);
                     while (i != -1 && j < max)
                     {
                         substr.field_index = i;
-                        if (that(substr)) return substr;
+                        if (that(substr)) { result = substr; return true; }
                         i = str.IndexOf(sub, i + 1);
                         j++;
                     }
-                    throw Failure.One;
+                    result = default(icomp_Substring);
+                    return false;
                 }
             }
 
-            public IahaArray<char> fattr_Substr(IahaArray<char> s, icomp_Substring ss) { char[] items = new char[ss.attr_length()]; Array.Copy(s.get(), ss.attr_index(), items, 0, ss.attr_length()); return new AhaString(items); }
-            public opaque_RegEx fattr_RegEx(IahaArray<char> s) { return new opaque_RegEx { value = new string(s.get()) }; }
-            public IahaSequence<icomp_Substring> fattr_Search(icomp_SearchParams param)
+            class obj_SearchRegExSeq : IahaSequence<icomp_Substring>
             {
-                IahaArray<char> sub = param.attr_for().attr_string();
-                string temp1 = new string(sub.get());
-                string temp2 = new string(param.attr_in().get());
-                return new obj_SearchSeq(temp2, temp1);
+                private string str;
+                private System.Text.RegularExpressions.Regex regEx;
+                private System.Text.RegularExpressions.Match match;
+                public obj_SearchRegExSeq(string s, System.Text.RegularExpressions.Regex r) { str = s; regEx = r; match = regEx.Match(s); }
+                public bool state(out icomp_Substring result) 
+                {
+                    if (match.Success)
+                    { 
+                        result = new comp_Substring(match.Index, match.Length); 
+                        return true; 
+                    }
+                    else
+                    {
+                        result = default(icomp_Substring);
+                        return false;
+                    }
+                }
+                public IahaObject<icomp_Substring> copy() { return new obj_SearchRegExSeq(str, regEx) { match = match }; }
+                public bool action_skip() { match = match.NextMatch(); return match.Success; }
+                public bool first(Predicate<icomp_Substring> that, long max, out icomp_Substring result)
+                {
+                    long j = 0;
+                    comp_Substring substr = new comp_Substring(match.Index, match.Length);
+                    System.Text.RegularExpressions.Match m = match;
+                    while (m.Success && j < max)
+                    {
+                        substr.field_index = m.Index;
+                        substr.field_length = m.Length;
+                        if (that(substr)) { result = substr; return true; }
+                        m = m.NextMatch();
+                        j++;
+                    }
+                    result = default(icomp_Substring);
+                    return false;
+                }
             }
-            public Int64 fattr_StringHashFunc(IahaArray<char> s) { return s.get().GetHashCode(); }
+
+            public bool fattr_Substr(IahaArray<char> s, icomp_Substring ss, out IahaArray<char> result) 
+            {
+                long i; long l;
+                if (ss.attr_index(out i) && ss.attr_length(out l))
+                {
+                    char[] items = new char[l];
+                    Array.Copy(s.get(), i, items, 0, l);
+                    result = new AhaString(items);
+                    return true;
+                }
+                else
+                {
+                    result = default(IahaArray<char>);
+                    return false;
+                }
+            }
+            public bool fattr_RegEx(IahaArray<char> s, out opaque_RegEx result) 
+            {
+                try
+                {
+                    result = new opaque_RegEx { value = new System.Text.RegularExpressions.Regex(new string(s.get())) };
+                    return true;
+                }
+                catch(System.Exception)
+                {
+                    result = default(opaque_RegEx);
+                    return false;
+                }
+            }
+            public bool fattr_Search(icomp_SearchParams param, out IahaSequence<icomp_Substring> result)
+            {
+                IahaArray<char> source;
+                icomp_Pattern p;
+                IahaArray<char> sub;
+                opaque_RegEx r;
+                result = default(IahaSequence<icomp_Substring>);
+                if (param.attr_for(out p) && param.attr_in(out source))
+                {
+                    if (p.attr_string(out sub))
+                    {
+                        string temp1 = new string(sub.get());
+                        string temp2 = new string(source.get());
+                        result = new obj_SearchSeq(temp2, temp1);
+                        return true;
+                    }
+                    if (p.attr_regEx(out r))
+                    {
+                        string temp = new string(source.get());
+                        result = new obj_SearchRegExSeq(temp, r.value);
+                        return true;
+                    }
+                }
+                return false;
+            }
+            public bool fattr_StringHashFunc(IahaArray<char> s, out long result) { result = s.get().GetHashCode(); return true; }
         }
     }
 
@@ -721,28 +905,28 @@ namespace Aha.Base
 
         public struct opaque_Path<tpar_Node>
         {
-            public Int64[] indexes;
+            public long[] indexes;
         }
 
         public interface icomp_TreeParam<tpar_Node>
         {
-            tpar_Node attr_root();
-            IahaArray<opaque_Tree<tpar_Node>> attr_children();
+            bool attr_root(out tpar_Node result);
+            bool attr_children(out IahaArray<opaque_Tree<tpar_Node>> result);
         }
 
         public interface imod_Trees<tpar_Node>
         {
-            opaque_Tree<tpar_Node> fattr_Tree(icomp_TreeParam<tpar_Node> param);
-            opaque_Tree<tpar_Node> fattr_Leaf(tpar_Node node);
-            tpar_Node fattr_Root(opaque_Tree<tpar_Node> tree);
-            IahaArray<opaque_Tree<tpar_Node>> fattr_Children(opaque_Tree<tpar_Node> tree);
-            IahaSequence<tpar_Node> fattr_NodesByLevel(opaque_Tree<tpar_Node> tree);
-            IahaSequence<tpar_Node> fattr_NodesByBranch(opaque_Tree<tpar_Node> tree);
-            Int64 fattr_LevelCount(opaque_Tree<tpar_Node> tree);
-            Int64 fattr_NodeCount(opaque_Tree<tpar_Node> tree);
-            opaque_Tree<tpar_Node> op_Tree_at_Path(opaque_Tree<tpar_Node> tree, opaque_Path<tpar_Node> path);
-            IahaSequence<Int64> fattr_Indexes(opaque_Path<tpar_Node> path);
-            IahaSequence<opaque_Tree<tpar_Node>> fattr_Ancestors(opaque_Tree<tpar_Node> tree, opaque_Path<tpar_Node> path);
+            bool fattr_Tree(icomp_TreeParam<tpar_Node> param, out opaque_Tree<tpar_Node> result);
+            bool fattr_Leaf(tpar_Node node, out opaque_Tree<tpar_Node> result);
+            bool fattr_Root(opaque_Tree<tpar_Node> tree, out tpar_Node result);
+            bool fattr_Children(opaque_Tree<tpar_Node> tree, out IahaArray<opaque_Tree<tpar_Node>> result);
+            bool fattr_NodesByLevel(opaque_Tree<tpar_Node> tree, out IahaSequence<tpar_Node> result);
+            bool fattr_NodesByBranch(opaque_Tree<tpar_Node> tree, out IahaSequence<tpar_Node> result);
+            bool fattr_LevelCount(opaque_Tree<tpar_Node> tree, out long result);
+            bool fattr_NodeCount(opaque_Tree<tpar_Node> tree, out long result);
+            bool op_Tree_at_Path(opaque_Tree<tpar_Node> tree, opaque_Path<tpar_Node> path, out opaque_Tree<tpar_Node> result);
+            bool fattr_Indexes(opaque_Path<tpar_Node> path, out IahaSequence<long> result);
+            bool fattr_Ancestors(opaque_Tree<tpar_Node> tree, opaque_Path<tpar_Node> path, out IahaSequence<opaque_Tree<tpar_Node>> result);
         }
 
         public class module_Trees<tpar_Node> : AhaModule, imod_Trees<tpar_Node>
@@ -751,32 +935,58 @@ namespace Aha.Base
             {
                 private Queue<opaque_Tree<tpar_Node>> queue = new Queue<opaque_Tree<tpar_Node>>();
                 public obj_NodesByLevel(opaque_Tree<tpar_Node> tree) { queue.Enqueue(tree); }
-                public tpar_Node state() { return queue.Peek().root; }
-                public IahaObject<tpar_Node> copy() { return new obj_NodesByLevel(queue.Peek()); }
-                public void action_skip() 
+                public bool state(out tpar_Node result)
                 {
-                    opaque_Tree<tpar_Node> top = queue.Dequeue();
-                    if (top.children != null)
+                    if (queue.Count > 0)
                     {
-                        foreach (opaque_Tree<tpar_Node> child in top.children)
-                            queue.Enqueue(child);
+                        result = queue.Peek().root;
+                        return true;
+                    }
+                    else
+                    {
+                        result = default(tpar_Node);
+                        return false;
                     }
                 }
-                public tpar_Node first(Predicate<tpar_Node> that, Int64 max)
+                public IahaObject<tpar_Node> copy() { return new obj_NodesByLevel(queue.Peek()); }
+                public bool action_skip() 
                 {
-                    Queue<opaque_Tree<tpar_Node>> q = new Queue<opaque_Tree<tpar_Node>>();
-                    q.Enqueue(queue.Peek());
-                    while (q.Count > 0)
+                    if (queue.Count > 0)
                     {
-                        opaque_Tree<tpar_Node> top = q.Dequeue();
-                        if (that(top.root)) return top.root;
+                        opaque_Tree<tpar_Node> top = queue.Dequeue();
                         if (top.children != null)
                         {
                             foreach (opaque_Tree<tpar_Node> child in top.children)
                                 queue.Enqueue(child);
                         }
+                        return true;
                     }
-                    throw Failure.One;
+                    else
+                    {
+                        return false;
+                    }
+                }
+                public bool first(Predicate<tpar_Node> that, long max, out tpar_Node result)
+                {
+                    if (queue.Count > 0 && max > 0)
+                    {
+                        Queue<opaque_Tree<tpar_Node>> q = new Queue<opaque_Tree<tpar_Node>>();
+                        q.Enqueue(queue.Peek());
+                        long j = 0;
+                        while (q.Count > 0 && j < max)
+                        {
+                            opaque_Tree<tpar_Node> top = q.Dequeue();
+                            if (that(top.root)) { result = top.root; return true; }
+                            if (top.children != null)
+                            {
+                                foreach (opaque_Tree<tpar_Node> child in top.children)
+                                    queue.Enqueue(child);
+                            }
+                            j++;
+                        }
+                    }
+                    result = default(tpar_Node);
+                    return false;
                 }
             }
 
@@ -784,32 +994,58 @@ namespace Aha.Base
             {
                 private Stack<opaque_Tree<tpar_Node>> stack = new Stack<opaque_Tree<tpar_Node>>();
                 public obj_NodesByBranch(opaque_Tree<tpar_Node> tree) { stack.Push(tree); }
-                public tpar_Node state() { return stack.Peek().root; }
-                public IahaObject<tpar_Node> copy() { return new obj_NodesByBranch(stack.Peek()); }
-                public void action_skip()
-                {
-                    opaque_Tree<tpar_Node> top = stack.Pop();
-                    if (top.children != null)
+                public bool state(out tpar_Node result) 
+                { 
+                    if (stack.Count > 0) 
+                    { 
+                        result = stack.Peek().root; 
+                        return true; 
+                    } 
+                    else 
                     {
-                        for (int i = top.children.Length - 1; i >= 0; i--)
-                            stack.Push(top.children[i]);
-                    }
+                        result = default(tpar_Node);
+                        return false;
+                    } 
                 }
-                public tpar_Node first(Predicate<tpar_Node> that, Int64 max)
+                public IahaObject<tpar_Node> copy() { return new obj_NodesByBranch(stack.Peek()); }
+                public bool action_skip()
                 {
-                    Stack<opaque_Tree<tpar_Node>> q = new Stack<opaque_Tree<tpar_Node>>();
-                    q.Push(stack.Peek());
-                    while (q.Count > 0)
+                    if (stack.Count > 0)
                     {
-                        opaque_Tree<tpar_Node> top = q.Pop();
-                        if (that(top.root)) return top.root;
+                        opaque_Tree<tpar_Node> top = stack.Pop();
                         if (top.children != null)
                         {
                             for (int i = top.children.Length - 1; i >= 0; i--)
                                 stack.Push(top.children[i]);
                         }
+                        return true;
                     }
-                    throw Failure.One;
+                    else
+                    {
+                        return false;
+                    }
+                }
+                public bool first(Predicate<tpar_Node> that, long max, out tpar_Node result)
+                {
+                    if (stack.Count > 0 && max > 0)
+                    {
+                        Stack<opaque_Tree<tpar_Node>> q = new Stack<opaque_Tree<tpar_Node>>();
+                        q.Push(stack.Peek());
+                        long j = 0;
+                        while (q.Count > 0 && j < max)
+                        {
+                            opaque_Tree<tpar_Node> top = q.Pop();
+                            if (that(top.root)) { result = top.root; return true; }
+                            if (top.children != null)
+                            {
+                                for (int i = top.children.Length - 1; i >= 0; i--)
+                                    stack.Push(top.children[i]);
+                            }
+                            j++;
+                        }
+                    }
+                    result = default(tpar_Node);
+                    return false;
                 }
             }
 
@@ -818,50 +1054,64 @@ namespace Aha.Base
                 struct Subtree
                 {
                     public opaque_Tree<tpar_Node> tree;
-                    public Int64[] indexes;
+                    public long[] indexes;
                 }
 
                 private Queue<Subtree> queue = new Queue<Subtree>();
-                public obj_PathsByLevel(opaque_Tree<tpar_Node> tree) { queue.Enqueue(new Subtree { tree = tree, indexes = new Int64[0] }); }
-                public opaque_Path<tpar_Node> state() { return new opaque_Path<tpar_Node> { indexes = queue.Peek().indexes }; }
+                public obj_PathsByLevel(opaque_Tree<tpar_Node> tree) { queue.Enqueue(new Subtree { tree = tree, indexes = new long[0] }); }
+                public bool state(out opaque_Path<tpar_Node> result) { result = new opaque_Path<tpar_Node> { indexes = queue.Peek().indexes }; return true; }
                 public IahaObject<opaque_Path<tpar_Node>> copy() { return new obj_PathsByLevel(queue.Peek().tree); }
-                public void action_skip()
+                public bool action_skip()
                 {
-                    Subtree top = queue.Dequeue();
-                    if (top.tree.children != null)
+                    if (queue.Count > 0)
                     {
-                        for (int i = 0; i < top.tree.children.Length; i++)
-                        {
-                            Int64[] indexes = new Int64[top.indexes.Length + 1];
-                            for (int j = 0; j < top.indexes.Length; j++)
-                                indexes[j] = top.indexes[j];
-                            indexes[top.indexes.Length] = i;
-                            queue.Enqueue(new Subtree { tree = top.tree.children[i], indexes = indexes });
-                        }
-                    }
-                }
-                public opaque_Path<tpar_Node> first(Predicate<opaque_Path<tpar_Node>> that, Int64 max)
-                {
-                    Queue<Subtree> q = new Queue<Subtree>();
-                    q.Enqueue(queue.Peek());
-                    while (q.Count > 0)
-                    {
-                        Subtree top = q.Dequeue();
-                        opaque_Path<tpar_Node> path = new opaque_Path<tpar_Node> { indexes = top.indexes };
-                        if (that(path)) return path;
+                        Subtree top = queue.Dequeue();
                         if (top.tree.children != null)
                         {
-                            for (int i = top.tree.children.Length - 1; i >= 0; i--)
+                            for (int i = 0; i < top.tree.children.Length; i++)
                             {
-                                Int64[] indexes = new Int64[top.indexes.Length + 1];
+                                long[] indexes = new long[top.indexes.Length + 1];
                                 for (int j = 0; j < top.indexes.Length; j++)
                                     indexes[j] = top.indexes[j];
                                 indexes[top.indexes.Length] = i;
-                                q.Enqueue(new Subtree { tree = top.tree.children[i], indexes = indexes });
+                                queue.Enqueue(new Subtree { tree = top.tree.children[i], indexes = indexes });
                             }
                         }
+                        return true;
                     }
-                    throw Failure.One;
+                    else
+                    {
+                        return false;
+                    }
+                }
+                public bool first(Predicate<opaque_Path<tpar_Node>> that, long max, out opaque_Path<tpar_Node> result)
+                {
+                    if (queue.Count > 0 && max > 0)
+                    {
+                        Queue<Subtree> q = new Queue<Subtree>();
+                        q.Enqueue(queue.Peek());
+                        long k = 0;
+                        while (q.Count > 0 && k < max)
+                        {
+                            Subtree top = q.Dequeue();
+                            opaque_Path<tpar_Node> path = new opaque_Path<tpar_Node> { indexes = top.indexes };
+                            if (that(path)) { result = path; return true; }
+                            if (top.tree.children != null)
+                            {
+                                for (int i = top.tree.children.Length - 1; i >= 0; i--)
+                                {
+                                    long[] indexes = new long[top.indexes.Length + 1];
+                                    for (int j = 0; j < top.indexes.Length; j++)
+                                        indexes[j] = top.indexes[j];
+                                    indexes[top.indexes.Length] = i;
+                                    q.Enqueue(new Subtree { tree = top.tree.children[i], indexes = indexes });
+                                }
+                            }
+                            k++;
+                        }
+                    }
+                    result = default(opaque_Path<tpar_Node>);
+                    return false;
                 }
             }
 
@@ -870,75 +1120,101 @@ namespace Aha.Base
                 struct Subtree
                 {
                     public opaque_Tree<tpar_Node> tree;
-                    public Int64[] indexes;
+                    public long[] indexes;
                 }
 
                 private Stack<Subtree> stack = new Stack<Subtree>();
-                public obj_PathsByBranch(opaque_Tree<tpar_Node> tree) { stack.Push(new Subtree { tree = tree, indexes = new Int64[0] }); }
-                public opaque_Path<tpar_Node> state() { return new opaque_Path<tpar_Node> { indexes = stack.Peek().indexes }; }
+                public obj_PathsByBranch(opaque_Tree<tpar_Node> tree) { stack.Push(new Subtree { tree = tree, indexes = new long[0] }); }
+                public bool state(out opaque_Path<tpar_Node> result) { result = new opaque_Path<tpar_Node> { indexes = stack.Peek().indexes }; return true; }
                 public IahaObject<opaque_Path<tpar_Node>> copy() { return new obj_PathsByBranch(stack.Peek().tree); }
-                public void action_skip()
+                public bool action_skip()
                 {
-                    Subtree top = stack.Pop();
-                    if (top.tree.children != null)
+                    if (stack.Count > 0)
                     {
-                        for (int i = top.tree.children.Length - 1; i >= 0; i--)
-                        {
-                            Int64[] indexes = new Int64[top.indexes.Length + 1];
-                            for (int j = 0; j < top.indexes.Length; j++)
-                                indexes[j] = top.indexes[j];
-                            indexes[top.indexes.Length] = i;
-                            stack.Push(new Subtree { tree = top.tree.children[i], indexes = indexes });
-                        }
-                    }
-                }
-                public opaque_Path<tpar_Node> first(Predicate<opaque_Path<tpar_Node>> that, Int64 max)
-                {
-                    Stack<Subtree> q = new Stack<Subtree>();
-                    q.Push(stack.Peek());
-                    while (q.Count > 0)
-                    {
-                        Subtree top = q.Pop();
-                        opaque_Path<tpar_Node> path = new opaque_Path<tpar_Node> { indexes = top.indexes };
-                        if (that(path)) return path;
+                        Subtree top = stack.Pop();
                         if (top.tree.children != null)
                         {
                             for (int i = top.tree.children.Length - 1; i >= 0; i--)
                             {
-                                Int64[] indexes = new Int64[top.indexes.Length + 1];
+                                long[] indexes = new long[top.indexes.Length + 1];
                                 for (int j = 0; j < top.indexes.Length; j++)
                                     indexes[j] = top.indexes[j];
                                 indexes[top.indexes.Length] = i;
-                                q.Push(new Subtree { tree = top.tree.children[i], indexes = indexes });
+                                stack.Push(new Subtree { tree = top.tree.children[i], indexes = indexes });
                             }
                         }
+                        return true;
                     }
-                    throw Failure.One;
+                    else
+                    {
+                        return false;
+                    }
+                }
+                public bool first(Predicate<opaque_Path<tpar_Node>> that, long max, out opaque_Path<tpar_Node> result)
+                {
+                    if (stack.Count > 0 && max > 0)
+                    {
+                        Stack<Subtree> q = new Stack<Subtree>();
+                        q.Push(stack.Peek());
+                        long k = 0;
+                        while (q.Count > 0 && k < max)
+                        {
+                            Subtree top = q.Pop();
+                            opaque_Path<tpar_Node> path = new opaque_Path<tpar_Node> { indexes = top.indexes };
+                            if (that(path)) { result = path; return true; }
+                            if (top.tree.children != null)
+                            {
+                                for (int i = top.tree.children.Length - 1; i >= 0; i--)
+                                {
+                                    long[] indexes = new long[top.indexes.Length + 1];
+                                    for (int j = 0; j < top.indexes.Length; j++)
+                                        indexes[j] = top.indexes[j];
+                                    indexes[top.indexes.Length] = i;
+                                    q.Push(new Subtree { tree = top.tree.children[i], indexes = indexes });
+                                }
+                            }
+                            k++;
+                        }
+                    }
+                    result = default(opaque_Path<tpar_Node>);
+                    return false;
                 }
             }
 
-            public opaque_Tree<tpar_Node> fattr_Tree(icomp_TreeParam<tpar_Node> param)
+            public bool fattr_Tree(icomp_TreeParam<tpar_Node> param, out opaque_Tree<tpar_Node> result)
             {
                 int levels = 0;
-                foreach (opaque_Tree<tpar_Node> child in param.attr_children().get())
-                    if (child.levels > levels) levels = child.levels;
-                return new opaque_Tree<tpar_Node>() { root = param.attr_root(), children = param.attr_children().get(), levels = levels + 1 }; 
+                IahaArray<opaque_Tree<tpar_Node>> children;
+                tpar_Node root;
+                if (param.attr_children(out children) && param.attr_root(out root))
+                {
+                    foreach (opaque_Tree<tpar_Node> child in children.get())
+                        if (child.levels > levels) levels = child.levels;
+                    result = new opaque_Tree<tpar_Node>() { root = root, children = children.get(), levels = levels + 1 };
+                    return true;
+                }
+                else
+                {
+                    result = default(opaque_Tree<tpar_Node>);
+                    return false;
+                }
             }
-            public opaque_Tree<tpar_Node> fattr_Leaf(tpar_Node node) { return new opaque_Tree<tpar_Node>() { root = node, children = null, levels = 0 }; }
-            public tpar_Node fattr_Root(opaque_Tree<tpar_Node> tree) { return tree.root; }
-            public IahaArray<opaque_Tree<tpar_Node>> fattr_Children(opaque_Tree<tpar_Node> tree) 
+            public bool fattr_Leaf(tpar_Node node, out opaque_Tree<tpar_Node> result) { result = new opaque_Tree<tpar_Node>() { root = node, children = null, levels = 0 }; return true; }
+            public bool fattr_Root(opaque_Tree<tpar_Node> tree, out tpar_Node result) { result = tree.root; return true; }
+            public bool fattr_Children(opaque_Tree<tpar_Node> tree, out IahaArray<opaque_Tree<tpar_Node>> result) 
             { 
                 if (tree.children == null) 
-                    return new AhaArray<opaque_Tree<tpar_Node>>(new opaque_Tree<tpar_Node>[] { }); 
+                    result = new AhaArray<opaque_Tree<tpar_Node>>(new opaque_Tree<tpar_Node>[] { }); 
                 else
-                    return new AhaArray<opaque_Tree<tpar_Node>>(tree.children); 
+                    result = new AhaArray<opaque_Tree<tpar_Node>>(tree.children);
+                return true;
             }
-            public IahaSequence<tpar_Node> fattr_NodesByLevel(opaque_Tree<tpar_Node> tree) { return new obj_NodesByLevel(tree); }
-            public IahaSequence<tpar_Node> fattr_NodesByBranch(opaque_Tree<tpar_Node> tree) { return new obj_NodesByBranch(tree); }
-            public Int64 fattr_LevelCount(opaque_Tree<tpar_Node> tree) { return tree.levels; }
-            public Int64 fattr_NodeCount(opaque_Tree<tpar_Node> tree)
+            public bool fattr_NodesByLevel(opaque_Tree<tpar_Node> tree, out IahaSequence<tpar_Node> result) { result = new obj_NodesByLevel(tree); return true; }
+            public bool fattr_NodesByBranch(opaque_Tree<tpar_Node> tree, out IahaSequence<tpar_Node> result) { result = new obj_NodesByBranch(tree); return true; }
+            public bool fattr_LevelCount(opaque_Tree<tpar_Node> tree, out long result) { result = tree.levels; return true; }
+            public bool fattr_NodeCount(opaque_Tree<tpar_Node> tree, out long result)
             {
-                int count = 0;
+                result = 0;
                 Stack<opaque_Tree<tpar_Node>> stack = new Stack<opaque_Tree<tpar_Node>>();
                 opaque_Tree<tpar_Node> subtree;
                 stack.Push(tree);
@@ -947,26 +1223,32 @@ namespace Aha.Base
                     subtree = stack.Pop();
                     if (subtree.children != null)
                     {
-                        count += subtree.children.Length;
+                        result += subtree.children.Length;
                         foreach (opaque_Tree<tpar_Node> child in subtree.children)
                             stack.Push(child);
                     }
                 }
-                return count;
+                return true;
             }
-            public opaque_Tree<tpar_Node> op_Tree_at_Path(opaque_Tree<tpar_Node> tree, opaque_Path<tpar_Node> path)
+            public bool op_Tree_at_Path(opaque_Tree<tpar_Node> tree, opaque_Path<tpar_Node> path, out opaque_Tree<tpar_Node> result)
             {
-                opaque_Tree<tpar_Node> result = tree;
+                result = tree;
                 int i = 0;
                 while (i < path.indexes.Length)
                 {
+                    if (path.indexes[i] >= result.children.Length)
+                        return false;
                     result = result.children[path.indexes[i]];
                     i++;
                 }
-                return result;
+                return true;
             }
-            public IahaSequence<Int64> fattr_Indexes(opaque_Path<tpar_Node> path) { return new AhaArraySeq<Int64> { items = path.indexes, index = 0 }; }
-            public IahaSequence<opaque_Tree<tpar_Node>> fattr_Ancestors(opaque_Tree<tpar_Node> tree, opaque_Path<tpar_Node> path)
+            public bool fattr_Indexes(opaque_Path<tpar_Node> path, out IahaSequence<long> result) 
+            { 
+                result = new AhaArraySeq<long> { items = path.indexes, index = 0 };
+                return true;
+            }
+            public bool fattr_Ancestors(opaque_Tree<tpar_Node> tree, opaque_Path<tpar_Node> path, out IahaSequence<opaque_Tree<tpar_Node>> result)
             {
                 opaque_Tree<tpar_Node>[] items = new opaque_Tree<tpar_Node>[path.indexes.Length - 1];
                 opaque_Tree<tpar_Node> temp = tree;
@@ -979,7 +1261,8 @@ namespace Aha.Base
                     i++;
                     j--;
                 }
-                return new AhaArraySeq<opaque_Tree<tpar_Node>> { items = items, index = 0 };
+                result = new AhaArraySeq<opaque_Tree<tpar_Node>> { items = items, index = 0 };
+                return true;
             }
         }
     }
@@ -1045,34 +1328,34 @@ namespace Aha.Base
     {
         public struct opaque_BitString
         {
-            public Int64 bits;
+            public long bits;
             public Byte[] bytes;
         }
 
         public interface iobj_DynamicBitString : IahaObject<opaque_BitString>
         {
-            void action_append(opaque_BitString param_str);
-            void action_resize(Int64 index);
-            void action_set(Int64 index);
-            void action_reset(Int64 index);
+            bool action_append(opaque_BitString param_str);
+            bool action_resize(long index);
+            bool action_set(long index);
+            bool action_reset(long index);
         }
 
         public interface icomp_Substring
         {
-            Int64 attr_index();
-            Int64 attr_length();
+            bool attr_index(out long result);
+            bool attr_length(out long result);
         }
 
         public interface imod_Bits
         {
-            opaque_BitString fattr_Substr(opaque_BitString str, icomp_Substring sub);
-            opaque_BitString attr_True();
-            opaque_BitString attr_False();
-            opaque_BitString attr_Nil();
-            opaque_BitString op_BitString_Equal_BitString(opaque_BitString first, opaque_BitString second);
-            opaque_BitString op_BitString_And_BitString(opaque_BitString first, opaque_BitString second);
-            opaque_BitString op_BitString_Or_BitString(opaque_BitString first, opaque_BitString second);
-            opaque_BitString op_BitString_Xor_BitString(opaque_BitString first, opaque_BitString second);
+            bool fattr_Substr(opaque_BitString str, icomp_Substring sub, out opaque_BitString result);
+            bool attr_True(out opaque_BitString result);
+            bool attr_False(out opaque_BitString result);
+            bool attr_Nil(out opaque_BitString result);
+            bool op_BitString_Equal_BitString(opaque_BitString first, opaque_BitString second, out opaque_BitString result);
+            bool op_BitString_And_BitString(opaque_BitString first, opaque_BitString second, out opaque_BitString result);
+            bool op_BitString_Or_BitString(opaque_BitString first, opaque_BitString second, out opaque_BitString result);
+            bool op_BitString_Xor_BitString(opaque_BitString first, opaque_BitString second, out opaque_BitString result);
         }
     }
 

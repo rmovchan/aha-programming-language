@@ -322,9 +322,9 @@ namespace Aha.Core
         public bool count(Predicate<Item> that, out long result)
         { 
             int j = 0; 
-            for (int i = 0; i < items.Length; i++) 
+            foreach (Item item in items) 
             { 
-                if (that(items[i])) 
+                if (that(item)) 
                     j++; 
             } 
             result = j;
@@ -482,19 +482,27 @@ namespace Aha.Core
         public bool count(Predicate<char> that, out long result)
         { 
             int j = 0; 
-            for (int i = 0; i < items.Length; i++) 
+            foreach (char ch in items) 
             { 
-                if (that(items[i])) 
+                if (that(ch)) 
                     j++; 
             } 
             result = j;
             return true;
         }
         public bool select(Predicate<char> that, out char[] result)
-        { 
-            char[] sel = Array.FindAll<char>(items.ToCharArray(), that); 
-            result = sel;
-            return true;
+        {
+            try
+            {
+                char[] sel = Array.FindAll<char>(items.ToCharArray(), that);
+                result = sel;
+                return true;
+            }
+            catch(System.Exception)
+            { 
+                result = default(char[]);
+                return false;
+            }
         }
         public bool enumerate(Predicate<char> that, out IahaSequence<char> result)
         { 
@@ -570,8 +578,8 @@ namespace Aha.Core
         }
         public bool forEach(Predicate<long> that) { for (long i = lo; i < hi; i++) { if (!that(i)) return false; } return true; }
         public bool forSome(Predicate<long> that) { for (long i = lo; i < hi; i++) { if (that(i)) return true; } return false; }
-        public bool such(Predicate<long> that, out long result) { for (long i = lo; i < hi; i++) { if (that(i)) return i; } throw Failure.One; }
-        public bool count(Predicate<long> that, out long result) { long j = 0; for (long i = lo; i < hi; i++) { if (that(i)) j++; } return j; }
+        public bool such(Predicate<long> that, out long result) { for (long i = lo; i < hi; i++) { if (that(i)) { result = i; return true; } } result = 0; return false; }
+        public bool count(Predicate<long> that, out long result) { long j = 0; for (long i = lo; i < hi; i++) { if (that(i)) j++; } result = j; return true; }
         public bool select(Predicate<long> that, out long[] result)
         {
             try

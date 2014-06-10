@@ -16,9 +16,9 @@ namespace Aha.Engine
             public int field_year;
             public int field_month;
             public int field_day;
-            public Int64 attr_year() { return field_year; }
-            public Int64 attr_month() { return field_month; }
-            public Int64 attr_day() { return field_day; }
+            public long attr_year() { return field_year; }
+            public long attr_month() { return field_month; }
+            public long attr_day() { return field_day; }
         }
 
         private bool field_terminated;

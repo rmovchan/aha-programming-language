@@ -175,9 +175,9 @@ namespace Aha.API
 
         public interface icomp_Version
         {
-            Int64 attr_major();
-            Int64 attr_minor();
-            Int64 attr_build();
+            long attr_major();
+            long attr_minor();
+            long attr_build();
         }
 
         public interface icomp_Framework
@@ -244,9 +244,9 @@ namespace Aha.API
         {
             struct comp_Version : icomp_Version
             {
-                public Int64 attr_major() { return 0; }
-                public Int64 attr_minor() { return 1; }
-                public Int64 attr_build() { return 1; }
+                public long attr_major() { return 0; }
+                public long attr_minor() { return 1; }
+                public long attr_build() { return 1; }
             }
 
             struct comp_Framework : icomp_Framework
@@ -360,14 +360,14 @@ namespace Aha.API
             public icomp_FileSystem attr_FileSystem() { return new comp_FileSystem(); }
 
             //    (~str integer): { integer -> String } "convert integer to string"
-            public IahaArray<char> op__str_integer(Int64 param_int) { return new AhaString(param_int.ToString()); }
+            public IahaArray<char> op__str_integer(long param_int) { return new AhaString(param_int.ToString()); }
             //    (~str @Float!Float): { @Float!Float -> String } "convert Float to string (local format)"
             public IahaArray<char> op__str_Float(Aha.Base.Math.opaque_Float param_float) { return new AhaString(param_float.value.ToString()); }
             //    (~str @Time!Timestamp): { @Time!Timestamp -> String } "convert Timestamp to string (local format)"
             public IahaArray<char> op__str_Timestamp(Aha.Base.Time.opaque_Timestamp param_timestamp) { DateTime dt = new DateTime(param_timestamp.ticks); return new AhaString(dt.ToString()); }
             //    (~str @Money!Money): { @Money!Money -> String } "convert Money to string (local format)"
             //    (~int String): { String -> integer } "convert string to integer"
-            public Int64 op__int_String(IahaArray<char> param_str) { return Convert.ToInt64(new string(param_str.get())); }
+            public long op__int_String(IahaArray<char> param_str) { return Convert.ToInt64(new string(param_str.get())); }
             //    (~float String): { String -> @Float!Float } "convert string (local format) to Float"
             public Aha.Base.Math.opaque_Float op__float_String(IahaArray<char> param_str) { return new Aha.Base.Math.opaque_Float() { value = Convert.ToDouble(new string(param_str.get())) }; }
             //    (~date String): { String -> @Time!Timestamp } "convert string (local format) to date"
@@ -487,7 +487,7 @@ namespace Aha.API
         {
             IahaArray<char> attr_fileType();
             Aha.Base.Time.opaque_Timestamp attr_modified();
-            Int64 attr_size();
+            long attr_size();
         }
 
         public interface icomp_ErrorKind
@@ -622,7 +622,7 @@ namespace Aha.API
         public interface icomp_ReadParams<tpar_Event>
         {
             icomp_Position<tpar_Event> attr_position();
-            Int64 attr_bytes();
+            long attr_bytes();
             tpar_Event fattr_result(Aha.Base.Bits.opaque_BitString result);
         }
 
@@ -635,8 +635,8 @@ namespace Aha.API
 
         public interface icomp_Position<tpar_Event>
         {
-            Int64 attr1_top();
-            Int64 attr2_bottom();
+            long attr1_top();
+            long attr2_bottom();
             bool attr3_next();
         }
 
@@ -692,7 +692,7 @@ namespace Aha.API
         public interface icomp_TextReadParams<tpar_Event>
         {
             IahaSequence<char> attr_content();
-            Int64 attr_size();
+            long attr_size();
             FileIOtypes.icomp_Encoding attr_encoding();
         }
 
@@ -701,7 +701,7 @@ namespace Aha.API
             Aha.API.Environment.opaque_FilePath attr_path();
             Aha.API.Jobs.icomp_Engine<tpar_Event> attr_engine();
             IahaSequence<char> attr_content();
-            Int64 attr_size();
+            long attr_size();
             FileIOtypes.icomp_Encoding attr_encoding();
             tpar_Event attr_success();
             tpar_Event fattr_error(FileIOtypes.icomp_ErrorInfo error);
@@ -740,14 +740,14 @@ namespace Aha.API
                         }
                         try
                         {
-                            Int64 pos = p.attr_position().attr1_top();
+                            long pos = p.attr_position().attr1_top();
                             stream.Position = pos;
                         }
                         catch(Failure)
                         {
                             try
                             {
-                                Int64 pos = p.attr_position().attr2_bottom();
+                                long pos = p.attr_position().attr2_bottom();
                                 stream.Position = stream.Length - pos;
                             }
                             catch(Failure)
@@ -814,14 +814,14 @@ namespace Aha.API
                         }
                         try
                         {
-                            Int64 pos = p.attr_position().attr1_top();
+                            long pos = p.attr_position().attr1_top();
                             stream.Position = pos;
                         }
                         catch (Failure)
                         {
                             try
                             {
-                                Int64 pos = p.attr_position().attr2_bottom();
+                                long pos = p.attr_position().attr2_bottom();
                                 stream.Position = stream.Length - pos;
                             }
                             catch (Failure)
@@ -874,10 +874,10 @@ namespace Aha.API
             private struct comp_TextReadParam : icomp_TextReadParams<tpar_Event>
             {
                 public IahaSequence<char> field_content;
-                public Int64 field_size;
+                public long field_size;
                 public FileIOtypes.icomp_Encoding field_encoding;
                 public IahaSequence<char> attr_content() { return field_content; }
-                public Int64 attr_size() { return field_size; }
+                public long attr_size() { return field_size; }
                 public FileIOtypes.icomp_Encoding attr_encoding() { return field_encoding; }
             }
             public Jobs.opaque_Job<tpar_Event> fattr_CreateReader(icomp_CreateReaderParam<tpar_Event> param)
@@ -914,9 +914,9 @@ namespace Aha.API
                 public char state() { return list[block][index]; }
                 public IahaObject<char> copy() { FileText clone = new FileText { list = list, index = index, block = block }; return clone; }
                 public void action_skip() { if (index == list[block].Length) { index = 0; block++; } else index++; }
-                public char first(Predicate<char> that, Int64 max) 
+                public char first(Predicate<char> that, long max) 
                 { 
-                    Int64 j = 0; 
+                    long j = 0; 
                     int i = index; 
                     int b = block; 
                     char item = list[block][index]; 
@@ -1056,7 +1056,7 @@ namespace Aha.API
                                     await stream.WriteAsync(BOM, 0, BOM.Length);
                                 }
                                 char[] data = new char[block];
-                                Int64 left = param.attr_size();
+                                long left = param.attr_size();
                                 int size = block;
                                 IahaSequence<char> seq = (IahaSequence<char>)param.attr_content().copy();
                                 while (left > 0)
