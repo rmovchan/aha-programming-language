@@ -11,6 +11,7 @@ namespace Aha.Engine
 {
     public class comp_Engine<tpar_Event> : Aha.API.Jobs.icomp_Engine<tpar_Event>
     {
+        //delegate void trace(string s);
         private struct Date : Aha.Base.Time.icomp_DateStruc
         {
             public int field_year;

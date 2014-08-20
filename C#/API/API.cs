@@ -42,26 +42,26 @@ namespace Aha.API
 
         public interface iobj_Behavior<tpar_Event> : IahaObject<IahaArray<opaque_Job<tpar_Event>>>
         {
-            void action_handle(tpar_Event param_event);
+            bool action_handle(tpar_Event param_event);
         }
 
         public delegate tpar_Event func_EnquireTime<tpar_Event>(Aha.Base.Time.opaque_Timestamp time);
 
         public interface icomp_ComputeParams<tpar_Event>
         {
-            tpar_Event fattr_event();
-            tpar_Event attr_fail();
+            bool fattr_event(out tpar_Event result);
+            bool attr_fail(out tpar_Event result);
         }
 
         public interface icomp_Engine<tpar_Event>
         {
-            opaque_Job<tpar_Event> fattr_raise(tpar_Event e);
-            opaque_Job<tpar_Event> fattr_delay(Aha.Base.Time.opaque_Interval interval, opaque_Job<tpar_Event> job);
-            opaque_Job<tpar_Event> fattr_schedule(Aha.Base.Time.opaque_Timestamp time, opaque_Job<tpar_Event> job);
-            opaque_Job<tpar_Event> fattr_enquireTime(func_EnquireTime<tpar_Event> enq);
-            opaque_Job<tpar_Event> fattr_compute(icomp_ComputeParams<tpar_Event> param);
-            opaque_Job<tpar_Event> attr_break();
-            opaque_Job<tpar_Event> attr_shutdown();
+            bool fattr_raise(tpar_Event e, out opaque_Job<tpar_Event> result);
+            bool fattr_delay(Aha.Base.Time.opaque_Interval interval, opaque_Job<tpar_Event> job, out opaque_Job<tpar_Event> result);
+            bool fattr_schedule(Aha.Base.Time.opaque_Timestamp time, opaque_Job<tpar_Event> job, out opaque_Job<tpar_Event> result);
+            bool fattr_enquireTime(func_EnquireTime<tpar_Event> enq, out opaque_Job<tpar_Event> result);
+            bool fattr_compute(icomp_ComputeParams<tpar_Event> param, out opaque_Job<tpar_Event> result);
+            bool attr_break(out opaque_Job<tpar_Event> result);
+            bool attr_shutdown(out opaque_Job<tpar_Event> result);
         }
     }
 
@@ -175,16 +175,16 @@ namespace Aha.API
 
         public interface icomp_Version
         {
-            long attr_major();
-            long attr_minor();
-            long attr_build();
+            bool attr_major(out long result);
+            bool attr_minor(out long result);
+            bool attr_build(out long result);
         }
 
         public interface icomp_Framework
         {
-            IahaArray<char> attr_name();
-            icomp_Version attr_version();
-            IahaArray<IahaArray<char>> attr_components();
+            bool attr_name(out IahaArray<char> result);
+            bool attr_version(out icomp_Version result);
+            bool attr_components(out IahaArray<IahaArray<char>> result);
         }
 
         public interface icomp_Platform
@@ -200,60 +200,60 @@ namespace Aha.API
 
         public interface icomp_Locale
         {
-            Aha.Base.Time.opaque_Interval attr_GMToffset();
-            IahaArray<char> attr_country();
-            IahaArray<char> attr_language();
-            IahaArray<char> attr_currency();
-            char attr_decimal();
+            bool attr_GMToffset(out Aha.Base.Time.opaque_Interval result);
+            bool attr_country(out IahaArray<char> result);
+            bool attr_language(out IahaArray<char> result);
+            bool attr_currency(out IahaArray<char> result);
+            bool attr_decimal(out char result);
             //format: @Format!Format "formatting routines"
             //deformat: @Format!Deformat "deformatting routines"
             //charCompare: @StrUtils!CharCompare "character comparison function"
-            IahaArray<char> fattr_upper(IahaArray<char> ch);
-            IahaArray<char> fattr_lower(IahaArray<char> ch);
+            bool fattr_upper(IahaArray<char> ch, out IahaArray<char> result);
+            bool fattr_lower(IahaArray<char> ch, out IahaArray<char> result);
             bool fattr_sameText(IahaArray<char> param_first, IahaArray<char> param_second);
         }
 
         public interface icomp_FileSystem
         {
-            IahaArray<char> attr_eol();
+            bool attr_eol(out IahaArray<char> result);
             //splitLines: { character* -> String* } "convert sequence of chars to sequence of lines"
             //joinLines: { String* -> character* } "convert sequence of lines to sequence of chars"
-            opaque_FilePath fattr_filePath(opaque_DirPath param_dir, IahaArray<char> param_name);
-            opaque_DirPath fattr_subDirPath(opaque_DirPath param_dir, IahaArray<char> param_name);
-            opaque_DirPath fattr_parentDirPath(opaque_DirPath param_dir);
-            IahaArray<char> fattr_fileName(opaque_FilePath param_path);
-            opaque_DirPath fattr_fileDir(opaque_FilePath param_dir);
-            IahaArray<char> fattr_fileExt(opaque_FilePath param_path);
-            opaque_FilePath fattr_changeExt(opaque_FilePath param_dir, IahaArray<char> param_ext);
-            IahaArray<IahaArray<char>> fattr_splitDirPath(opaque_DirPath param_path);
-            opaque_DirPath fattr_buildDirPath(IahaArray<IahaArray<char>> param_parts);
-            opaque_DirPath fattr_workingDir();
-            opaque_DirPath fattr_appDir();
-            opaque_DirPath fattr_rootDir();
+            bool fattr_filePath(opaque_DirPath param_dir, IahaArray<char> param_name, out opaque_FilePath result);
+            bool fattr_subDirPath(opaque_DirPath param_dir, IahaArray<char> param_name, out opaque_DirPath result);
+            bool fattr_parentDirPath(opaque_DirPath param_dir, out opaque_DirPath result);
+            bool fattr_fileName(opaque_FilePath param_path, out IahaArray<char> result);
+            bool fattr_fileDir(opaque_FilePath param_dir, out opaque_DirPath result);
+            bool fattr_fileExt(opaque_FilePath param_path, out IahaArray<char> result);
+            bool fattr_changeExt(opaque_FilePath param_dir, IahaArray<char> param_ext, out opaque_FilePath result);
+            bool fattr_splitDirPath(opaque_DirPath param_path, out IahaArray<IahaArray<char>> result);
+            bool fattr_buildDirPath(IahaArray<IahaArray<char>> param_parts, out opaque_DirPath result);
+            bool fattr_workingDir(out opaque_DirPath result);
+            bool fattr_appDir(out opaque_DirPath result);
+            bool fattr_rootDir(out opaque_DirPath result);
         }
 
         public interface imod_Environment
         {
-            icomp_Framework attr_Framework();
-            icomp_Platform attr_Platform();
-            icomp_Locale attr_Locale();
-            icomp_FileSystem attr_FileSystem();
+            bool attr_Framework(out icomp_Framework result);
+            bool attr_Platform(out icomp_Platform result);
+            bool attr_Locale(out icomp_Locale result);
+            bool attr_FileSystem(out icomp_FileSystem result);
         }
 
         public class module_Environment : AhaModule, imod_Environment
         {
             struct comp_Version : icomp_Version
             {
-                public long attr_major() { return 0; }
-                public long attr_minor() { return 1; }
-                public long attr_build() { return 1; }
+                public bool attr_major(out long result) { result = 0; return true; }
+                public bool attr_minor(out long result) { result = 1; return true; }
+                public bool attr_build(out long result) { result = 1; return true; }
             }
 
             struct comp_Framework : icomp_Framework
             {
-                public IahaArray<char> attr_name() { return new AhaString("Aha! for .NET"); }
-                public icomp_Version attr_version() { return new comp_Version(); }
-                public IahaArray<IahaArray<char>> attr_components() { return new AhaArray<IahaArray<char>>(new IahaArray<char>[] { }); }
+                public bool attr_name(out IahaArray<char> result) { result = new AhaString("Aha! for .NET"); return true; }
+                public bool attr_version(out icomp_Version result) { result = new comp_Version(); return true; }
+                public bool attr_components(out IahaArray<IahaArray<char>> result) { result = new AhaArray<IahaArray<char>>(new IahaArray<char>[] { }); return true; }
             }
 
             public icomp_Framework attr_Framework() { return new comp_Framework(); }
@@ -275,15 +275,15 @@ namespace Aha.API
             {
                 private Aha.Base.Time.opaque_Interval field_GMToffset;
                 public Aha.Base.Time.opaque_Interval attr_GMToffset() { return field_GMToffset; }
-                public IahaArray<char> attr_country() { return new AhaString(System.Globalization.CultureInfo.CurrentCulture.EnglishName); }
-                public IahaArray<char> attr_language() { return new AhaString(System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName); }
-                public IahaArray<char> attr_currency() { return new AhaString(System.Globalization.CultureInfo.CurrentCulture.NumberFormat.CurrencySymbol); }
-                public char attr_decimal() { return System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator[0]; }
+                public bool attr_country(out IahaArray<char> result) { result = new AhaString(System.Globalization.CultureInfo.CurrentCulture.EnglishName); return true; }
+                public bool attr_language(out IahaArray<char> result) { result = new AhaString(System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName); return true; }
+                public bool attr_currency(out IahaArray<char> result) { result = new AhaString(System.Globalization.CultureInfo.CurrentCulture.NumberFormat.CurrencySymbol); return true; }
+                public bool attr_decimal(out char result) { result = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator[0]; return true; }
                 //format: @Format!Format "formatting routines"
                 //deformat: @Format!Deformat "deformatting routines"
                 //charCompare: @StrUtils!CharCompare "character comparison function"
-                public IahaArray<char> fattr_upper(IahaArray<char> param_str) { return new AhaString((new string(param_str.get())).ToUpper(System.Globalization.CultureInfo.CurrentCulture)); }
-                public IahaArray<char> fattr_lower(IahaArray<char> param_str) { return new AhaString((new string(param_str.get())).ToLower(System.Globalization.CultureInfo.CurrentCulture)); }
+                public bool fattr_upper(IahaArray<char> param_str, out IahaArray<char> result) { result = new AhaString((new string(param_str.get())).ToUpper(System.Globalization.CultureInfo.CurrentCulture)); return true; }
+                public bool fattr_lower(IahaArray<char> param_str, out IahaArray<char> result) { result = new AhaString((new string(param_str.get())).ToLower(System.Globalization.CultureInfo.CurrentCulture)); return true; }
                 public bool fattr_sameText(IahaArray<char> param_first, IahaArray<char> param_second)
                 {
                     return String.Compare(
@@ -302,24 +302,24 @@ namespace Aha.API
 
             class comp_FileSystem : icomp_FileSystem
             {
-                public IahaArray<char> attr_eol() { return new AhaString("\r\n"); }
+                public bool attr_eol(out IahaArray<char> result) { result = new AhaString("\r\n"); return true; }
                 //splitLines: { character* -> String* } "convert sequence of chars to sequence of lines"
                 //joinLines: { String* -> character* } "convert sequence of lines to sequence of chars"
-                public opaque_FilePath fattr_filePath(opaque_DirPath param_dir, IahaArray<char> param_name)
-                { return new opaque_FilePath { value = param_dir.value + System.IO.Path.PathSeparator + (new string(param_name.get())) }; }
-                public opaque_DirPath fattr_subDirPath(opaque_DirPath param_dir, IahaArray<char> param_name)
-                { return new opaque_DirPath { value = param_dir.value + System.IO.Path.PathSeparator + (new string(param_name.get())) }; }
-                public opaque_DirPath fattr_parentDirPath(opaque_DirPath param_dir)
-                { return new opaque_DirPath { value = System.IO.Path.GetDirectoryName(param_dir.value) }; }
-                public IahaArray<char> fattr_fileName(opaque_FilePath param_path)
-                { return new AhaString(System.IO.Path.GetFileName(param_path.value)); }
-                public opaque_DirPath fattr_fileDir(opaque_FilePath param_path)
-                { return new opaque_DirPath { value = System.IO.Path.GetDirectoryName(param_path.value) }; }
-                public IahaArray<char> fattr_fileExt(opaque_FilePath param_path)
-                { return new AhaString(System.IO.Path.GetExtension(param_path.value)); }
-                public opaque_FilePath fattr_changeExt(opaque_FilePath param_dir, IahaArray<char> param_ext)
-                { return new opaque_FilePath { value = System.IO.Path.ChangeExtension(param_dir.value, new string(param_ext.get())) }; }
-                public IahaArray<IahaArray<char>> fattr_splitDirPath(opaque_DirPath param_path)
+                public bool fattr_filePath(opaque_DirPath param_dir, IahaArray<char> param_name, out opaque_FilePath result)
+                { result = new opaque_FilePath { value = param_dir.value + System.IO.Path.PathSeparator + (new string(param_name.get())) }; return true; }
+                public bool fattr_subDirPath(opaque_DirPath param_dir, IahaArray<char> param_name, out opaque_DirPath result)
+                { result = new opaque_DirPath { value = param_dir.value + System.IO.Path.PathSeparator + (new string(param_name.get())) }; return true; }
+                public bool fattr_parentDirPath(opaque_DirPath param_dir, out opaque_DirPath result)
+                { result = new opaque_DirPath { value = System.IO.Path.GetDirectoryName(param_dir.value) }; return true; }
+                public bool fattr_fileName(opaque_FilePath param_path, out IahaArray<char> result)
+                { result = new AhaString(System.IO.Path.GetFileName(param_path.value)); return true; }
+                public bool fattr_fileDir(opaque_FilePath param_path, out opaque_DirPath result)
+                { result = new opaque_DirPath { value = System.IO.Path.GetDirectoryName(param_path.value) }; return true; }
+                public bool fattr_fileExt(opaque_FilePath param_path, out IahaArray<char> result)
+                { result = new AhaString(System.IO.Path.GetExtension(param_path.value)); return true; }
+                public bool fattr_changeExt(opaque_FilePath param_dir, IahaArray<char> param_ext, out opaque_FilePath result)
+                { result = new opaque_FilePath { value = System.IO.Path.ChangeExtension(param_dir.value, new string(param_ext.get())) }; return true; }
+                public bool fattr_splitDirPath(opaque_DirPath param_path, out IahaArray<IahaArray<char>> result)
                 {
                     List<int> list = new List<int>();
                     int j = 0;
@@ -344,36 +344,77 @@ namespace Aha.API
                     seg = new char[param_path.value.Length - j];
                     Array.Copy(param_path.value.ToCharArray(), j, seg, 0, param_path.value.Length - j);
                     temp[list.Count] = new AhaString(seg);
-                    return new AhaArray<IahaArray<char>>(temp);
+                    result = new AhaArray<IahaArray<char>>(temp);
+                    return true;
                 }
-                public opaque_DirPath fattr_buildDirPath(IahaArray<IahaArray<char>> param_parts)
+                public bool fattr_buildDirPath(IahaArray<IahaArray<char>> param_parts, out opaque_DirPath result)
                 {
                     string[] paths = new string[param_parts.size()];
-                    for (int i = 0; i < param_parts.size(); i++) paths[i] = new string(param_parts.at(i).get());
-                    return new opaque_DirPath { value = System.IO.Path.Combine(paths) };
+                    for (int i = 0; i < param_parts.size(); i++)
+                    {
+                        IahaArray<char> path;
+                        if (param_parts.at(i, out path))
+                            paths[i] = new string(path.get());
+                        else
+                        {
+                            result = default(opaque_DirPath);
+                            return false;
+                        }
+                    }
+                    result = new opaque_DirPath { value = System.IO.Path.Combine(paths) };
+                    return true;
                 }
-                public opaque_DirPath fattr_workingDir() { return new opaque_DirPath { value = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData) }; }
-                public opaque_DirPath fattr_appDir() { return new opaque_DirPath { value = System.Reflection.Assembly.GetEntryAssembly().Location }; }
-                public opaque_DirPath fattr_rootDir() { return new opaque_DirPath { value = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop) }; }
+                public bool fattr_workingDir(out opaque_DirPath result) { result = new opaque_DirPath { value = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData) }; return true; }
+                public bool fattr_appDir(out opaque_DirPath result) { result = new opaque_DirPath { value = System.Reflection.Assembly.GetEntryAssembly().Location }; return true; }
+                public bool fattr_rootDir(out opaque_DirPath result) { result = new opaque_DirPath { value = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop) }; return true; }
             }
 
-            public icomp_FileSystem attr_FileSystem() { return new comp_FileSystem(); }
+            public bool attr_FileSystem(out icomp_FileSystem result) { result = new comp_FileSystem(); return true; }
 
             //    (~str integer): { integer -> String } "convert integer to string"
-            public IahaArray<char> op__str_integer(long param_int) { return new AhaString(param_int.ToString()); }
+            public bool op__str_integer(long param_int, out IahaArray<char> result) 
+            { 
+                  result = new AhaString(param_int.ToString()); 
+                  return true; 
+            }
             //    (~str @Float!Float): { @Float!Float -> String } "convert Float to string (local format)"
-            public IahaArray<char> op__str_Float(Aha.Base.Math.opaque_Float param_float) { return new AhaString(param_float.value.ToString()); }
+            public bool op__str_Float(Aha.Base.Math.opaque_Float param_float, out IahaArray<char> result)
+            { 
+                result = new AhaString(param_float.value.ToString()); 
+                return true; 
+            }
             //    (~str @Time!Timestamp): { @Time!Timestamp -> String } "convert Timestamp to string (local format)"
-            public IahaArray<char> op__str_Timestamp(Aha.Base.Time.opaque_Timestamp param_timestamp) { DateTime dt = new DateTime(param_timestamp.ticks); return new AhaString(dt.ToString()); }
+            public bool op__str_Timestamp(Aha.Base.Time.opaque_Timestamp param_timestamp, out IahaArray<char> result) 
+            { 
+                DateTime dt = new DateTime(param_timestamp.ticks); 
+                result = new AhaString(dt.ToString());
+                return true;
+            }
             //    (~str @Money!Money): { @Money!Money -> String } "convert Money to string (local format)"
             //    (~int String): { String -> integer } "convert string to integer"
-            public long op__int_String(IahaArray<char> param_str) { return Convert.ToInt64(new string(param_str.get())); }
+            public bool op__int_String(IahaArray<char> param_str, out long result) 
+            { 
+                result = Convert.ToInt64(new string(param_str.get()));
+                return true;
+            }
             //    (~float String): { String -> @Float!Float } "convert string (local format) to Float"
-            public Aha.Base.Math.opaque_Float op__float_String(IahaArray<char> param_str) { return new Aha.Base.Math.opaque_Float() { value = Convert.ToDouble(new string(param_str.get())) }; }
+            public bool op__float_String(IahaArray<char> param_str, out Aha.Base.Math.opaque_Float result) 
+            { 
+                result = new Aha.Base.Math.opaque_Float() { value = Convert.ToDouble(new string(param_str.get())) };
+                return true;
+            }
             //    (~date String): { String -> @Time!Timestamp } "convert string (local format) to date"
-            public Aha.Base.Time.opaque_Timestamp op__date_String(IahaArray<char> param_str) { return new Aha.Base.Time.opaque_Timestamp() { ticks = Convert.ToDateTime(new string(param_str.get())).Date.Ticks }; }
+            public bool op__date_String(IahaArray<char> param_str, out Aha.Base.Time.opaque_Timestamp result) 
+            { 
+                result = new Aha.Base.Time.opaque_Timestamp() { ticks = Convert.ToDateTime(new string(param_str.get())).Date.Ticks };
+                return true;
+            }
             //    (~time String): { String -> @Time!Interval } "convert string (local format) to time"
-            public Aha.Base.Time.opaque_Interval op__time_String(IahaArray<char> param_str) { return new Aha.Base.Time.opaque_Interval() { ticks = Convert.ToDateTime(new string(param_str.get())).TimeOfDay.Ticks }; }
+            public bool op__time_String(IahaArray<char> param_str, out Aha.Base.Time.opaque_Interval result) 
+            { 
+                result = new Aha.Base.Time.opaque_Interval() { ticks = Convert.ToDateTime(new string(param_str.get())).TimeOfDay.Ticks };
+                return true;
+            }
             //    (~timestamp String): { String -> @Time!Timestamp } "convert string (local format) to timestamp"
             //    (~money String): { String -> @Money!Money } "convert string (local format) to Money"
             //    (String <= String): { String, String } "compare string in local sorting order"
@@ -485,34 +526,34 @@ namespace Aha.API
     {
         public interface icomp_FileInfo
         {
-            IahaArray<char> attr_fileType();
-            Aha.Base.Time.opaque_Timestamp attr_modified();
-            long attr_size();
+            bool attr_fileType(out IahaArray<char> result);
+            bool attr_modified(out Aha.Base.Time.opaque_Timestamp result);
+            bool attr_size(out long result);
         }
 
         public interface icomp_ErrorKind
         {
-            bool attr1_access();
-            bool attr2_IO();
-            bool attr3_notFound();
-            bool attr4_nameClash();
-            bool attr5_outOfMemory();
-            bool attr6_other();
+            bool attr_access();
+            bool attr_IO();
+            bool attr_notFound();
+            bool attr_nameClash();
+            bool attr_outOfMemory();
+            bool attr_other();
         }
 
         public interface icomp_ErrorInfo
         {
-            icomp_ErrorKind attr_kind();
-            IahaArray<char> attr_message();
+            bool attr_kind(out icomp_ErrorKind result);
+            bool attr_message(out IahaArray<char> result);
         }
 
         public interface icomp_Encoding
         {
-            bool attr1_ASCII();
-            bool attr2_UTF8();
-            bool attr3_UCS2LE();
-            bool attr4_UCS2BE();
-            bool attr5_auto();
+            bool attr_ASCII();
+            bool attr_UTF8();
+            bool attr_UCS2LE();
+            bool attr_UCS2BE();
+            bool attr_auto();
         }
 
     }
@@ -621,90 +662,90 @@ namespace Aha.API
     {
         public interface icomp_ReadParams<tpar_Event>
         {
-            icomp_Position<tpar_Event> attr_position();
-            long attr_bytes();
-            tpar_Event fattr_result(Aha.Base.Bits.opaque_BitString result);
+            bool attr_position(out icomp_Position<tpar_Event> result);
+            bool attr_bytes(out long result);
+            bool attr_result(Aha.Base.Bits.opaque_BitString data, out tpar_Event result);
         }
 
         public interface icomp_WriteParams<tpar_Event>
         {
-            icomp_Position<tpar_Event> attr_position();
-            Aha.Base.Bits.opaque_BitString attr_data();
-            tpar_Event attr_written();
+            bool attr_position(out icomp_Position<tpar_Event> result);
+            bool attr_data(out Aha.Base.Bits.opaque_BitString result);
+            bool attr_written(out tpar_Event result);
         }
 
         public interface icomp_Position<tpar_Event>
         {
-            long attr1_top();
-            long attr2_bottom();
-            bool attr3_next();
+            bool attr_top(out long result);
+            bool attr_bottom(out long result);
+            bool attr_next();
         }
 
         public interface icomp_ReaderCommand<tpar_Event>
         {
-            icomp_ReadParams<tpar_Event> attr1_read();
-            tpar_Event attr2_close();
+            bool attr_read(out icomp_ReadParams<tpar_Event> result);
+            bool attr_close(out tpar_Event result);
         }
 
         public interface icomp_WriterCommand<tpar_Event>
         {
-            icomp_WriteParams<tpar_Event> attr1_write();
-            tpar_Event attr2_close();
+            bool attr_write(out icomp_WriteParams<tpar_Event> result);
+            bool attr_close(out tpar_Event result);
         }
 
-        public delegate Jobs.opaque_Job<tpar_Event> func_Reader<tpar_Event>(icomp_ReaderCommand<tpar_Event> cmd);
+        public delegate bool func_Reader<tpar_Event>(icomp_ReaderCommand<tpar_Event> cmd, out Jobs.opaque_Job<tpar_Event> result);
 
-        public delegate Jobs.opaque_Job<tpar_Event> func_Writer<tpar_Event>(icomp_WriterCommand<tpar_Event> cmd);
+        public delegate bool func_Writer<tpar_Event>(icomp_WriterCommand<tpar_Event> cmd, out Jobs.opaque_Job<tpar_Event> result);
 
         public interface imod_FileIO<tpar_Event>
         {
-            Jobs.opaque_Job<tpar_Event> fattr_CreateReader(icomp_CreateReaderParam<tpar_Event> param);
-            Jobs.opaque_Job<tpar_Event> fattr_CreateWriter(icomp_CreateWriterParam<tpar_Event> param);
-            Jobs.opaque_Job<tpar_Event> fattr_ReadText(icomp_ReadTextParam<tpar_Event> param);
-            Jobs.opaque_Job<tpar_Event> fattr_WriteText(icomp_WriteTextParam<tpar_Event> param);
+            bool attr_CreateReader(icomp_CreateReaderParam<tpar_Event> param, out Jobs.opaque_Job<tpar_Event> result);
+            bool attr_CreateWriter(icomp_CreateWriterParam<tpar_Event> param, out Jobs.opaque_Job<tpar_Event> result);
+            bool attr_ReadText(icomp_ReadTextParam<tpar_Event> param, out Jobs.opaque_Job<tpar_Event> result);
+            bool attr_WriteText(icomp_WriteTextParam<tpar_Event> param, out Jobs.opaque_Job<tpar_Event> result);
         }
 
         public interface icomp_CreateReaderParam<tpar_Event>
         {
-            Aha.API.Environment.opaque_FilePath attr_path();
-            Aha.API.Jobs.icomp_Engine<tpar_Event> attr_engine();
-            tpar_Event fattr_success(func_Reader<tpar_Event> reader);
-            tpar_Event fattr_error(FileIOtypes.icomp_ErrorInfo error);
+            bool attr_path(out Aha.API.Environment.opaque_FilePath result);
+            bool attr_engine(out Aha.API.Jobs.icomp_Engine<tpar_Event> result);
+            bool attr_success(func_Reader<tpar_Event> reader, out tpar_Event result);
+            bool attr_error(FileIOtypes.icomp_ErrorInfo error, out tpar_Event result);
         }
 
         public interface icomp_CreateWriterParam<tpar_Event>
         {
-            Aha.API.Environment.opaque_FilePath attr_path();
-            Aha.API.Jobs.icomp_Engine<tpar_Event> attr_engine();
-            tpar_Event fattr_success(func_Writer<tpar_Event> writer);
-            tpar_Event fattr_error(FileIOtypes.icomp_ErrorInfo error);
+            bool attr_path(out Aha.API.Environment.opaque_FilePath result);
+            bool attr_engine(out Aha.API.Jobs.icomp_Engine<tpar_Event> result);
+            bool attr_success(func_Writer<tpar_Event> writer, out tpar_Event result);
+            bool attr_error(FileIOtypes.icomp_ErrorInfo error, out tpar_Event result);
         }
 
         public interface icomp_ReadTextParam<tpar_Event>
         {
-            Aha.API.Environment.opaque_FilePath attr_path();
-            Aha.API.Jobs.icomp_Engine<tpar_Event> attr_engine();
-            FileIOtypes.icomp_Encoding attr_encoding();
-            tpar_Event fattr_success(icomp_TextReadParams<tpar_Event> result);
-            tpar_Event fattr_error(FileIOtypes.icomp_ErrorInfo error);
+            bool attr_path(out Aha.API.Environment.opaque_FilePath result);
+            bool attr_engine(out Aha.API.Jobs.icomp_Engine<tpar_Event> result);
+            bool attr_encoding(out FileIOtypes.icomp_Encoding result);
+            bool fattr_success(icomp_TextReadParams<tpar_Event> result, out tpar_Event result);
+            bool fattr_error(FileIOtypes.icomp_ErrorInfo error, out tpar_Event result);
         }
 
         public interface icomp_TextReadParams<tpar_Event>
         {
-            IahaSequence<char> attr_content();
-            long attr_size();
-            FileIOtypes.icomp_Encoding attr_encoding();
+            bool attr_content(out IahaSequence<char> result);
+            bool attr_size(out long result);
+            bool attr_encoding(out FileIOtypes.icomp_Encoding result);
         }
 
         public interface icomp_WriteTextParam<tpar_Event>
         {
-            Aha.API.Environment.opaque_FilePath attr_path();
-            Aha.API.Jobs.icomp_Engine<tpar_Event> attr_engine();
-            IahaSequence<char> attr_content();
-            long attr_size();
-            FileIOtypes.icomp_Encoding attr_encoding();
-            tpar_Event attr_success();
-            tpar_Event fattr_error(FileIOtypes.icomp_ErrorInfo error);
+            bool attr_path(out Aha.API.Environment.opaque_FilePath result);
+            bool attr_engine(out Aha.API.Jobs.icomp_Engine<tpar_Event> result);
+            bool attr_content(out IahaSequence<char> result);
+            bool attr_size(out long result);
+            bool attr_encoding(out FileIOtypes.icomp_Encoding result);
+            bool attr_success(out tpar_Event result);
+            bool attr_error(FileIOtypes.icomp_ErrorInfo error, out tpar_Event result);
         }
 
         public class module_FileIO<tpar_Event> : AhaModule, imod_FileIO<tpar_Event>
@@ -712,14 +753,18 @@ namespace Aha.API
             class ErrorInfo : Aha.API.FileIOtypes.icomp_ErrorKind, Aha.API.FileIOtypes.icomp_ErrorInfo
             {
                 private System.Exception field_ex;
-                public bool attr1_access() { return field_ex is System.Security.SecurityException || field_ex is System.UnauthorizedAccessException; }
-                public bool attr2_IO() { return field_ex is System.IO.IOException; }
-                public bool attr3_notFound() { return field_ex is System.IO.FileNotFoundException || field_ex is System.IO.DirectoryNotFoundException; }
-                public bool attr4_nameClash() { return field_ex is System.IO.IOException; } //TODO
-                public bool attr5_outOfMemory() { return field_ex is System.OutOfMemoryException; }
-                public bool attr6_other() { return !(field_ex is System.Security.SecurityException || field_ex is System.UnauthorizedAccessException || field_ex is System.IO.IOException || field_ex is System.IO.FileNotFoundException || field_ex is System.IO.DirectoryNotFoundException || field_ex is System.OutOfMemoryException); }
-                public FileIOtypes.icomp_ErrorKind attr_kind() { return this; }
-                public IahaArray<char> attr_message() { return new AhaString(field_ex.Message); }
+                public bool attr_access() { return field_ex is System.Security.SecurityException || field_ex is System.UnauthorizedAccessException; }
+                public bool attr_IO() { return field_ex is System.IO.IOException; }
+                public bool attr_notFound() { return field_ex is System.IO.FileNotFoundException || field_ex is System.IO.DirectoryNotFoundException; }
+                public bool attr_nameClash() { return field_ex is System.IO.IOException; } //TODO
+                public bool attr_outOfMemory() { return field_ex is System.OutOfMemoryException; }
+                public bool attr_other() { return !(field_ex is System.Security.SecurityException || field_ex is System.UnauthorizedAccessException || field_ex is System.IO.IOException || field_ex is System.IO.FileNotFoundException || field_ex is System.IO.DirectoryNotFoundException || field_ex is System.OutOfMemoryException); }
+                public bool attr_kind(out FileIOtypes.icomp_ErrorKind result) 
+                { 
+                    result = this;
+                    return true;
+                }
+                public bool attr_message(out IahaArray<char> result) { result = new AhaString(field_ex.Message); return true; }
                 public ErrorInfo(System.Exception param_ex)
                 {
                     field_ex = param_ex;
@@ -732,38 +777,29 @@ namespace Aha.API
                 icomp_ReadParams<tpar_Event> p;
                 private async void read()
                 {
+                    long ipos;
+                    icomp_Position<tpar_Event> pos;
+                    Environment.opaque_FilePath path;
                     try
                     {
-                        if (stream == null)
+                        if (stream == null && field_param.attr_path(out path))
                         {
-                            stream = new System.IO.FileStream(field_param.attr_path().value, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read);
+                            stream = new System.IO.FileStream(path.value, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read);
                         }
-                        try
-                        {
-                            long pos = p.attr_position().attr1_top();
-                            stream.Position = pos;
-                        }
-                        catch(Failure)
-                        {
-                            try
-                            {
-                                long pos = p.attr_position().attr2_bottom();
-                                stream.Position = stream.Length - pos;
-                            }
-                            catch(Failure)
-                            {
-                                // next
-                            }
-                        }
+                        if (p.attr_position(out pos) && pos.attr_top(out ipos))
+                            stream.Position = ipos;
+                        else
+                            if (pos.attr_bottom(out ipos))
+                                stream.Position = stream.Length - ipos;
                         byte[] data = new byte[p.attr_bytes()];
                         int byteCount = await stream.ReadAsync(data, 0, (int)p.attr_bytes());
                         if (byteCount != p.attr_bytes()) { Array.Resize<byte>(ref data, byteCount); }
                         Aha.Base.Bits.opaque_BitString bits = new Base.Bits.opaque_BitString { bytes = data, bits = byteCount * 8 };
-                        field_param.attr_engine().fattr_raise(p.fattr_result(bits)).execute();
+                        field_param.attr_engine().fattr_raise(p.attr_result(bits)).execute();
                     }
                     catch(System.Exception ex)
                     {
-                        field_param.attr_engine().fattr_raise(field_param.fattr_error(new ErrorInfo(ex))).execute();
+                        field_param.attr_engine().fattr_raise(field_param.attr_error(new ErrorInfo(ex))).execute();
                     }
                 }
                 private void close()
@@ -778,7 +814,7 @@ namespace Aha.API
                 {
                     try
                     {
-                        p = cmd.attr1_read();                       
+                        p = cmd.attr_read();                       
                         return new Jobs.opaque_Job<tpar_Event>
                         {
                             title = "Reader.read " + field_param.attr_path().value,
@@ -835,7 +871,7 @@ namespace Aha.API
                     }
                     catch (System.Exception ex)
                     {
-                        field_param.attr_engine().fattr_raise(field_param.fattr_error(new ErrorInfo(ex))).execute();
+                        field_param.attr_engine().fattr_raise(field_param.attr_error(new ErrorInfo(ex))).execute();
                     }
                 }
                 private void close()
@@ -850,7 +886,7 @@ namespace Aha.API
                 {
                     try
                     {
-                        p = cmd.attr1_write();
+                        p = cmd.attr_write();
                         return new Jobs.opaque_Job<tpar_Event>
                         {
                             title = "Writer.write " + field_param.attr_path().value,
@@ -880,7 +916,7 @@ namespace Aha.API
                 public long attr_size() { return field_size; }
                 public FileIOtypes.icomp_Encoding attr_encoding() { return field_encoding; }
             }
-            public Jobs.opaque_Job<tpar_Event> fattr_CreateReader(icomp_CreateReaderParam<tpar_Event> param)
+            public Jobs.opaque_Job<tpar_Event> attr_CreateReader(icomp_CreateReaderParam<tpar_Event> param)
             {
                 Reader reader = new Reader(param);
                 return new Jobs.opaque_Job<tpar_Event>
@@ -889,11 +925,11 @@ namespace Aha.API
                         execute =
                             delegate()
                             {
-                                param.attr_engine().fattr_raise(param.fattr_success(reader.func_Reader)).execute();
+                                param.attr_engine().fattr_raise(param.attr_success(reader.func_Reader)).execute();
                             }
                     };
             }
-            public Jobs.opaque_Job<tpar_Event> fattr_CreateWriter(icomp_CreateWriterParam<tpar_Event> param)
+            public Jobs.opaque_Job<tpar_Event> attr_CreateWriter(icomp_CreateWriterParam<tpar_Event> param)
             {
                 Writer writer = new Writer(param);
                 return new Jobs.opaque_Job<tpar_Event>
@@ -902,7 +938,7 @@ namespace Aha.API
                     execute =
                         delegate()
                         {
-                            param.attr_engine().fattr_raise(param.fattr_success(writer.func_Writer)).execute();
+                            param.attr_engine().fattr_raise(param.attr_success(writer.func_Writer)).execute();
                         }
                 };
             }
@@ -933,32 +969,32 @@ namespace Aha.API
             struct FileEncoding : FileIOtypes.icomp_Encoding
             {
                 public Encoding field_encoding;
-                bool FileIOtypes.icomp_Encoding.attr1_ASCII()
+                bool FileIOtypes.icomp_Encoding.attr_ASCII()
                 {
                     return field_encoding.Equals(Encoding.ASCII);
                 }
 
-                bool FileIOtypes.icomp_Encoding.attr2_UTF8()
+                bool FileIOtypes.icomp_Encoding.attr_UTF8()
                 {
                     return field_encoding.Equals(Encoding.UTF8);
                 }
 
-                bool FileIOtypes.icomp_Encoding.attr3_UCS2LE()
+                bool FileIOtypes.icomp_Encoding.attr_UCS2LE()
                 {
                     return field_encoding.Equals(Encoding.Unicode);
                 }
 
-                bool FileIOtypes.icomp_Encoding.attr4_UCS2BE()
+                bool FileIOtypes.icomp_Encoding.attr_UCS2BE()
                 {
                     return field_encoding.Equals(Encoding.BigEndianUnicode);
                 }
 
-                bool FileIOtypes.icomp_Encoding.attr5_auto()
+                bool FileIOtypes.icomp_Encoding.attr_auto()
                 {
                     return field_encoding.Equals(Encoding.Default);
                 }
             }
-            public Jobs.opaque_Job<tpar_Event> fattr_ReadText(icomp_ReadTextParam<tpar_Event> param)
+            public Jobs.opaque_Job<tpar_Event> attr_ReadText(icomp_ReadTextParam<tpar_Event> param)
             {
 
                 return new Jobs.opaque_Job<tpar_Event>
@@ -974,16 +1010,16 @@ namespace Aha.API
                             {
                                 stream = new System.IO.FileStream(param.attr_path().value, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read);
                                 FileText text = new FileText() { list = new List<string>(), block = 0, index = 0 };
-                                if (param.attr_encoding().attr1_ASCII())
+                                if (param.attr_encoding().attr_ASCII())
                                 { encoding = Encoding.ASCII; }
                                 else
-                                    if (param.attr_encoding().attr2_UTF8())
+                                    if (param.attr_encoding().attr_UTF8())
                                     { encoding = Encoding.UTF8; }
                                     else
-                                        if (param.attr_encoding().attr3_UCS2LE())
+                                        if (param.attr_encoding().attr_UCS2LE())
                                         { encoding = Encoding.Unicode; }
                                         else
-                                            if (param.attr_encoding().attr4_UCS2BE())
+                                            if (param.attr_encoding().attr_UCS2BE())
                                             { encoding = Encoding.BigEndianUnicode; }
                                             else
                                             { encoding = null; } 
@@ -1022,7 +1058,7 @@ namespace Aha.API
                         }
                 };
             }
-            public Jobs.opaque_Job<tpar_Event> fattr_WriteText(icomp_WriteTextParam<tpar_Event> param)
+            public Jobs.opaque_Job<tpar_Event> attr_WriteText(icomp_WriteTextParam<tpar_Event> param)
             {
 
                 return new Jobs.opaque_Job<tpar_Event>
@@ -1037,16 +1073,16 @@ namespace Aha.API
                             try
                             {
                                 stream = new System.IO.FileStream(param.attr_path().value, System.IO.FileMode.CreateNew, System.IO.FileAccess.Write, System.IO.FileShare.None);
-                                if (param.attr_encoding().attr1_ASCII())
+                                if (param.attr_encoding().attr_ASCII())
                                 { encoding = Encoding.ASCII; }
                                 else
-                                    if (param.attr_encoding().attr2_UTF8())
+                                    if (param.attr_encoding().attr_UTF8())
                                     { encoding = Encoding.UTF8; }
                                     else
-                                        if (param.attr_encoding().attr3_UCS2LE())
+                                        if (param.attr_encoding().attr_UCS2LE())
                                         { encoding = Encoding.Unicode; }
                                         else
-                                            if (param.attr_encoding().attr4_UCS2BE())
+                                            if (param.attr_encoding().attr_UCS2BE())
                                             { encoding = Encoding.BigEndianUnicode; }
                                             else
                                             { encoding = Encoding.Default; }
@@ -1081,7 +1117,7 @@ namespace Aha.API
                             }
                             catch (System.Exception ex)
                             {
-                                param.attr_engine().fattr_raise(param.fattr_error(new ErrorInfo(ex))).execute();
+                                param.attr_engine().fattr_raise(param.attr_error(new ErrorInfo(ex))).execute();
                             }
                             finally
                             {
