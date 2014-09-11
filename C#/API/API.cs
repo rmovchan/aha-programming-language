@@ -774,33 +774,42 @@ namespace Aha.API
             {
                 private icomp_CreateReaderParam<tpar_Event> field_param;
                 private System.IO.FileStream stream = null;
-                icomp_ReadParams<tpar_Event> p;
-                private async void read()
+                private async void read(icomp_ReadParams<tpar_Event> p)
                 {
                     long ipos;
                     icomp_Position<tpar_Event> pos;
                     Environment.opaque_FilePath path;
-                    try
-                    {
-                        if (stream == null && field_param.attr_path(out path))
+                    Jobs.icomp_Engine<tpar_Event> engine;
+                    tpar_Event evt;
+                    Jobs.opaque_Job<tpar_Event> job;
+                    if (field_param.attr_engine(out engine))
+                        try
                         {
-                            stream = new System.IO.FileStream(path.value, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read);
+                            if (stream == null && field_param.attr_path(out path))
+                            {
+                                stream = new System.IO.FileStream(path.value, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read);
+                            }
+                            if (p.attr_position(out pos) && pos.attr_top(out ipos))
+                                stream.Position = ipos;
+                            else
+                                if (pos.attr_bottom(out ipos))
+                                    stream.Position = stream.Length - ipos;
+                            long bytes;
+                            if (p.attr_bytes(out bytes))
+                            {
+                                byte[] data = new byte[bytes];
+                                int byteCount = await stream.ReadAsync(data, 0, (int)bytes);
+                                if (byteCount != bytes) { Array.Resize<byte>(ref data, byteCount); }
+                                Aha.Base.Bits.opaque_BitString bits = new Base.Bits.opaque_BitString { bytes = data, bits = byteCount * 8 };
+                                if (p.attr_result(bits, out evt) && engine.fattr_raise(evt, out job))
+                                    job.execute();
+                            }
                         }
-                        if (p.attr_position(out pos) && pos.attr_top(out ipos))
-                            stream.Position = ipos;
-                        else
-                            if (pos.attr_bottom(out ipos))
-                                stream.Position = stream.Length - ipos;
-                        byte[] data = new byte[p.attr_bytes()];
-                        int byteCount = await stream.ReadAsync(data, 0, (int)p.attr_bytes());
-                        if (byteCount != p.attr_bytes()) { Array.Resize<byte>(ref data, byteCount); }
-                        Aha.Base.Bits.opaque_BitString bits = new Base.Bits.opaque_BitString { bytes = data, bits = byteCount * 8 };
-                        field_param.attr_engine().fattr_raise(p.attr_result(bits)).execute();
-                    }
-                    catch(System.Exception ex)
-                    {
-                        field_param.attr_engine().fattr_raise(field_param.attr_error(new ErrorInfo(ex))).execute();
-                    }
+                        catch(System.Exception ex)
+                        {
+                            if (field_param.attr_error(new ErrorInfo(ex), out evt) && engine.fattr_raise(evt, out job))
+                                job.execute();
+                        }
                 }
                 private void close()
                 {
@@ -810,25 +819,27 @@ namespace Aha.API
                         stream = null;
                     }
                 }
-                public Jobs.opaque_Job<tpar_Event> func_Reader(icomp_ReaderCommand<tpar_Event> cmd)
+                public bool func_Reader(icomp_ReaderCommand<tpar_Event> cmd, out Jobs.opaque_Job<tpar_Event> Job)
                 {
-                    try
+                    Environment.opaque_FilePath path;
+                    icomp_ReadParams<tpar_Event> p;
+                    if (field_param.attr_path(out path) && cmd.attr_read(out p))
                     {
-                        p = cmd.attr_read();                       
-                        return new Jobs.opaque_Job<tpar_Event>
+                        Job = new Jobs.opaque_Job<tpar_Event>
                         {
-                            title = "Reader.read " + field_param.attr_path().value,
-                            execute = read
+                            title = "Reader.read " + path.value,
+                            execute = delegate() { read(p); }
                         };
                     }
-                    catch(System.Exception)
+                    else
                     {
-                        return new Jobs.opaque_Job<tpar_Event>
+                        Job = new Jobs.opaque_Job<tpar_Event>
                         {
-                            title = "Reader.close " + field_param.attr_path().value,
+                            title = "Reader.close " + path.value,
                             execute = close
                         };
                     }
+                    return true;
                 }
                 public Reader(icomp_CreateReaderParam<tpar_Event> param)
                 {
@@ -839,40 +850,40 @@ namespace Aha.API
             {
                 private icomp_CreateWriterParam<tpar_Event> field_param;
                 private System.IO.FileStream stream = null;
-                icomp_WriteParams<tpar_Event> p;
-                private async void write()
+                private async void write(icomp_WriteParams<tpar_Event> p)
                 {
-                    try
-                    {
-                        if (stream == null)
-                        {
-                            stream = new System.IO.FileStream(field_param.attr_path().value, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.Write, System.IO.FileShare.None);
-                        }
+                    long ipos;
+                    icomp_Position<tpar_Event> pos;
+                    Environment.opaque_FilePath path;
+                    Jobs.icomp_Engine<tpar_Event> engine;
+                    tpar_Event evt;
+                    Jobs.opaque_Job<tpar_Event> job;
+                    if (field_param.attr_engine(out engine))
                         try
                         {
-                            long pos = p.attr_position().attr1_top();
-                            stream.Position = pos;
+                            if (stream == null && field_param.attr_path(out path))
+                            {
+                                stream = new System.IO.FileStream(path.value, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.Write, System.IO.FileShare.None);
+                            }
+                            if (p.attr_position(out pos) && pos.attr_top(out ipos))
+                                stream.Position = ipos;
+                            else
+                                if (pos.attr_bottom(out ipos))
+                                    stream.Position = stream.Length - ipos;
+                            Base.Bits.opaque_BitString bits;
+                            if (p.attr_data(out bits))
+                            {
+                                byte[] data = bits.bytes;
+                                await stream.WriteAsync(data, 0, data.Length);
+                                if (p.attr_written(out evt) && engine.fattr_raise(evt, out job))
+                                    job.execute();
+                            }
                         }
-                        catch (Failure)
+                        catch (System.Exception ex)
                         {
-                            try
-                            {
-                                long pos = p.attr_position().attr2_bottom();
-                                stream.Position = stream.Length - pos;
-                            }
-                            catch (Failure)
-                            {
-                                // next
-                            }
+                            if (field_param.attr_error(new ErrorInfo(ex), out evt) && engine.fattr_raise(evt, out job))
+                                job.execute();
                         }
-                        byte[] data = p.attr_data().bytes;
-                        await stream.WriteAsync(data, 0, data.Length);
-                        field_param.attr_engine().fattr_raise(p.attr_written()).execute();
-                    }
-                    catch (System.Exception ex)
-                    {
-                        field_param.attr_engine().fattr_raise(field_param.attr_error(new ErrorInfo(ex))).execute();
-                    }
                 }
                 private void close()
                 {
@@ -882,25 +893,28 @@ namespace Aha.API
                         stream = null;
                     }
                 }
-                public Jobs.opaque_Job<tpar_Event> func_Writer(icomp_WriterCommand<tpar_Event> cmd)
+                public bool func_Writer(icomp_WriterCommand<tpar_Event> cmd, out Jobs.opaque_Job<tpar_Event> job)
                 {
-                    try
+                    Environment.opaque_FilePath path;
+                    icomp_WriteParams<tpar_Event> p;
+                    if (field_param.attr_path(out path) && cmd.attr_write(out p))
                     {
-                        p = cmd.attr_write();
-                        return new Jobs.opaque_Job<tpar_Event>
+                        job = new Jobs.opaque_Job<tpar_Event>
                         {
-                            title = "Writer.write " + field_param.attr_path().value,
-                            execute = write
+                            title = "Writer.write " + path.value,
+                            execute =
+                                delegate() { write(p); }
                         };
                     }
-                    catch (System.Exception)
+                    else
                     {
-                        return new Jobs.opaque_Job<tpar_Event>
+                        job = new Jobs.opaque_Job<tpar_Event>
                         {
-                            title = "Writer.close " + field_param.attr_path().value,
+                            title = "Writer.close " + path.value,
                             execute = close
                         };
                     }
+                    return true;
                 }
                 public Writer(icomp_CreateWriterParam<tpar_Event> param)
                 {
@@ -919,26 +933,42 @@ namespace Aha.API
             public Jobs.opaque_Job<tpar_Event> attr_CreateReader(icomp_CreateReaderParam<tpar_Event> param)
             {
                 Reader reader = new Reader(param);
+                Environment.opaque_FilePath path;
+                Jobs.icomp_Engine<tpar_Event> engine;
+                tpar_Event evt;
+                Jobs.opaque_Job<tpar_Event> job;
+                param.attr_engine(out engine);
+                param.attr_path(out path);
+                param.attr_success(reader.func_Reader, out evt);
+                engine.fattr_raise(evt, out job);
                 return new Jobs.opaque_Job<tpar_Event>
-                    {
-                        title = "CreateReader " + param.attr_path().value,
-                        execute =
-                            delegate()
-                            {
-                                param.attr_engine().fattr_raise(param.attr_success(reader.func_Reader)).execute();
-                            }
-                    };
+                {
+                    title = "CreateReader " + path.value,
+                    execute =
+                        delegate()
+                        {
+                            job.execute();
+                        }
+                };
             }
             public Jobs.opaque_Job<tpar_Event> attr_CreateWriter(icomp_CreateWriterParam<tpar_Event> param)
             {
                 Writer writer = new Writer(param);
+                Environment.opaque_FilePath path;
+                Jobs.icomp_Engine<tpar_Event> engine;
+                tpar_Event evt;
+                Jobs.opaque_Job<tpar_Event> job;
+                param.attr_engine(out engine);
+                param.attr_path(out path);
+                param.attr_success(writer.func_Writer, out evt);
+                engine.fattr_raise(evt, out job);
                 return new Jobs.opaque_Job<tpar_Event>
                 {
-                    title = "CreateWriter " + param.attr_path().value,
+                    title = "CreateWriter " + path.value,
                     execute =
                         delegate()
                         {
-                            param.attr_engine().fattr_raise(param.attr_success(writer.func_Writer)).execute();
+                            job.execute();
                         }
                 };
             }
@@ -997,9 +1027,17 @@ namespace Aha.API
             public Jobs.opaque_Job<tpar_Event> attr_ReadText(icomp_ReadTextParam<tpar_Event> param)
             {
 
+                Environment.opaque_FilePath path;
+                param.attr_path(out path);
+                FileIOtypes.icomp_Encoding enc;
+                param.attr_encoding(out enc);
+                Jobs.icomp_Engine<tpar_Event> engine;
+                param.attr_engine(out engine);
+                tpar_Event evt;
+                Jobs.opaque_Job<tpar_Event> job;
                 return new Jobs.opaque_Job<tpar_Event>
                 {
-                    title = "ReadText " + param.attr_path().value,
+                    title = "ReadText " + path.value,
                     execute =
                         async delegate ()
                         {
@@ -1008,18 +1046,18 @@ namespace Aha.API
                             System.Text.Encoding encoding;
                             try
                             {
-                                stream = new System.IO.FileStream(param.attr_path().value, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read);
+                                stream = new System.IO.FileStream(path.value, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read);
                                 FileText text = new FileText() { list = new List<string>(), block = 0, index = 0 };
-                                if (param.attr_encoding().attr_ASCII())
+                                if (enc.attr_ASCII())
                                 { encoding = Encoding.ASCII; }
                                 else
-                                    if (param.attr_encoding().attr_UTF8())
+                                    if (enc.attr_UTF8())
                                     { encoding = Encoding.UTF8; }
                                     else
-                                        if (param.attr_encoding().attr_UCS2LE())
+                                        if (enc.attr_UCS2LE())
                                         { encoding = Encoding.Unicode; }
                                         else
-                                            if (param.attr_encoding().attr_UCS2BE())
+                                            if (enc.attr_UCS2BE())
                                             { encoding = Encoding.BigEndianUnicode; }
                                             else
                                             { encoding = null; } 
@@ -1045,11 +1083,15 @@ namespace Aha.API
                                     text.list.Add(encoding.GetString(data));
                                 }
                                 comp_TextReadParam p = new comp_TextReadParam() { field_encoding = new FileEncoding { field_encoding = encoding }, field_size = stream.Length, field_content = text };
-                                param.attr_engine().fattr_raise(param.fattr_success(p)).execute();
+                                param.fattr_success(p, out evt);
+                                engine.fattr_raise(evt, out job);
+                                job.execute();
                             }
                             catch (System.Exception ex)
                             {
-                                param.attr_engine().fattr_raise(param.fattr_error(new ErrorInfo(ex))).execute();
+                                param.fattr_error(new ErrorInfo(ex), out evt);
+                                engine.fattr_raise(evt, out job);
+                                job.execute();
                             }
                             finally
                             {
