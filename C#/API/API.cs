@@ -1103,9 +1103,17 @@ namespace Aha.API
             public Jobs.opaque_Job<tpar_Event> attr_WriteText(icomp_WriteTextParam<tpar_Event> param)
             {
 
+                Environment.opaque_FilePath path;
+                param.attr_path(out path);
+                FileIOtypes.icomp_Encoding enc;
+                param.attr_encoding(out enc);
+                Jobs.icomp_Engine<tpar_Event> engine;
+                param.attr_engine(out engine);
+                tpar_Event evt;
+                Jobs.opaque_Job<tpar_Event> job;
                 return new Jobs.opaque_Job<tpar_Event>
                 {
-                    title = "WriteText " + param.attr_path().value,
+                    title = "WriteText " + path.value,
                     execute =
                         async delegate()
                         {
@@ -1114,17 +1122,17 @@ namespace Aha.API
                             System.Text.Encoding encoding;
                             try
                             {
-                                stream = new System.IO.FileStream(param.attr_path().value, System.IO.FileMode.CreateNew, System.IO.FileAccess.Write, System.IO.FileShare.None);
-                                if (param.attr_encoding().attr_ASCII())
+                                stream = new System.IO.FileStream(path.value, System.IO.FileMode.CreateNew, System.IO.FileAccess.Write, System.IO.FileShare.None);
+                                if (enc.attr_ASCII())
                                 { encoding = Encoding.ASCII; }
                                 else
-                                    if (param.attr_encoding().attr_UTF8())
+                                    if (enc.attr_UTF8())
                                     { encoding = Encoding.UTF8; }
                                     else
-                                        if (param.attr_encoding().attr_UCS2LE())
+                                        if (enc.attr_UCS2LE())
                                         { encoding = Encoding.Unicode; }
                                         else
-                                            if (param.attr_encoding().attr_UCS2BE())
+                                            if (enc.attr_UCS2BE())
                                             { encoding = Encoding.BigEndianUnicode; }
                                             else
                                             { encoding = Encoding.Default; }
@@ -1134,32 +1142,35 @@ namespace Aha.API
                                     await stream.WriteAsync(BOM, 0, BOM.Length);
                                 }
                                 char[] data = new char[block];
-                                long left = param.attr_size();
+                                long left;
+                                param.attr_size(out left);
                                 int size = block;
-                                IahaSequence<char> seq = (IahaSequence<char>)param.attr_content().copy();
+                                IahaSequence<char> seq; param.attr_content(out seq); seq = (IahaSequence<char>)seq.copy();
                                 while (left > 0)
                                 {
                                     if (left < block) size = (int)left;
                                     for (int i = 0; i < size; i++)
                                     {
-                                        try
+                                        if (seq.state(out data[i]))
                                         {
-                                            data[i] = seq.state();
-                                            try { seq.action_skip(); }
-                                            catch (Failure) { size = i + 1; left = size; }
+                                            if (!seq.action_skip()) { size = i + 1; left = size; }
                                         }
-                                        catch (Failure) { size = i; left = size; }
+                                        else { size = i; left = size; }
                                     }
                                     if (size != block) Array.Resize<char>(ref data, size);
                                     byte[] buf = encoding.GetBytes(data);
                                     await stream.WriteAsync(buf, 0, buf.Length);
                                     left -= size;
                                 }
-                                param.attr_engine().fattr_raise(param.attr_success()).execute();
+                                param.attr_success(out evt);
+                                engine.fattr_raise(evt, out job);
+                                job.execute();
                             }
                             catch (System.Exception ex)
                             {
-                                param.attr_engine().fattr_raise(param.attr_error(new ErrorInfo(ex))).execute();
+                                param.attr_error(new ErrorInfo(ex), out evt);
+                                engine.fattr_raise(evt, out job);
+                                job.execute();
                             }
                             finally
                             {
@@ -1208,74 +1219,82 @@ namespace Aha.API
     }
 
     namespace Process
-//doc 
-//    Title: "Process"
-//    Purpose: "Use a component that runs a job"
-//    Package: "Application Program Interface"
-//    Author: "Roman Movchan, Melbourne, Australia"
-//    Created: "2013-09-06"
-//end
+    //doc 
+    //    Title: "Process"
+    //    Purpose: "Use a component that runs a job"
+    //    Package: "Application Program Interface"
+    //    Author: "Roman Movchan, Melbourne, Australia"
+    //    Created: "2013-09-06"
+    //end
 
-//type Settings: arbitrary "component settings"
-//type Output: arbitrary "component output"
-//type Event: arbitrary "client's event type"
-//use Jobs: API/Jobs(Event: Event)
-//the CreateProcess: { [ classname: [character] password: [character] engine: @Jobs!Engine settings: Settings output: { Output -> Event } ] -> @Jobs!Job } "return job that creates process"
+    //type Settings: arbitrary "component settings"
+    //type Output: arbitrary "component output"
+    //type Event: arbitrary "client's event type"
+    //use Jobs: API/Jobs(Event: Event)
+    //the Create: { [ classname: [character] password: [character] engine: @Jobs!Engine settings: Settings output: { Output -> Event } ] -> @Jobs!Job } "return job that creates process"
     {
         public interface icomp_ProcessParam<tpar_Settings, tpar_Output, tpar_Event>
         {
-            IahaArray<char> attr_classname();
-            IahaArray<char> attr_password();
-            Aha.API.Jobs.icomp_Engine<tpar_Event> attr_engine();
-            tpar_Settings attr_settings();
-            tpar_Event fattr_output(tpar_Output output);
+            bool attr_classname(out IahaArray<char> result);
+            bool attr_password(out IahaArray<char> result);
+            bool attr_engine(out Aha.API.Jobs.icomp_Engine<tpar_Event> result);
+            bool attr_settings(out tpar_Settings result);
+            bool fattr_output(tpar_Output output, out tpar_Event result);
         }
 
-        public interface imod_Process<tpar_Settings, tpar_Output, tpar_Event> 
-            where tpar_Event : ProcessDef.base_Event
-            where tpar_Output : ProcessDef.base_Output
-            where tpar_Settings : ProcessDef.base_Settings
+        public interface imod_Process<tpar_Settings, tpar_Output, tpar_Event>
         {
-            Aha.API.Jobs.opaque_Job<tpar_Event> fattr_Create(icomp_ProcessParam<tpar_Settings, tpar_Output, tpar_Event> param);
+            bool fattr_Create(icomp_ProcessParam<tpar_Settings, tpar_Output, tpar_Event> param, out Aha.API.Jobs.opaque_Job<tpar_Event> result);
         }
 
         public class module_Process<tpar_Settings, tpar_Output, tpar_Event> : AhaModule, imod_Process<tpar_Settings, tpar_Output, tpar_Event>
-            where tpar_Event : ProcessDef.base_Event
-            where tpar_Output : ProcessDef.base_Output
-            where tpar_Settings : ProcessDef.base_Settings
         {
-            delegate tpar_Event func_Output(tpar_Output output);
+            delegate bool func_Output<tpar_Output, tpar_Event>(tpar_Output output, out tpar_Event result);
 
-            class comp_BehaviorParams : ProcessDef.icomp_BehaviorParams
+            public interface icomp_BehaviorParams<tpar_Settings, tpar_Output, tpar_Event>
             {
-                private ProcessDef.base_Settings field_settings;
+                bool attr_settings(out tpar_Settings result);
+                bool attr_password(out IahaArray<char> result);
+                bool fattr_output(tpar_Output text, out Jobs.opaque_Job<tpar_Event> result);
+                bool attr_engine(out Jobs.icomp_Engine<tpar_Event> result);
+            }
+
+            class comp_BehaviorParams<tpar_Settings, tpar_Output, tpar_Event, tpar_Event2> : icomp_BehaviorParams<tpar_Settings, tpar_Output, tpar_Event>
+            {
+                private tpar_Settings field_settings;
                 private IahaArray<char> field_password;
-                private func_Output field_output;
-                private Aha.API.Jobs.icomp_Engine<tpar_Event> field_engine;
-                private Aha.Engine.comp_Engine<ProcessDef.base_Event> field_engine2;
-                public ProcessDef.base_Settings attr_settings() { return field_settings; }
-                public IahaArray<char> attr_password() { return field_password; }
-                public Jobs.opaque_Job<ProcessDef.base_Event> fattr_output(ProcessDef.base_Output output) 
+                private func_Output<tpar_Output, tpar_Event> field_output;
+                private Aha.API.Jobs.icomp_Engine<tpar_Event> field_engine; //component's engine
+                private Aha.API.Jobs.icomp_Engine<tpar_Event2> field_engine2; //client's engine
+
+                public bool attr_settings(out tpar_Settings result) { result = field_settings; return true; }
+                public bool attr_password(out IahaArray<char> result) { result = field_password; return true; }
+                public bool fattr_output(tpar_Output output, out Jobs.opaque_Job<tpar_Event> result)
                 {
-                    return new Jobs.opaque_Job<ProcessDef.base_Event>
+                    result = new Jobs.opaque_Job<tpar_Event>
                     {
                         title = "output",
                         execute =
                             delegate()
                             {
-                                field_engine.fattr_raise(field_output((tpar_Output)output)).execute();
+                                tpar_Event2 evt; 
+                                field_output(output, out tpar_Event2 evt);
+                                Jobs.opaque_Job<tpar_Event2> job;
+                                field_engine2.fattr_raise(evt, out job);
+                                job.execute();
                             }
                     };
+                    return true;
                 }
-                public Jobs.icomp_Engine<ProcessDef.base_Event> attr_engine() { return field_engine2; }
+                public bool attr_engine(out Jobs.icomp_Engine<tpar_Event> result) { result = field_engine; return true; }
                 public comp_BehaviorParams
                     (
-                        ProcessDef.base_Settings param_settings, 
-                        IahaArray<char> param_password, 
-                        func_Output param_output, 
+                        tpar_Settings param_settings,
+                        IahaArray<char> param_password,
+                        func_Output<tpar_Output, tpar_Event> param_output,
                         Aha.API.Jobs.icomp_Engine<tpar_Event> param_engine,
-                        Aha.Engine.comp_Engine<ProcessDef.base_Event> param_engine2
-                    ) 
+                        Aha.Engine.comp_Engine<tpar_Event2> param_engine2
+                    )
                 {
                     field_settings = param_settings;
                     field_password = param_password;
@@ -1287,7 +1306,9 @@ namespace Aha.API
 
             public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_Create(icomp_ProcessParam<tpar_Settings, tpar_Output, tpar_Event> param)
             {
-                string classname = new string(param.attr_classname().get());
+                IahaArray<char> cn; 
+                param.attr_classname(out cn);
+                string classname = new string(cn.get());
                 return new Jobs.opaque_Job<tpar_Event>
                 {
                     title = "Create " + classname,
@@ -1307,12 +1328,13 @@ namespace Aha.API
                                         Type eventType = assembly.GetType("opaque_Event", true, false);
                                         Type engType = typeof(Aha.Engine.comp_Engine<>).MakeGenericType(new Type[] { eventType });
                                         Object eng = Activator.CreateInstance(engType);
+                                        Type bpType = typeof(comp_BehaviorParams<,,,>).MakeGenericType(new Type[] { settingsType, outputType, eventType });
                                         func_Output output = param.fattr_output;
                                         comp_BehaviorParams bp = new comp_BehaviorParams
                                             (
                                                 param.attr_settings(),
                                                 param.attr_password(),
-                                                output, 
+                                                output,
                                                 param.attr_engine(),
                                                 (Aha.Engine.comp_Engine<ProcessDef.base_Event>)eng
                                             );
@@ -1349,44 +1371,21 @@ namespace Aha.API
                 };
             }
         }
-
-        namespace ProcessDef
-//doc 
-//    Title: "ProcessDef"
-//    Purpose: "Definition of a process component"
-//    Package: "Application Program Interface"
-//    Author: "Roman Movchan, Melbourne, Australia"
-//    Created: "2013-09-06"
-//end
-
-//type Settings: opaque "component's settings (set at creation of an instance)"
-//type Output: opaque "component's output (created using an output job)"
-//type Event: opaque "custom event type"
-//use Jobs: API/Jobs<Event: Event>
-//the Title: [character] "component's title"  
-//the Behavior: { [ settings: Settings password: [character] output: { Output -> @Jobs!Job } engine: @Jobs!Engine ] -> @Jobs!Behavior } "component's behavior"
-        {
-            public class base_Settings { }
-
-            public class base_Output { }
-
-            public class base_Event { }
-
-            public interface icomp_BehaviorParams
-            {
-                base_Settings attr_settings();
-                IahaArray<char> attr_password();
-                Jobs.opaque_Job<base_Event> fattr_output(base_Output text);
-                Jobs.icomp_Engine<base_Event> attr_engine();
-            }
-
-            public interface imod_ProcessDef
-            {
-                IahaArray<char> attr_Title();
-                IahaArray<char> attr_Signature();
-                Jobs.iobj_Behavior<base_Event> fattr_Behavior(icomp_BehaviorParams param_param);
-            }
-        }
-
     }
-}
+
+    //doc 
+    //    Title: "ProcessDef"
+    //    Purpose: "Definition of a process component"
+    //    Package: "Application Program Interface"
+    //    Author: "Roman Movchan, Melbourne, Australia"
+    //    Created: "2013-09-06"
+    //end
+
+    //type Settings: opaque "component's settings (set at creation of an instance)"
+    //type Output: opaque "component's output (created using an output job)"
+    //type Event: opaque "custom event type"
+    //use Jobs: API/Jobs<Event: Event>
+    //the Title: [character] "component's title"  
+    //the Behavior: { [ settings: Settings password: [character] output: { Output -> @Jobs!Job } engine: @Jobs!Engine ] -> @Jobs!Behavior } "component's behavior"
+
+} //namespace Aha.API
