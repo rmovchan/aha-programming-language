@@ -16,9 +16,9 @@ namespace Aha.Engine
             public int field_year;
             public int field_month;
             public int field_day;
-            public long attr_year() { return field_year; }
-            public long attr_month() { return field_month; }
-            public long attr_day() { return field_day; }
+            public bool attr_year(out long result) { result = field_year; return true; }
+            public bool attr_month(out long result) { result = field_month; return true; }
+            public bool attr_day(out long result) { result = field_day; return true; }
         }
 
         private bool field_terminated;
@@ -115,12 +115,13 @@ namespace Aha.Engine
                 field_terminated = true;
             }
         }
+
         public void HandleExternal(tpar_Event e) { trace("INPUT"); events.Enqueue(e); recv.Set(); } //handle external event (such as user input)
         public bool Terminated() { return field_terminated; }
         public Queue<string> Trace() { return field_trace; }
-        public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_raise(tpar_Event e) 
+        public bool fattr_raise(tpar_Event e, out Aha.API.Jobs.opaque_Job<tpar_Event> result) 
         {
-            return new API.Jobs.opaque_Job<tpar_Event> 
+            result = new API.Jobs.opaque_Job<tpar_Event> 
             { 
                 title = "raise", 
                 execute = 
@@ -130,14 +131,15 @@ namespace Aha.Engine
                         recv.Set(); 
                     } 
             }; //put event in queue and signal
+            return true;
         }
         //public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_run(Aha.API.Jobs.opaque_Job<tpar_Event> job) 
         //{ 
         //    return delegate() { Thread thread = new Thread(new ThreadStart(job)); threads.Add(thread); thread.Start(); }; 
         //}
-        public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_enquireTime(Aha.API.Jobs.func_EnquireTime<tpar_Event> enq) 
+        public bool fattr_enquireTime(Aha.API.Jobs.func_EnquireTime<tpar_Event> enq, out Aha.API.Jobs.opaque_Job<tpar_Event> result) 
         {
-            return new API.Jobs.opaque_Job<tpar_Event> 
+            result = new API.Jobs.opaque_Job<tpar_Event> 
             { 
                 title = "enquireTime", 
                 execute = 
@@ -146,11 +148,12 @@ namespace Aha.Engine
                         events.Enqueue(enq(curr())); 
                         recv.Set(); 
                     } 
-            }; 
+            };
+            return true;
         }
-        public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_delay(Aha.Base.Time.opaque_Interval interval, Aha.API.Jobs.opaque_Job<tpar_Event> job) 
+        public bool fattr_delay(Aha.Base.Time.opaque_Interval interval, Aha.API.Jobs.opaque_Job<tpar_Event> job, out Aha.API.Jobs.opaque_Job<tpar_Event> result) 
         {
-            return new API.Jobs.opaque_Job<tpar_Event>
+            result = new API.Jobs.opaque_Job<tpar_Event>
             {
                 title = "delay", //TODO: show interval length
                 execute =
@@ -160,10 +163,11 @@ namespace Aha.Engine
                         scheduleNext();
                     }
             };
+            return true;
         }
-        public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_schedule(Aha.Base.Time.opaque_Timestamp time, Aha.API.Jobs.opaque_Job<tpar_Event> job)
+        public bool fattr_schedule(Aha.Base.Time.opaque_Timestamp time, Aha.API.Jobs.opaque_Job<tpar_Event> job, out Aha.API.Jobs.opaque_Job<tpar_Event> result)
         {
-            return new API.Jobs.opaque_Job<tpar_Event>
+            result = new API.Jobs.opaque_Job<tpar_Event>
             {
                 title = "schedule", //TODO: show time
                 execute = 
@@ -173,10 +177,11 @@ namespace Aha.Engine
                         scheduleNext();
                     }
             };
+            return true;
         }
-        public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_compute(Aha.API.Jobs.icomp_ComputeParams<tpar_Event> param)
+        public bool fattr_compute(Aha.API.Jobs.icomp_ComputeParams<tpar_Event> param, out Aha.API.Jobs.opaque_Job<tpar_Event> result)
         {
-            return new API.Jobs.opaque_Job<tpar_Event>
+            result = new API.Jobs.opaque_Job<tpar_Event>
             {
                 title = "compute",
                 execute =
@@ -186,24 +191,18 @@ namespace Aha.Engine
                             delegate() 
                             { 
                                 tpar_Event e; 
-                                try 
-                                { 
-                                    e = param.fattr_event();
-                                } 
-                                catch (System.Exception) 
-                                { 
-                                    e = param.attr_fail();
-                                }
+                                if (!param.fattr_event(out e)) param.attr_fail(out e);
                                 events.Enqueue(e); 
                             })); 
                         threads.Add(thread); 
                         thread.Start();
                     }
             };
+            return true;
         }
-        public Aha.API.Jobs.opaque_Job<tpar_Event> attr_break() 
+        public bool attr_break(out Aha.API.Jobs.opaque_Job<tpar_Event> result) 
         {
-            return new API.Jobs.opaque_Job<tpar_Event>
+            result = new API.Jobs.opaque_Job<tpar_Event>
             {
                 title = "break",
                 execute =
@@ -215,11 +214,12 @@ namespace Aha.Engine
                         threads.Clear();
                         workthread.Abort();
                     }
-            }; 
+            };
+            return true;
         }
-        public Aha.API.Jobs.opaque_Job<tpar_Event> attr_shutdown()
+        public bool attr_shutdown(out Aha.API.Jobs.opaque_Job<tpar_Event> result)
         {
-            return new API.Jobs.opaque_Job<tpar_Event>
+            result = new API.Jobs.opaque_Job<tpar_Event>
             {
                 title = "shutdown",
                 execute =
@@ -228,6 +228,7 @@ namespace Aha.Engine
                         field_shutdown = true;
                     }
             };
+            return true;
         }
         public void StartExternal(Aha.API.Jobs.iobj_Behavior<tpar_Event> param_behavior)
         {
@@ -239,7 +240,9 @@ namespace Aha.Engine
         public void StopExternal() 
         {
             //trace.Enqueue("ABORT");
-            attr_break().execute();
+            Aha.API.Jobs.opaque_Job<tpar_Event> job;
+            attr_break(out job);
+            job.execute();
             if (workthread != null)
             {
                 workthread.Abort();

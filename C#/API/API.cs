@@ -7,6 +7,27 @@ using Aha.Core;
 
 namespace Aha.API
 {
+    namespace ErrorInfo
+    //doc 
+    //    Title: "ErrorInfo"
+    //    Purpose: "Generic error information"
+    //    Package: "Application Program Interface"
+    //    Author: "Roman Movchan, Melbourne, Australia"
+    //    Created: "2014-09-13"
+    //end
+
+    //type ErrorKind: arbitrary "custom error kind"
+    //export Types:
+    //    type ErrorInfo: [ kind: ErrorKind message: [character] ] "error information"
+    //end
+    {
+        public interface icomp_ErrorInfo<tpar_ErrorKind>
+        {
+            bool attr_kind(out tpar_ErrorKind result);
+            bool attr_message(out IahaArray<char> result);
+        }
+    }
+
     namespace Jobs
     //doc 
     //    Title: "Jobs"
@@ -977,10 +998,10 @@ namespace Aha.API
                 public List<string> list;
                 public int index;
                 public int block;
-                public char state() { return list[block][index]; }
+                public bool state(out char result) { if (block == list.Count) { result = default(char); return false; } result = list[block][index]; return true; }
                 public IahaObject<char> copy() { FileText clone = new FileText { list = list, index = index, block = block }; return clone; }
-                public void action_skip() { if (index == list[block].Length) { index = 0; block++; } else index++; }
-                public char first(Predicate<char> that, long max) 
+                public bool action_skip() { if (block == list.Count) return false; if (index == list[block].Length) { index = 0; block++; } else index++; return true; }
+                public bool first(Predicate<char> that, long max, out char result) 
                 { 
                     long j = 0; 
                     int i = index; 
@@ -988,12 +1009,13 @@ namespace Aha.API
                     char item = list[block][index]; 
                     while (j < max) 
                     { 
-                        item = list[b][i]; 
-                        if (that(item)) return item;
+                        item = list[b][i];
+                        if (that(item)) { result = item; return true; }
                         if (i == list[b].Length) { i = 0; b++; } else i++;
                         j++; 
-                    } 
-                    throw Failure.One; 
+                    }
+                    result = default(char);
+                    return false; 
                 }
             }
             struct FileEncoding : FileIOtypes.icomp_Encoding
@@ -1231,7 +1253,9 @@ namespace Aha.API
     //type Output: arbitrary "component output"
     //type Event: arbitrary "client's event type"
     //use Jobs: API/Jobs(Event: Event)
-    //the Create: { [ classname: [character] password: [character] engine: @Jobs!Engine settings: Settings output: { Output -> Event } ] -> @Jobs!Job } "return job that creates process"
+    //type ErrorKind: [ noClassname: noLibrary: noModule: invalidModule: typeMismatch: ]
+    //use ErrorInfo: API/ErrorInfo(ErrorKind: ErrorKind)
+    //the Create: { [ classname: [character] password: [character] engine: @Jobs!Engine settings: Settings output: { Output -> Event } error: { @ErrorInfo!ErrorInfo -> Event } ] -> @Jobs!Job } "return job that creates process"
     {
         public interface icomp_ProcessParam<tpar_Settings, tpar_Output, tpar_Event>
         {
@@ -1251,19 +1275,11 @@ namespace Aha.API
         {
             delegate bool func_Output<tpar_Output, tpar_Event>(tpar_Output output, out tpar_Event result);
 
-            public interface icomp_BehaviorParams<tpar_Settings, tpar_Output, tpar_Event>
-            {
-                bool attr_settings(out tpar_Settings result);
-                bool attr_password(out IahaArray<char> result);
-                bool fattr_output(tpar_Output text, out Jobs.opaque_Job<tpar_Event> result);
-                bool attr_engine(out Jobs.icomp_Engine<tpar_Event> result);
-            }
-
-            class comp_BehaviorParams<tpar_Settings, tpar_Output, tpar_Event, tpar_Event2> : icomp_BehaviorParams<tpar_Settings, tpar_Output, tpar_Event>
+            class comp_BehaviorParams<tpar_Settings, tpar_Output, tpar_Event, tpar_Event2> : ProcessDef.icomp_BehaviorParams<tpar_Settings, tpar_Output, tpar_Event>
             {
                 private tpar_Settings field_settings;
                 private IahaArray<char> field_password;
-                private func_Output<tpar_Output, tpar_Event> field_output;
+                private func_Output<tpar_Output, tpar_Event2> field_output;
                 private Aha.API.Jobs.icomp_Engine<tpar_Event> field_engine; //component's engine
                 private Aha.API.Jobs.icomp_Engine<tpar_Event2> field_engine2; //client's engine
 
@@ -1278,7 +1294,7 @@ namespace Aha.API
                             delegate()
                             {
                                 tpar_Event2 evt; 
-                                field_output(output, out tpar_Event2 evt);
+                                field_output(output, out evt);
                                 Jobs.opaque_Job<tpar_Event2> job;
                                 field_engine2.fattr_raise(evt, out job);
                                 job.execute();
@@ -1291,9 +1307,9 @@ namespace Aha.API
                     (
                         tpar_Settings param_settings,
                         IahaArray<char> param_password,
-                        func_Output<tpar_Output, tpar_Event> param_output,
+                        func_Output<tpar_Output, tpar_Event2> param_output,
                         Aha.API.Jobs.icomp_Engine<tpar_Event> param_engine,
-                        Aha.Engine.comp_Engine<tpar_Event2> param_engine2
+                        Aha.API.Jobs.icomp_Engine<tpar_Event2> param_engine2
                     )
                 {
                     field_settings = param_settings;
@@ -1304,12 +1320,12 @@ namespace Aha.API
                 }
             }
 
-            public Aha.API.Jobs.opaque_Job<tpar_Event> fattr_Create(icomp_ProcessParam<tpar_Settings, tpar_Output, tpar_Event> param)
+            public bool fattr_Create(icomp_ProcessParam<tpar_Settings, tpar_Output, tpar_Event> param, out Aha.API.Jobs.opaque_Job<tpar_Event> result)
             {
                 IahaArray<char> cn; 
                 param.attr_classname(out cn);
                 string classname = new string(cn.get());
-                return new Jobs.opaque_Job<tpar_Event>
+                result = new Jobs.opaque_Job<tpar_Event>
                 {
                     title = "Create " + classname,
                     execute =
@@ -1323,37 +1339,45 @@ namespace Aha.API
                                     System.Reflection.Assembly assembly = System.Reflection.Assembly.LoadFrom(path);
                                     Type settingsType = assembly.GetType("opaque_Settings", true, false);
                                     Type outputType = assembly.GetType("opaque_Output", true, false);
+                                    Type eventType = assembly.GetType("opaque_Event", true, false);
                                     if (settingsType.IsAssignableFrom(typeof(tpar_Settings)) && typeof(tpar_Output).IsAssignableFrom(outputType))
                                     {
-                                        Type eventType = assembly.GetType("opaque_Event", true, false);
                                         Type engType = typeof(Aha.Engine.comp_Engine<>).MakeGenericType(new Type[] { eventType });
-                                        Object eng = Activator.CreateInstance(engType);
-                                        Type bpType = typeof(comp_BehaviorParams<,,,>).MakeGenericType(new Type[] { settingsType, outputType, eventType });
-                                        func_Output output = param.fattr_output;
-                                        comp_BehaviorParams bp = new comp_BehaviorParams
-                                            (
-                                                param.attr_settings(),
-                                                param.attr_password(),
-                                                output,
-                                                param.attr_engine(),
-                                                (Aha.Engine.comp_Engine<ProcessDef.base_Event>)eng
-                                            );
+                                        object eng = Activator.CreateInstance(engType); //component's engine
+                                        Type bpType = typeof(comp_BehaviorParams<,,,>).MakeGenericType(new Type[] { settingsType, outputType, eventType, typeof(tpar_Event) });
+                                        func_Output<tpar_Output, tpar_Event> output = param.fattr_output;
+                                        tpar_Settings settings;
+                                        param.attr_settings(out settings);
+                                        IahaArray<char> password;
+                                        param.attr_password(out password);
+                                        Jobs.icomp_Engine<tpar_Event> engine; //client's engine
+                                        param.attr_engine(out engine);
+                                        object bp = Activator.CreateInstance(bpType, new object[] { settings, password, output, eng, engine });
                                         foreach (Type type in assembly.ExportedTypes)
                                         {
-                                            if (type.IsClass)
+                                            if (type.IsClass && type.Name == "mod_ProcessDef")
                                             {
                                                 try
                                                 {
-                                                    ProcessDef.imod_ProcessDef proc = Activator.CreateInstance(type) as ProcessDef.imod_ProcessDef;
-                                                    if (proc != null)
+                                                    Type compType = typeof(ProcessDef.imod_ProcessDef<,,>).MakeGenericType(new Type[] { settingsType, outputType, eventType });
+                                                    object comp = Activator.CreateInstance(type);
+                                                    if (comp != null)
                                                     {
+                                                        object behavior = compType.InvokeMember
+                                                            (
+                                                                "fattr_Behavior",
+                                                                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                                                                null,
+                                                                comp,
+                                                                new Object[] { bp }
+                                                            );
                                                         engType.InvokeMember
                                                             (
                                                                 "StartExternal",
                                                                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
                                                                 null,
                                                                 eng,
-                                                                new Object[] { proc.fattr_Behavior(bp) }
+                                                                new Object[] { behavior }
                                                             );
                                                         return;
                                                     }
@@ -1369,10 +1393,12 @@ namespace Aha.API
                             }
                         } // Error: classname is not registered
                 };
+                return true;
             }
         }
     }
 
+    namespace ProcessDef
     //doc 
     //    Title: "ProcessDef"
     //    Purpose: "Definition of a process component"
@@ -1387,5 +1413,20 @@ namespace Aha.API
     //use Jobs: API/Jobs<Event: Event>
     //the Title: [character] "component's title"  
     //the Behavior: { [ settings: Settings password: [character] output: { Output -> @Jobs!Job } engine: @Jobs!Engine ] -> @Jobs!Behavior } "component's behavior"
+    {
+        public interface icomp_BehaviorParams<tpar_Settings, tpar_Output, tpar_Event>
+        {
+            bool attr_settings(out tpar_Settings result);
+            bool attr_password(out IahaArray<char> result);
+            bool fattr_output(tpar_Output text, out Jobs.opaque_Job<tpar_Event> result);
+            bool attr_engine(out Jobs.icomp_Engine<tpar_Event> result);
+        }
+
+        public interface imod_ProcessDef<tpar_Settings, tpar_Output, tpar_Event>
+        {
+            bool attr_Title(out IahaArray<char> result);
+            bool fattr_Behavior(icomp_BehaviorParams<tpar_Settings, tpar_Output, tpar_Event> bp, out Jobs.iobj_Behavior<tpar_Event> result);
+        }
+    }
 
 } //namespace Aha.API
