@@ -12,32 +12,37 @@ using Aha.API.Application;
 using Aha.API.Jobs;
 using Aha.Base;
 using Aha.Core;
-using Aha.Engine;
+using Aha.Engine_;
 
 namespace AhaMain
 {
     public partial class Console : Form
     {
-        delegate opaque_Job<opaque_Event> func_Output(string text);
+        delegate opaque_Job<tpar_Event> func_Output<tpar_Event>(string text);
 
-        struct BehaviorParams : icomp_BehaviorParams
+        struct BehaviorParams<tpar_Event> : icomp_BehaviorParams<tpar_Event>
         {
-            public func_Output field_output;
+            public func_Output<tpar_Event> field_output;
             public string field_settings;
-            public icomp_Engine<opaque_Event> field_engine;
-            public IahaArray<char> attr_settings() { return new AhaString(field_settings); }
-            public IahaArray<char> attr_password() { return new AhaString(""); } //TODO
-            public opaque_Job<opaque_Event> fattr_output(IahaArray<char> text) { return field_output(new string(text.get())); }
-            public icomp_Engine<opaque_Event> attr_engine() { return field_engine; }
+            public icomp_Engine<tpar_Event> field_engine;
+            public bool attr_settings(out IahaArray<char> result) { result = new AhaString(field_settings); return true; }
+            public bool attr_password(out IahaArray<char> result) { result = new AhaString(""); return true; } //TODO
+            public opaque_Job<tpar_Event> fattr_output(IahaArray<char> text) { return field_output(new string(text.get())); }
+            public bool attr_engine(out icomp_Engine<tpar_Event> result) { result = field_engine; return true; }
         }
 
         private Assembly assembly;
-        private imod_Application app;
-        private iobj_Behavior<opaque_Event> b;
-        private comp_Engine<opaque_Event> eng;
+        private object app;
+        private Type eventType;
+        private object b;
+        private Type appType;
+        private Type engType;
+        private object eng;
         private bool running;
+        private string title;
         private Queue<string> messages = new Queue<string>();
         private void output(string text) { messages.Enqueue(text); }
+
         public Console()
         {
             InitializeComponent();
@@ -45,11 +50,11 @@ namespace AhaMain
 
         private void PopulateApplications()
         {
-            Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("Software").OpenSubKey("Aha! for .NET").OpenSubKey("ConsoleApp");
+            Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("Software").OpenSubKey("Aha! Factor").OpenSubKey("Aha! for .NET").OpenSubKey("ConsoleApp");
             string[] names = key.GetSubKeyNames();
             foreach (string name in names)
             {
-                ToolStripDropDownItem item = new ToolStripDropDownButton(name, null, item_Click); //new string[3] { name, (string)key.OpenSubKey("Path").GetValue(name), (string)key.OpenSubKey("Settings").GetValue(name) });
+                ToolStripDropDownItem item = new ToolStripDropDownButton(name, null, item_Click); 
                 toolStripMenuItem1.DropDownItems.Add(item);
             }
         }
@@ -71,11 +76,28 @@ namespace AhaMain
 
         private void runToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            toolStripStatusLabel1.Text = "Running application '" + new string(app.attr_Title().get()) +"'";
+            toolStripStatusLabel1.Text = "Running application '" + title + "'";
             textBox1.ReadOnly = false;
             textBox1.Focus();
             running = true;
-            eng.StartExternal((iobj_Behavior<opaque_Event>)b.copy());
+            // get application's behavior
+            object[] args = new object[2];
+            appType.InvokeMember
+                (
+                    "attr_Behavior",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                    null,
+                    app,
+                    args
+                );
+            engType.InvokeMember
+                (
+                    "StartExternal",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                    null,
+                    eng,
+                    new object[] { args[1] }
+                );
             runToolStripMenuItem.Enabled = false;
             toolStripMenuItem1.Enabled = false;
             stopToolStripMenuItem.Enabled = true;
@@ -88,8 +110,16 @@ namespace AhaMain
         private void timer1_Tick(object sender, EventArgs e)
         {
             while (messages.Count > 0) listBox1.Items.Add(messages.Dequeue());
-            if (running) while (eng.Trace().Count > 0) listBox2.Items.Add(DateTime.Now.TimeOfDay.ToString() + ": " + eng.Trace().Dequeue());
-            if (running && eng.Terminated())
+            //if (running) while (eng.Trace().Count > 0) listBox2.Items.Add(DateTime.Now.TimeOfDay.ToString() + ": " + eng.Trace().Dequeue());
+            bool term = (Boolean)engType.InvokeMember
+                (
+                    "Terminated",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                    null,
+                    eng,
+                    new object[] { }
+                );
+            if (running && term)
             {
                 toolStripStatusLabel1.Text = "Terminated";
                 textBox1.ReadOnly = true;
@@ -102,12 +132,29 @@ namespace AhaMain
 
         private void stopToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            eng.StopExternal();
+            engType.InvokeMember
+                (
+                    "StopExternal",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                    null,
+                    eng,
+                    new object[] { }
+                );
         }
 
         private void Console_FormClosed(object sender, FormClosedEventArgs e)
         {
-            if (eng != null) eng.StopExternal();
+            if (eng != null)
+            {
+                engType.InvokeMember
+                    (
+                        "StopExternal",
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                        null,
+                        eng,
+                        new object[] { }
+                    );
+            }
         }
 
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
@@ -116,26 +163,32 @@ namespace AhaMain
             {
                 eng = null;
                 assembly = Assembly.LoadFrom(openFileDialog1.FileName);
-                foreach (Type type in assembly.ExportedTypes)
+                try
                 {
-                    if (type.IsClass)
-                    {
-                        try
-                        {
-                            app = Activator.CreateInstance(type) as imod_Application;
-                            if (app != null)
-                            {
-                                eng = new comp_Engine<opaque_Event>();
-                                toolStripStatusLabel1.Text = "Enter application settings for '" + new string(app.attr_Title().get()) + "'";
-                                textBox2.ReadOnly = false;
-                                textBox2.Focus();
-                                return;
-                            }
-                        }
-                        catch (System.Exception) { }
-                    }   
+                    eventType = assembly.GetType("opaque_Event");
+                    Type exportType = assembly.GetType("export");
+                    object export = Activator.CreateInstance(exportType);
+                    app = exportType.GetField("value").GetValue(export);
+                    appType = typeof(imod_Application<>).MakeGenericType(new Type[] { eventType });
+                    engType = typeof(comp_Engine<>).MakeGenericType(new Type[] { eventType });
+                    eng = Activator.CreateInstance(engType);
+                    // get application's title
+                    object[] args = new object[1];
+                    appType.InvokeMember(
+                        "attr_Title",
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                        null,
+                        app,
+                        args);
+                    title = new string(((IahaArray<char>)args[0]).get());
+                    toolStripStatusLabel1.Text = "Enter application settings for '" + title + "'";
+                    textBox2.ReadOnly = false;
+                    textBox2.Focus();
                 }
-                toolStripStatusLabel1.Text = "Error: assembly doesn't contain an Aha! application";
+                catch (System.Exception)
+                {
+                    toolStripStatusLabel1.Text = "Error: assembly doesn't contain an Aha! application";
+                }
             }
        }
 

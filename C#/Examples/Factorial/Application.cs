@@ -12,66 +12,50 @@ namespace Aha.API
 {
     namespace Application
     {
-        public class impl_Event : opaque_Event
+        public struct opaque_Event
         {
-            private IahaArray<char> field_input;
-            public IahaArray<char> attr_input() { return field_input; }
-            public impl_Event(IahaArray<char> param_input) { field_input = param_input; }
+            public string input;
         }
 
-        public class module_Application : AhaModule, imod_Application
+        class obj_Behavior : Jobs.iobj_Behavior<opaque_Event>
         {
-            //private module_Jobs<opaque_Event> nick_Jobs = new module_Jobs<opaque_Event>();
-
-            class obj_Behavior : Jobs.iobj_Behavior<opaque_Event>
+            private icomp_BehaviorParams<opaque_Event> field_param;
+            private IahaArray<Jobs.opaque_Job<opaque_Event>> field_jobs;
+            private bool op_Exclaim_integer(long param_n, out long result) 
             {
-                private icomp_BehaviorParams field_param;
-                private IahaArray<Jobs.opaque_Job<opaque_Event>> field_jobs;
-                private Int64 op_Exclaim_integer(Int64 param_n) { return (new AhaSegment(1, param_n + 1)).foldl(delegate(Int64 x, Int64 y) { return checked(x * y); }); }
-                public void action_handle(opaque_Event param_event)
-                {
-                    try
-                    {
-                        field_jobs = new AhaArray<Jobs.opaque_Job<opaque_Event>>
-                            (
-                                new Jobs.opaque_Job<opaque_Event>[] 
-                                    { 
-                                        field_param.fattr_output
-                                            (
-                                                new AhaString
-                                                    (
-                                                        op_Exclaim_integer
-                                                            (
-                                                                Convert.ToInt64
-                                                                    (
-                                                                        new string(((impl_Event)param_event).attr_input().get())
-                                                                    )
-                                                            ).ToString()
-                                                    )
-                                            )
-                                    }
-                            );
-                    }
-                    catch (System.Exception)
-                    {
-                        field_jobs = new AhaArray<Jobs.opaque_Job<opaque_Event>>
-                            (
-                                new Jobs.opaque_Job<opaque_Event>[] 
-                                    { 
-                                        field_param.fattr_output(new AhaString("Error"))
-                                    }
-                            );
-                    }
-                }
-                public IahaArray<Jobs.opaque_Job<opaque_Event>> state() { return field_jobs; }
-                public IahaObject<IahaArray<Jobs.opaque_Job<opaque_Event>>> copy() { return new obj_Behavior(field_param); }
-                public obj_Behavior(icomp_BehaviorParams param_param) { field_param = param_param; field_jobs = new AhaArray<Jobs.opaque_Job<opaque_Event>>(new Jobs.opaque_Job<opaque_Event>[] { }); }
+                IahaArray<long> seg = new AhaSegment(1, param_n + 1);
+                return (seg.foldl(delegate(long x, long y, out long res) { try { res = checked(x * y); return true; } catch(System.Exception) { res = 0; return false; } }, out result));
             }
-
-            public IahaArray<char> attr_Title() { return new AhaString("Factorial"); }
-            public IahaArray<char> attr_Signature() { return new AhaString("Demo"); }
-            public Jobs.iobj_Behavior<opaque_Event> fattr_Behavior(icomp_BehaviorParams param_param) { return new obj_Behavior(param_param); }
-            public opaque_Event fattr_Receive(IahaArray<char> param_input) { return new impl_Event(param_input); }
+            public bool action_handle(opaque_Event param_event)
+            {
+                long fact;
+                IahaArray<char> msg;
+                Jobs.opaque_Job<opaque_Event> job;
+                if (op_Exclaim_integer(Convert.ToInt64(param_event.input), out fact))
+                {
+                    msg = new AhaString(fact.ToString());
+                }
+                else
+                {
+                    msg = new AhaString("Error");
+                }
+                field_param.fattr_output(msg, out job);
+                field_jobs = new AhaArray<Jobs.opaque_Job<opaque_Event>> ( new Jobs.opaque_Job<opaque_Event>[]  { job });
+                return true;
+            }
+            public bool state(out IahaArray<Jobs.opaque_Job<opaque_Event>> result) { result = field_jobs; return true; }
+            public IahaObject<IahaArray<Jobs.opaque_Job<opaque_Event>>> copy() { return new obj_Behavior(field_param); }
+            public obj_Behavior(icomp_BehaviorParams<opaque_Event> param_param) { field_param = param_param; field_jobs = new AhaArray<Jobs.opaque_Job<opaque_Event>>(new Jobs.opaque_Job<opaque_Event>[] { }); }
         }
+
+        class comp_Application : API.Application.imod_Application<opaque_Event>
+        {
+            public bool attr_Title(out IahaArray<char> result) { result = new AhaString("Factorial"); return true; }
+            public bool attr_Signature(out IahaArray<char> result) { result = new AhaString("Demo"); return true; }
+            public bool fattr_Behavior(icomp_BehaviorParams<opaque_Event> param_param, out Jobs.iobj_Behavior<opaque_Event> result) { result = new obj_Behavior(param_param); return true; }
+            public bool fattr_Receive(IahaArray<char> param_input, out opaque_Event result) { result = new opaque_Event { input = new string(param_input.get()) }; return true; }
+        }
+
+        public class export { public imod_Application<opaque_Event> value = new comp_Application(); }
     }
 }
