@@ -1,5 +1,5 @@
 C:\Users\Roman\aha-programming-language\C#\Base\Base\bin\Release\Base.dll
 C:\Users\Roman\aha-programming-language\C#\Base\Base\bin\Release\Base.pdb
+C:\Users\Roman\aha-programming-language\C#\Base\Base\obj\Release\Base.csprojResolveAssemblyReference.cache
 C:\Users\Roman\aha-programming-language\C#\Base\Base\obj\Release\Base.dll
 C:\Users\Roman\aha-programming-language\C#\Base\Base\obj\Release\Base.pdb
-C:\Users\Roman\aha-programming-language\C#\Base\Base\obj\Release\Base.csprojResolveAssemblyReference.cache

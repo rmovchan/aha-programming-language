@@ -18,17 +18,34 @@ namespace AhaMain
 {
     public partial class Console : Form
     {
-        delegate opaque_Job<tpar_Event> func_Output<tpar_Event>(string text);
+        delegate void func_Output(string text);
 
         struct BehaviorParams<tpar_Event> : icomp_BehaviorParams<tpar_Event>
         {
-            public func_Output<tpar_Event> field_output;
-            public string field_settings;
-            public icomp_Engine<tpar_Event> field_engine;
+            private func_Output field_output;
+            private string field_settings;
+            private icomp_Engine<tpar_Event> field_engine;
+
             public bool attr_settings(out IahaArray<char> result) { result = new AhaString(field_settings); return true; }
             public bool attr_password(out IahaArray<char> result) { result = new AhaString(""); return true; } //TODO
-            public opaque_Job<tpar_Event> fattr_output(IahaArray<char> text) { return field_output(new string(text.get())); }
+            public bool fattr_output(IahaArray<char> text, out opaque_Job<tpar_Event> result) 
+            {
+                func_Output output = field_output;
+                result = new opaque_Job<tpar_Event>()
+                {
+                    title = "output",
+                    execute = delegate() { output(new string(text.get())); }
+                };  
+                return true; 
+            }
             public bool attr_engine(out icomp_Engine<tpar_Event> result) { result = field_engine; return true; }
+
+            public BehaviorParams(func_Output output, string settings, icomp_Engine<tpar_Event> engine)
+            {
+                field_output = output;
+                field_settings = settings;
+                field_engine = engine;
+            }
         }
 
         private Assembly assembly;
@@ -66,12 +83,34 @@ namespace AhaMain
 
         private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (e.KeyChar == '\r') { eng.HandleExternal(app.fattr_Receive(new AhaString(((TextBox)sender).Text))); ((TextBox)sender).Clear(); }
+            if (e.KeyChar == '\r') 
+            {
+                object[] args = new object[2];
+                args[0] = new AhaString(((TextBox)sender).Text);
+                if ((bool)appType.InvokeMember
+                        (
+                            "fattr_Receive",
+                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                            null,
+                            app,
+                            args
+                        )
+                    )
+                    engType.InvokeMember
+                        (
+                            "HandleExternal",
+                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                            null,
+                            eng,
+                            new object[] { args[1] }
+                        );
+                ((TextBox)sender).Clear(); 
+            }
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-
+            int x = 0;
         }
 
         private void runToolStripMenuItem_Click(object sender, EventArgs e)
@@ -80,8 +119,13 @@ namespace AhaMain
             textBox1.ReadOnly = false;
             textBox1.Focus();
             running = true;
+            // create behavior parameters
+            Type bpType = typeof(BehaviorParams<>).MakeGenericType(new Type[] { eventType });
+            func_Output local_output = output;
+            b = Activator.CreateInstance(bpType, new object[] { local_output, textBox2.Text, eng });
             // get application's behavior
             object[] args = new object[2];
+            args[0] = b;
             appType.InvokeMember
                 (
                     "attr_Behavior",
@@ -109,25 +153,25 @@ namespace AhaMain
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            while (messages.Count > 0) listBox1.Items.Add(messages.Dequeue());
-            //if (running) while (eng.Trace().Count > 0) listBox2.Items.Add(DateTime.Now.TimeOfDay.ToString() + ": " + eng.Trace().Dequeue());
-            bool term = (Boolean)engType.InvokeMember
-                (
-                    "Terminated",
-                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
-                    null,
-                    eng,
-                    new object[] { }
-                );
-            if (running && term)
-            {
-                toolStripStatusLabel1.Text = "Terminated";
-                textBox1.ReadOnly = true;
-                running = false;
-                runToolStripMenuItem.Enabled = true;
-                toolStripMenuItem1.Enabled = true;
-                stopToolStripMenuItem.Enabled = false;
-            }
+            //while (messages.Count > 0) listBox1.Items.Add(messages.Dequeue());
+            ////if (running) while (eng.Trace().Count > 0) listBox2.Items.Add(DateTime.Now.TimeOfDay.ToString() + ": " + eng.Trace().Dequeue());
+            //bool term = (Boolean)engType.InvokeMember
+            //    (
+            //        "Terminated",
+            //        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+            //        null,
+            //        eng,
+            //        new object[] { }
+            //    );
+            //if (running && term)
+            //{
+            //    toolStripStatusLabel1.Text = "Terminated";
+            //    textBox1.ReadOnly = true;
+            //    running = false;
+            //    runToolStripMenuItem.Enabled = true;
+            //    toolStripMenuItem1.Enabled = true;
+            //    stopToolStripMenuItem.Enabled = false;
+            //}
         }
 
         private void stopToolStripMenuItem_Click(object sender, EventArgs e)
@@ -200,34 +244,34 @@ namespace AhaMain
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
 
-            if (eng != null) eng.StopExternal();
-            Application.Exit();
+            //if (eng != null) eng.StopExternal();
+            //Application.Exit();
         }
 
         private void textBox2_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (e.KeyChar == '\r') 
-            {
-                BehaviorParams bp = new BehaviorParams 
-                { 
-                    field_output = 
-                        delegate(string text) 
-                        {
-                            return new Aha.API.Jobs.opaque_Job<opaque_Event>
-                            {
-                                title = "output",
-                                execute = delegate() { output(text); }
-                            };
-                        }, 
-                    field_engine = eng, 
-                    field_settings = ((TextBox)sender).Text 
-                };
-                b = app.fattr_Behavior(bp);
-                //this.Text = new string(app.attr_Title().get());
-                toolStripStatusLabel1.Text = "Ready to run '" + new string(app.attr_Title().get()) + "'";
-                runToolStripMenuItem.Enabled = true;
-                textBox2.ReadOnly = true;
-            }
+            //if (e.KeyChar == '\r') 
+            //{
+            //    BehaviorParams bp = new BehaviorParams 
+            //    { 
+            //        field_output = 
+            //            delegate(string text) 
+            //            {
+            //                return new Aha.API.Jobs.opaque_Job<opaque_Event>
+            //                {
+            //                    title = "output",
+            //                    execute = delegate() { output(text); }
+            //                };
+            //            }, 
+            //        field_engine = eng, 
+            //        field_settings = ((TextBox)sender).Text 
+            //    };
+            //    b = app.fattr_Behavior(bp);
+            //    //this.Text = new string(app.attr_Title().get());
+            //    toolStripStatusLabel1.Text = "Ready to run '" + new string(app.attr_Title().get()) + "'";
+            //    runToolStripMenuItem.Enabled = true;
+            //    textBox2.ReadOnly = true;
+            //}
 
         }
 

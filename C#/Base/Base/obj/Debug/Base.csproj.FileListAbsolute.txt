@@ -1,4 +1,0 @@
-C:\Users\Roman\aha-programming-language\C#\Base\Base\bin\Debug\Base.dll
-C:\Users\Roman\aha-programming-language\C#\Base\Base\bin\Debug\Base.pdb
-C:\Users\Roman\aha-programming-language\C#\Base\Base\obj\Debug\Base.dll
-C:\Users\Roman\aha-programming-language\C#\Base\Base\obj\Debug\Base.pdb
