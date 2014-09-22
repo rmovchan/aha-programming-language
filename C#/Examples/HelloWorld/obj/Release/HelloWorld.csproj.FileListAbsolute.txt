@@ -1,5 +1,0 @@
-C:\Users\Roman\aha-programming-language\C#\Examples\HelloWorld\bin\Release\HelloWorld.dll
-C:\Users\Roman\aha-programming-language\C#\Examples\HelloWorld\bin\Release\HelloWorld.pdb
-C:\Users\Roman\aha-programming-language\C#\Examples\HelloWorld\obj\Release\HelloWorld.csprojResolveAssemblyReference.cache
-C:\Users\Roman\aha-programming-language\C#\Examples\HelloWorld\obj\Release\HelloWorld.dll
-C:\Users\Roman\aha-programming-language\C#\Examples\HelloWorld\obj\Release\HelloWorld.pdb

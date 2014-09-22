@@ -454,7 +454,7 @@ namespace Aha.Engine_
         {
             result = new API.Jobs.opaque_Job<tpar_Event>
             {
-                title = "LOG " + message.get(),
+                title = ">>> " + message.get(),
                 execute =
                     delegate()
                     {

@@ -1,7 +1,0 @@
-C:\Users\Roman\aha-programming-language\C#\API\bin\Release\API.dll
-C:\Users\Roman\aha-programming-language\C#\API\bin\Release\API.pdb
-C:\Users\Roman\aha-programming-language\C#\API\bin\Release\Base.dll
-C:\Users\Roman\aha-programming-language\C#\API\bin\Release\Base.pdb
-C:\Users\Roman\aha-programming-language\C#\API\obj\Release\API.csprojResolveAssemblyReference.cache
-C:\Users\Roman\aha-programming-language\C#\API\obj\Release\API.dll
-C:\Users\Roman\aha-programming-language\C#\API\obj\Release\API.pdb
