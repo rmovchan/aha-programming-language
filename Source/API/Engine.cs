@@ -238,6 +238,8 @@ namespace Aha.Engine_
         public bool fattr_rootDir(out Aha.API.Environment.opaque_DirPath result) { result = new Aha.API.Environment.opaque_DirPath { value = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop) }; return true; }
     }
 
+    public delegate void func_Trace(string text);
+
     public class comp_Engine<tpar_Event> : Aha.API.Jobs.icomp_Engine<tpar_Event>
     {
         private struct Date : Aha.Base.Time.icomp_DateStruc
@@ -252,6 +254,8 @@ namespace Aha.Engine_
 
         private bool field_terminated;
         private bool field_shutdown;
+        private bool field_suspended;
+        private func_Trace field_trace;
         private Aha.Base.Time.opaque_Timestamp today;
         private DateTime midnight = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
         private Aha.API.Jobs.iobj_Behavior<tpar_Event> field_behavior;
@@ -259,9 +263,10 @@ namespace Aha.Engine_
         private List<Thread> threads = new List<Thread>();
         private Thread workthread;
         private AutoResetEvent recv = new AutoResetEvent(false);
+        private AutoResetEvent resumed = new AutoResetEvent(false);
         private Queue<tpar_Event> events = new Queue<tpar_Event>();
-        private Queue<string> field_trace = new Queue<string>();
-        private void trace(string s) { field_trace.Enqueue(s); }
+        //private Queue<string> field_trace = new Queue<string>();
+        private void trace(string s) { if (field_trace != null) field_trace(s); }
         private SortedList<DateTime, Aha.API.Jobs.opaque_Job<tpar_Event>> schedule = new SortedList<DateTime, Aha.API.Jobs.opaque_Job<tpar_Event>>();
         private System.Timers.Timer scheduler = new System.Timers.Timer();
         private void scheduler_Elapsed(object sender, System.Timers.ElapsedEventArgs e) 
@@ -288,7 +293,8 @@ namespace Aha.Engine_
             IahaArray<API.Jobs.opaque_Job<tpar_Event>> jobs;
             field_behavior.state(out jobs);
             foreach (Aha.API.Jobs.opaque_Job<tpar_Event> job in jobs.get()) 
-            { 
+            {
+                if (field_suspended) resumed.WaitOne();
                 trace("JOB " + job.title);
                 try
                 {
@@ -324,12 +330,14 @@ namespace Aha.Engine_
                         catch (System.Threading.ThreadAbortException)
                         {
                             trace("ABORTED");
+                            return;
                         }
                     }
                 }
                 catch (System.Threading.ThreadAbortException)
                 {
                     trace("ABORTED");
+                    return;
                 }
             }
             catch (Failure) 
@@ -341,15 +349,20 @@ namespace Aha.Engine_
                 trace("ERROR " + ex.Message);
             }
             finally
-            { 
+            {
+                recv.Reset();
+                resumed.Reset();
+                events.Clear();
                 trace("<<FINISH>>");
                 field_terminated = true;
             }
         }
 
         public void HandleExternal(tpar_Event e) { trace("INPUT"); events.Enqueue(e); recv.Set(); } //handle external event (such as user input)
+        public void Suspend() { field_suspended = true; trace("SUSPENDED"); }
+        public void Resume() { field_suspended = false; trace("RESUMED"); resumed.Set(); }
         public bool Terminated() { return field_terminated; }
-        public Queue<string> Trace() { return field_trace; }
+        //public void SetTrace(func_Trace trace) { field_trace = trace; }
         
         // Interface members:
         public bool attr_framework(out Aha.API.Environment.icomp_Framework result) { result = new comp_Framework(); return true; }
@@ -437,6 +450,18 @@ namespace Aha.Engine_
             };
             return true;
         }
+        public bool fattr_log(IahaArray<char> message, out Aha.API.Jobs.opaque_Job<tpar_Event> result)
+        {
+            result = new API.Jobs.opaque_Job<tpar_Event>
+            {
+                title = "LOG " + message.get(),
+                execute =
+                    delegate()
+                    {
+                    }
+            };
+            return true;
+        }
         public bool attr_break(out Aha.API.Jobs.opaque_Job<tpar_Event> result) 
         {
             result = new API.Jobs.opaque_Job<tpar_Event>
@@ -467,12 +492,14 @@ namespace Aha.Engine_
             };
             return true;
         }
-        public void StartExternal(Aha.API.Jobs.iobj_Behavior<tpar_Event> param_behavior)
+        public void StartExternal(Aha.API.Jobs.iobj_Behavior<tpar_Event> param_behavior, func_Trace trace)
         {
             field_behavior = param_behavior;
+            field_trace = trace;
             workthread = new Thread(new ThreadStart(work));
             workthread.Start();
             field_terminated = false;
+            field_suspended = false;
         }
         public void StopExternal() 
         {

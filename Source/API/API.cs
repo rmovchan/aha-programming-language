@@ -270,6 +270,7 @@ namespace Aha.API
             bool fattr_schedule(Aha.Base.Time.opaque_Timestamp time, opaque_Job<tpar_Event> job, out opaque_Job<tpar_Event> result);
             bool fattr_enquireTime(func_EnquireTime<tpar_Event> enq, out opaque_Job<tpar_Event> result);
             bool fattr_compute(icomp_ComputeParams<tpar_Event> param, out opaque_Job<tpar_Event> result);
+            bool fattr_log(IahaArray<char> message, out Aha.API.Jobs.opaque_Job<tpar_Event> result);
             bool attr_break(out opaque_Job<tpar_Event> result);
             bool attr_shutdown(out opaque_Job<tpar_Event> result);
         }
