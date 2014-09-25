@@ -272,7 +272,8 @@ namespace Aha.API
             bool fattr_compute(icomp_ComputeParams<tpar_Event> param, out opaque_Job<tpar_Event> result);
             bool fattr_log(IahaArray<char> message, out Aha.API.Jobs.opaque_Job<tpar_Event> result);
             bool attr_break(out opaque_Job<tpar_Event> result);
-            bool attr_shutdown(out opaque_Job<tpar_Event> result);
+            bool attr_enable(out opaque_Job<tpar_Event> result);
+            bool attr_disable(out opaque_Job<tpar_Event> result);
         }
 
         public struct export { }

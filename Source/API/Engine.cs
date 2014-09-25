@@ -253,7 +253,7 @@ namespace Aha.Engine_
         }
 
         private bool field_terminated;
-        private bool field_shutdown;
+        private bool field_enabled;
         private bool field_suspended;
         private func_Trace field_trace;
         private Aha.Base.Time.opaque_Timestamp today;
@@ -291,7 +291,7 @@ namespace Aha.Engine_
         private void perform()
         {
             IahaArray<API.Jobs.opaque_Job<tpar_Event>> jobs;
-            field_behavior.state(out jobs);
+            if (!field_behavior.state(out jobs)) throw (Failure.One);
             foreach (Aha.API.Jobs.opaque_Job<tpar_Event> job in jobs.get()) 
             {
                 if (field_suspended) resumed.WaitOne();
@@ -311,11 +311,12 @@ namespace Aha.Engine_
             try
             {
                 trace("<<START>>");
-                field_shutdown = false;
+                field_terminated = false;
+                field_enabled = false;
                 try
                 {
                     perform(); //perform initial jobs
-                    while (!field_shutdown) //main event loop
+                    while (field_enabled || events.Count != 0) //main event loop
                     {
                         try
                         {
@@ -324,7 +325,7 @@ namespace Aha.Engine_
                                 trace("IDLE");
                             }
                             recv.WaitOne(); //wait events
-                            field_behavior.action_handle(events.Dequeue()); //handle event
+                            if (!field_behavior.action_handle(events.Dequeue())) throw(Failure.One); //handle event
                             perform(); //perform new jobs
                         }
                         catch (System.Threading.ThreadAbortException)
@@ -354,14 +355,16 @@ namespace Aha.Engine_
                 resumed.Reset();
                 events.Clear();
                 trace("<<FINISH>>");
+                field_enabled = false;
                 field_terminated = true;
             }
         }
 
-        public void HandleExternal(tpar_Event e) { trace("INPUT"); events.Enqueue(e); recv.Set(); } //handle external event (such as user input)
+        public void HandleExternal(tpar_Event e) { if (field_enabled) { trace("INPUT"); events.Enqueue(e); recv.Set(); } } //handle external event (such as user input)
         public void Suspend() { field_suspended = true; trace("SUSPENDED"); }
         public void Resume() { field_suspended = false; trace("RESUMED"); resumed.Set(); }
         public bool Terminated() { return field_terminated; }
+        public bool Enabled() { return field_enabled; }
         //public void SetTrace(func_Trace trace) { field_trace = trace; }
         
         // Interface members:
@@ -479,15 +482,28 @@ namespace Aha.Engine_
             };
             return true;
         }
-        public bool attr_shutdown(out Aha.API.Jobs.opaque_Job<tpar_Event> result)
+        public bool attr_enable(out Aha.API.Jobs.opaque_Job<tpar_Event> result)
         {
             result = new API.Jobs.opaque_Job<tpar_Event>
             {
-                title = "shutdown",
+                title = "enable",
                 execute =
                     delegate()
                     {
-                        field_shutdown = true;
+                        field_enabled = true;
+                    }
+            };
+            return true;
+        }
+        public bool attr_disable(out Aha.API.Jobs.opaque_Job<tpar_Event> result)
+        {
+            result = new API.Jobs.opaque_Job<tpar_Event>
+            {
+                title = "disable",
+                execute =
+                    delegate()
+                    {
+                        field_enabled = false;
                     }
             };
             return true;
@@ -500,6 +516,7 @@ namespace Aha.Engine_
             workthread.Start();
             field_terminated = false;
             field_suspended = false;
+            field_enabled = false;
         }
         public void StopExternal() 
         {

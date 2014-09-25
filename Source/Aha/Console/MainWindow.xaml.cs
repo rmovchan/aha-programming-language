@@ -39,6 +39,7 @@ namespace Console
         {
             private func_Output field_output;
             private string field_settings;
+            private string field_password;
             private icomp_Engine<tpar_Event> field_engine;
 
             public bool attr_settings(out IahaArray<char> result) { result = new AhaString(field_settings); return true; }
@@ -55,15 +56,16 @@ namespace Console
             }
             public bool attr_engine(out icomp_Engine<tpar_Event> result) { result = field_engine; return true; }
 
-            public BehaviorParams(func_Output output, string settings, icomp_Engine<tpar_Event> engine)
+            public BehaviorParams(func_Output output, string settings, string password, icomp_Engine<tpar_Event> engine)
             {
                 field_output = output;
                 field_settings = settings;
+                field_password = password;
                 field_engine = engine;
             }
         }
 
-        
+        private Microsoft.Win32.RegistryKey registryKey;
         private Assembly assembly;
         private object app;
         private Type eventType;
@@ -114,7 +116,7 @@ namespace Console
         {
             try
             {
-                Microsoft.Win32.RegistryKey registryKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("Software").OpenSubKey("Aha! Factor").OpenSubKey("Aha! for .NET").OpenSubKey("ConsoleApp");
+                registryKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("Software", true).OpenSubKey("Aha! Factor", true).OpenSubKey("Aha! Factor for .NET", true).OpenSubKey("ConsoleApp", true);
                 string[] names = registryKey.GetSubKeyNames();
                 foreach (string name in names)
                 {
@@ -193,52 +195,10 @@ namespace Console
 
         private void MenuItem_Click_1(object sender, RoutedEventArgs e)
         {
-            // create behavior parameters
-            Type bpType = typeof(BehaviorParams<>).MakeGenericType(new Type[] { eventType });
-            func_Output local_output = output;
-            func_Trace local_trace = addTrace;
-            b = Activator.CreateInstance(bpType, new object[] { local_output, parameters.Text, eng });
-            // get application's behavior
-            object[] args = new object[2];
-            args[0] = b;
-            try
-            {
-                appType.InvokeMember
-                    (
-                        "fattr_Behavior",
-                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
-                        null,
-                        app,
-                        args
-                    );
-                engType.InvokeMember
-                    (
-                        "StartExternal",
-                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
-                        null,
-                        eng,
-                        new object[] { args[1], local_trace }
-                    );
-            }
-            catch (System.Exception)
-            {
-                status.Content = "Error starting application";
-                return;
-            }
-            start.IsEnabled = false;
-            open.IsEnabled = false;
-            suspend.IsEnabled = true;
-            applicationBox.IsEnabled = false;
-            appSuspended = false;
-            stop.IsEnabled = true;
-            parameters.IsReadOnly = true;
-            status.Content = "Running";
-            input.IsReadOnly = false;
-            input.Focus();
-            messageLog.Clear();
-            //traceView.Items.Clear();
-            running = true;
-            outputTimer.Start();
+            status.Content = "Enter application's password and press Enter";
+            password.Visibility = Visibility.Visible;
+            passwordLabel.Visibility = Visibility.Visible;
+            password.Focus();
         }
 
         private void MenuItem_Click_2(object sender, RoutedEventArgs e)
@@ -277,7 +237,7 @@ namespace Console
             outputTimer.Stop();
             while (messages.Count > 0) 
             { 
-                messageLog.AppendText(messages.Dequeue()); 
+                messageLog.AppendText(messages.Dequeue() + "\n"); 
                 messageLog.ScrollToEnd(); 
             }
             while (trace.Count > 0)
@@ -310,11 +270,33 @@ namespace Console
                     eng,
                     new object[] { }
                 );
+            if
+                ((Boolean)engType.InvokeMember
+                    (
+                        "Enabled",
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                        null,
+                        eng,
+                        new object[] { }
+                    )
+                )
+            {
+                if (input.Visibility != Visibility.Visible)
+                {
+                    input.Visibility = Visibility.Visible;
+                    inputLabel.Visibility = Visibility.Visible;
+                    input.Focus();
+                }
+            }
+            else
+            {
+                input.Visibility = Visibility.Hidden;
+                inputLabel.Visibility = Visibility.Hidden;
+            }
             if (running && term)
             {
                 running = false;
                 status.Content = "Terminated";
-                input.IsReadOnly = true;
                 start.IsEnabled = true;
                 open.IsEnabled = true;
                 applicationBox.IsEnabled = true;
@@ -322,6 +304,7 @@ namespace Console
                 resume.IsEnabled = false;
                 stop.IsEnabled = false;
                 parameters.IsReadOnly = false;
+                parameters.Focus();
             }
             else
                 outputTimer.Start();
@@ -394,11 +377,11 @@ namespace Console
 
         private void register_Click(object sender, RoutedEventArgs e)
         {
-            Microsoft.Win32.Registry.SetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! for .NET\\ConsoleApp\\" + applicationBox.Text, "Path", assembly.Location);
-            Microsoft.Win32.Registry.SetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! for .NET\\ConsoleApp\\" + applicationBox.Text, "Settings", parameters.Text);
-            Microsoft.Win32.Registry.SetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! for .NET\\ConsoleApp\\" + applicationBox.Text, "WindowState", (int)this.WindowState);
-            Microsoft.Win32.Registry.SetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! for .NET\\ConsoleApp\\" + applicationBox.Text, "WindowHeight", this.Height);
-            Microsoft.Win32.Registry.SetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! for .NET\\ConsoleApp\\" + applicationBox.Text, "WindowWidth", this.Width);
+            Microsoft.Win32.Registry.SetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! Factor for .NET\\ConsoleApp\\" + applicationBox.Text, "Path", assembly.Location);
+            Microsoft.Win32.Registry.SetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! Factor for .NET\\ConsoleApp\\" + applicationBox.Text, "Settings", parameters.Text);
+            Microsoft.Win32.Registry.SetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! Factor for .NET\\ConsoleApp\\" + applicationBox.Text, "WindowState", (int)this.WindowState);
+            Microsoft.Win32.Registry.SetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! Factor for .NET\\ConsoleApp\\" + applicationBox.Text, "WindowHeight", this.Height);
+            Microsoft.Win32.Registry.SetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! Factor for .NET\\ConsoleApp\\" + applicationBox.Text, "WindowWidth", this.Width);
             if (applicationBox.SelectedIndex < 0)
             {
                 applicationBox.Items.Add(applicationBox.Text);
@@ -412,15 +395,19 @@ namespace Console
 
         private void applicationBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (applicationBox.SelectedIndex >= 0)
+            int idx = applicationBox.SelectedIndex;
+            unregister.IsEnabled = idx >= 0;
+            if (idx >= 0)
             {
-                string path = (string)Microsoft.Win32.Registry.GetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! for .NET\\ConsoleApp\\" + applicationBox.Items[applicationBox.SelectedIndex], "Path", "");
+                string path = (string)Microsoft.Win32.Registry.GetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! Factor for .NET\\ConsoleApp\\" + applicationBox.Items[idx], "Path", "");
                 LoadDll(path);
-                parameters.Text = (string)Microsoft.Win32.Registry.GetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! for .NET\\ConsoleApp\\" + applicationBox.Items[applicationBox.SelectedIndex], "Settings", "");
-                this.WindowState = (System.Windows.WindowState)Microsoft.Win32.Registry.GetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! for .NET\\ConsoleApp\\" + applicationBox.Items[applicationBox.SelectedIndex], "WindowState", this.WindowState);
-                this.Height = Convert.ToDouble((string)Microsoft.Win32.Registry.GetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! for .NET\\ConsoleApp\\" + applicationBox.Items[applicationBox.SelectedIndex], "WindowHeight", this.Height));
-                this.Width = Convert.ToDouble((string)Microsoft.Win32.Registry.GetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! for .NET\\ConsoleApp\\" + applicationBox.Items[applicationBox.SelectedIndex], "WindowWidth", this.Width));
+                parameters.Text = (string)Microsoft.Win32.Registry.GetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! Factor for .NET\\ConsoleApp\\" + applicationBox.Items[idx], "Settings", "");
+                this.WindowState = (System.Windows.WindowState)Microsoft.Win32.Registry.GetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! Factor for .NET\\ConsoleApp\\" + applicationBox.Items[idx], "WindowState", this.WindowState);
+                this.Height = Convert.ToDouble((string)Microsoft.Win32.Registry.GetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! Factor for .NET\\ConsoleApp\\" + applicationBox.Items[idx], "WindowHeight", this.Height));
+                this.Width = Convert.ToDouble((string)Microsoft.Win32.Registry.GetValue("HKEY_CURRENT_USER\\Software\\Aha! Factor\\Aha! Factor for .NET\\ConsoleApp\\" + applicationBox.Items[idx], "WindowWidth", this.Width));
             }
+            else
+                parameters.Text = "";
         }
 
         private void clearTrace_Click(object sender, RoutedEventArgs e)
@@ -446,6 +433,77 @@ namespace Console
                         file.WriteLine(line);
                     }
                 }
+            }
+        }
+
+        private void unregister_Click(object sender, RoutedEventArgs e)
+        {
+            int idx = applicationBox.SelectedIndex;
+            if (idx >= 0)
+            {
+                registryKey.DeleteSubKey((string)applicationBox.Items[idx], false);
+                applicationBox.Items.RemoveAt(idx);
+                applicationBox.SelectedIndex = -1;
+                parameters.Text = "";
+                register.IsEnabled = false;
+                start.IsEnabled = false;
+                stop.IsEnabled = false;
+                suspend.IsEnabled = false;
+                resume.IsEnabled = false;
+                unregister.IsEnabled = false;
+            }
+        }
+
+        private void password_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Return)
+            {
+                passwordLabel.Visibility = Visibility.Hidden;
+                password.Visibility = Visibility.Hidden;
+                // create behavior parameters
+                Type bpType = typeof(BehaviorParams<>).MakeGenericType(new Type[] { eventType });
+                func_Output local_output = output;
+                func_Trace local_trace = addTrace;
+                b = Activator.CreateInstance(bpType, new object[] { local_output, parameters.Text, password.Password, eng });
+                // get application's behavior
+                object[] args = new object[2];
+                args[0] = b;
+                try
+                {
+                    appType.InvokeMember
+                        (
+                            "fattr_Behavior",
+                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                            null,
+                            app,
+                            args
+                        );
+                    engType.InvokeMember
+                        (
+                            "StartExternal",
+                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                            null,
+                            eng,
+                            new object[] { args[1], local_trace }
+                        );
+                }
+                catch (System.Exception)
+                {
+                    status.Content = "Error starting application";
+                    return;
+                }
+                start.IsEnabled = false;
+                open.IsEnabled = false;
+                suspend.IsEnabled = true;
+                applicationBox.IsEnabled = false;
+                appSuspended = false;
+                stop.IsEnabled = true;
+                parameters.IsReadOnly = true;
+                messageLog.Clear();
+                //traceView.Items.Clear();
+                status.Content = "Running";
+                running = true;
+                outputTimer.Start();
             }
         }
 
