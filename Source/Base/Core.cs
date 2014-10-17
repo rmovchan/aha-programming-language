@@ -15,6 +15,11 @@ namespace Aha.Core
         bool first(Predicate<Item> that, long max, out Item result);
     }
 
+    public interface IahaObjSequence<Item> : IahaObject<Item>
+    {
+        bool action_skip();
+    }
+
     public class Failure : System.Exception
     {
         public Failure() : base() { }
@@ -48,7 +53,7 @@ namespace Aha.Core
         public Item curr;
         public Rule rule;
         public bool state(out Item result) { result = curr; return true; }
-        public IahaObject<Item> copy() { AhaSeq<Item> clone = new AhaSeq<Item> { curr = curr, rule = rule }; return clone; }
+        public IahaObject<Item> copy() { return new AhaSeq<Item> { curr = curr, rule = rule }; }
         public bool action_skip() { return rule(curr, out curr); }
         public bool first(Predicate<Item> that, long max, out Item result) 
         { 
@@ -67,13 +72,13 @@ namespace Aha.Core
 
     public struct AhaObjSeq<Item> : IahaSequence<Item>
     {
-        public IahaSequence<Item> obj;
+        public IahaObjSequence<Item> obj;
         public bool state(out Item result) { return obj.state(out result); }
-        public IahaObject<Item> copy() { AhaObjSeq<Item> clone = new AhaObjSeq<Item> { obj = obj }; return clone; }
+        public IahaObject<Item> copy() { return new AhaObjSeq<Item> { obj = (IahaObjSequence<Item>)obj.copy() }; }
         public bool action_skip() { return obj.action_skip(); }
         public bool first(Predicate<Item> that, long max, out Item result) 
         { 
-            IahaSequence<Item> clone = (IahaSequence<Item>)obj.copy(); 
+            IahaObjSequence<Item> clone = (IahaObjSequence<Item>)obj.copy(); 
             long j = 0; 
             Item item; 
             if (clone.state(out item)) 
@@ -481,13 +486,12 @@ namespace Aha.Core
         }
         public bool count(Predicate<char> that, out long result)
         { 
-            int j = 0; 
+            result = 0; 
             foreach (char ch in items) 
             { 
                 if (that(ch)) 
-                    j++; 
+                    result++; 
             } 
-            result = j;
             return true;
         }
         public bool select(Predicate<char> that, out char[] result)
@@ -579,7 +583,7 @@ namespace Aha.Core
         public bool forEach(Predicate<long> that) { for (long i = lo; i < hi; i++) { if (!that(i)) return false; } return true; }
         public bool forSome(Predicate<long> that) { for (long i = lo; i < hi; i++) { if (that(i)) return true; } return false; }
         public bool such(Predicate<long> that, out long result) { for (long i = lo; i < hi; i++) { if (that(i)) { result = i; return true; } } result = 0; return false; }
-        public bool count(Predicate<long> that, out long result) { long j = 0; for (long i = lo; i < hi; i++) { if (that(i)) j++; } result = j; return true; }
+        public bool count(Predicate<long> that, out long result) { result = 0; for (long i = lo; i < hi; i++) { if (that(i)) result++; } return true; }
         public bool select(Predicate<long> that, out long[] result)
         {
             try

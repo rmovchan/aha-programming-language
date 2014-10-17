@@ -8,42 +8,9 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Aha.Core;
 
-namespace Aha.Base
+namespace Aha.Package.Base
 {
     namespace Collections
-//doc
-//    Title:   "Collections"
-//    Purpose: "Generic collections: dynamic arrays, stacks, queues"
-//    Package: "Aha! Base Library"
-//    Author:  "Roman Movchan"
-//    Created: "2010-10-14"
-//end
-
-//type Item: arbitrary "collection item"
-
-//export Types:
-//    type DynamicArray:
-//        obj [Item]
-//            add(Item) "add new item"
-//            replace([ at: integer item: Item ]) "replace item at index"
-//            exchange([ first: integer second: integer ]) "swap two items"
-//            move([ from: integer to: integer ]) "move item to new position"
-//            insert([ at: integer item: Item ]) "insert item at index"
-//            delete(integer) "delete item at index"
-//        end "a dynamic array"
-
-//    type DynamicSequence:
-//        obj Item
-//            push(Item) "add an item"
-//            pop "remove an item"
-//        end "a dynamic sequence"
-
-//export Constructors:
-//    the DynamicArray: DynamicArray "zero-length dynamic array"
-//    the Stack: DynamicSequence "empty stack"
-//    the Queue: DynamicSequence "empty queue"
-//    the Storage: RandomStorage "empty random storage"
-//end
     {
         public interface icomp_ReplaceParam<Item>
         {
@@ -57,74 +24,288 @@ namespace Aha.Base
             bool attr_item(out Item result);
         }
 
+        public interface icomp_SwapParam<Item>
+        {
+            bool attr_first(out long result);
+            bool attr_second(out long result);
+        }
+
+        public interface icomp_MoveParam<Item>
+        {
+            bool attr_from(out long result);
+            bool attr_to(out long result);
+        }
+
         public interface iobj_DynamicArray<Item> : IahaObject<IahaArray<Item>>
         {
             bool action_add(Item item);
             bool action_replace(icomp_ReplaceParam<Item> param);
             bool action_insert(icomp_InsertParam<Item> param);
+            bool action_swap(icomp_SwapParam<Item> param);
+            bool action_move(icomp_MoveParam<Item> param);
             bool action_delete(long index);
         }
 
-        public interface iobj_DynamicSequence<Item> : IahaObject<Item>
+        public interface iobj_DynamicSequence<Item> : IahaSequence<Item>
         {
-            bool action_push(Item item);
-            bool action_pop();
+            bool action_add(Item item);
+            bool action_skip();
         }
 
         public interface imod_Collections<Item>
         {
             bool attr_DynamicArray(out iobj_DynamicArray<Item> result);
+            bool fattr_DynamicArrayOf(IahaArray<Item> items, out iobj_DynamicArray<Item> result);
             bool attr_Stack(out iobj_DynamicSequence<Item> result);
             bool attr_Queue(out iobj_DynamicSequence<Item> result);
+        }
+
+        public class module_Collections<Item> : AhaModule, imod_Collections<Item>
+        {
+            class obj_DynamicArray : iobj_DynamicArray<Item>
+            {
+                private List<Item> list;
+                public obj_DynamicArray() { list = new List<Item>(); }
+                public obj_DynamicArray(Item[] items) { list = new List<Item>(items); }
+                public bool state(out IahaArray<Item> result)
+                {
+                    result = new AhaArray<Item>(list.ToArray());
+                    return true;
+                }
+                public IahaObject<IahaArray<Item>> copy() { obj_DynamicArray clone = new obj_DynamicArray(list.ToArray()); return clone; }
+                public bool action_add(Item item)
+                {
+                    list.Add(item);
+                    return true;
+                }
+                public bool action_replace(icomp_ReplaceParam<Item> param)
+                {
+                    long index;
+                    Item item;
+                    if (param.attr_index(out index) && index >= 0 && index < list.Count && param.attr_item(out item))
+                    {
+                        list[(int)index] = item;
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                public bool action_insert(icomp_InsertParam<Item> param)
+                {
+                    long index;
+                    Item item;
+                    if (param.attr_index(out index) && index >= 0 && index <= list.Count && param.attr_item(out item))
+                    {
+                        list.Insert((int)index, item);
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                public bool action_swap(icomp_SwapParam<Item> param)
+                {
+                    long index1, index2;
+                    if (param.attr_first(out index1) && index1 >= 0 && index1 < list.Count && param.attr_second(out index2) && index2 >= 0 && index2 < list.Count)
+                    {
+                        Item item = list[(int)index1];
+                        list[(int)index1] = list[(int)index2];
+                        list[(int)index2] = item;
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                public bool action_move(icomp_MoveParam<Item> param)
+                {
+                    long index1, index2;
+                    if (param.attr_from(out index1) && index1 >= 0 && index1 < list.Count && param.attr_to(out index2) && index2 >= 0 && index2 < list.Count)
+                    {
+                        if (index1 != index2)
+                        {
+                            Item[] items = list.ToArray();
+                            Item item = list[(int)index1]; //from
+                            //shift items:
+                            if (index1 < index2)
+                                list.CopyTo((int)index1 + 1, items, (int)index1, (int)(index2 - index1)); //down
+                            else
+                                list.CopyTo((int)index1, items, (int)index1 + 1, (int)(index1 - index2)); //up
+
+                            list = new List<Item>(items);
+                            list[(int)index2] = item; //to
+                        }
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                public bool action_delete(long index)
+                {
+                    if (index >= 0 && index <= list.Count)
+                    {
+                        list.RemoveAt((int)index);
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            class obj_Stack : iobj_DynamicSequence<Item>
+            {
+                class node
+                {
+                    public Item item;
+                    public node next;
+                }
+                private node head = null;
+                public bool state(out Item result)
+                {
+                    if (head != null)
+                    {
+                        result = head.item;
+                        return true;
+                    }
+                    else
+                    {
+                        result = default(Item);
+                        return false;
+                    }
+                }
+                public IahaObject<Item> copy() { obj_Stack clone = new obj_Stack() { head = head }; return clone; }
+                public bool action_add(Item item)
+                {
+                    node h = new node();
+                    h.item = item;
+                    h.next = head;
+                    head = h;
+                    return true;
+                }
+                public bool action_skip()
+                {
+                    if (head != null)
+                    {
+                        head = head.next;
+                        return true;
+                    }
+                    else
+                        return false;
+                }
+                public bool first(Predicate<Item> that, long max, out Item result)
+                {
+                    if (head != null)
+                    {
+                        node h = head;
+                        for (long j = 0; j < max; j++)
+                        {
+                            if (that(h.item))
+                            {
+                                result = h.item;
+                                return true;
+                            }
+                            h = h.next;
+                            if (h == null) break;
+                        }
+                    }
+                    result = default(Item);
+                    return false;
+                }
+            }
+
+            class obj_Queue : iobj_DynamicSequence<Item>
+            {
+                class node
+                {
+                    public Item item;
+                    public node next;
+                    public node prev;
+                }
+                private node head = null;
+                private node tail = null;
+                public bool state(out Item result)
+                {
+                    if (tail != null)
+                    {
+                        result = tail.item;
+                        return true;
+                    }
+                    else
+                    {
+                        result = default(Item);
+                        return false;
+                    }
+                }
+                public IahaObject<Item> copy() { obj_Queue clone = new obj_Queue(); node p = head; while (p != null) { clone.action_add(p.item); p = p.next; } return clone; }
+                public bool action_add(Item item)
+                {
+                    node h = new node();
+                    h.item = item;
+                    h.next = head;
+                    h.prev = null;
+                    head = h;
+                    if (tail == null)
+                        tail = h;
+                    return true;
+                }
+                public bool action_skip()
+                {
+                    if (tail != null)
+                    {
+                        tail = tail.prev;
+                        tail.prev = tail.prev.prev;
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                public bool first(Predicate<Item> that, long max, out Item result)
+                {
+                    if (tail != null)
+                    {
+                        node t = tail;
+                        for (long j = 0; j < max; j++)
+                        {
+                            if (that(t.item))
+                            {
+                                result = t.item;
+                                return true;
+                            }
+                            t = t.prev;
+                            if (t == null) break;
+                        }
+                    }
+                    result = default(Item);
+                    return false;
+                }
+            }
+
+            public bool attr_DynamicArray(out iobj_DynamicArray<Item> result) { try { result = new obj_DynamicArray(); return true; } catch (System.Exception) { result = default(iobj_DynamicArray<Item>); return false; } }
+            public bool fattr_DynamicArrayOf(IahaArray<Item> items, out iobj_DynamicArray<Item> result) { try { result = new obj_DynamicArray(items.get()); return true; } catch (System.Exception) { result = default(iobj_DynamicArray<Item>); return false; } }
+            public bool attr_Stack(out iobj_DynamicSequence<Item> result) { try { result = new obj_Stack(); return true; } catch (System.Exception) { result = default(iobj_DynamicSequence<Item>); return false; } }
+            public bool attr_Queue(out iobj_DynamicSequence<Item> result) { try { result = new obj_Queue(); return true; } catch (System.Exception) { result = default(iobj_DynamicSequence<Item>); return false; } }
         }
     }
 
     namespace Rational
-//doc
-//    Title:   "Rational"
-//    Package: "Aha! Base Library"
-//    Purpose: "Rational numbers"
-//    Author:  "Roman Movchan, Melbourne, Australia"
-//    Created: "2012-06-02"
-//end
-
-//export Types:
-//    type Rational: opaque "a rational number"
-//    type RatioStruc:
-//        [
-//            num: integer "numerator"
-//            den: integer "denominator"
-//        ] "rational as composite"
-//end
-
-//export Operators:
-//    (integer / integer): { integer, integer -> Rational } "divide integers to get Rational"
-//    (~struc Rational): { Rational -> RatioStruc } "convert Rational to RatioStruc"
-//    (Rational + Rational): { Rational, Rational -> Rational } "sum of two rationals"
-//    (Rational - Rational): { Rational, Rational -> Rational } "difference between two rationals"
-//    (Rational * Rational): { Rational, Rational -> Rational } "product of two rationals"
-//    (Rational / Rational): { Rational, Rational -> Rational } "quotient of two rationals"
-//    (Rational < Rational): { Rational, Rational } "is first rational less than second?"
-//    (Rational <= Rational): { Rational, Rational } "is first rational less than or equal to second?"
-//    (Rational = Rational): { Rational, Rational } "is first rational equal to second?"
-//    (Rational /= Rational): { Rational, Rational } "is first rational not equal to second?"
-//    (Rational >= Rational): { Rational, Rational } "is first rational greater than or equal to second?"
-//    (Rational > Rational): { Rational, Rational } "is first rational greater than second?"
-//end
     {
-        public struct opaque_Rational
-        {
-            public long num;
-            public long den;
-        }
-
         public interface icomp_RatioStruc
         {
             bool attr_num(out long result);
             bool attr_den(out long result);
         }
 
-        public interface imod_Rational<opaque_Rational>
+        public interface imod_Rational
         {
             bool op_integer_Slash_integer(long num, long den, out opaque_Rational result);
             bool op__struc(opaque_Rational x, out icomp_RatioStruc result);
@@ -132,7 +313,13 @@ namespace Aha.Base
             bool op_Rational_Less_Rational(opaque_Rational a, opaque_Rational b);
         }
 
-        public class module_Rational : AhaModule
+        public struct opaque_Rational
+        {
+            public long num;
+            public long den;
+        }
+
+        public class module_Rational : AhaModule, imod_Rational
         {
             class comp_RatioStruc : icomp_RatioStruc
             {
@@ -145,26 +332,26 @@ namespace Aha.Base
 
             public bool op_integer_Slash_integer(long num, long den, out opaque_Rational result) { result = new opaque_Rational { num = num, den = den }; return true; }
             public bool op__struc(opaque_Rational x, out icomp_RatioStruc result) { result = new comp_RatioStruc(x.num, x.den); return true; }
-            public bool op_Rational_Plus_Rational(opaque_Rational a, opaque_Rational b, out opaque_Rational result) 
+            public bool op_Rational_Plus_Rational(opaque_Rational a, opaque_Rational b, out opaque_Rational result)
             {
                 try
                 {
                     result = new opaque_Rational { num = checked(a.num * b.den + a.den * b.num), den = checked(a.den * b.den) };
                     return true;
                 }
-                catch(System.Exception)
-                { 
+                catch (System.Exception)
+                {
                     result = default(opaque_Rational);
                     return false;
                 }
             }
-            public bool op_Rational_Less_Rational(opaque_Rational a, opaque_Rational b) 
+            public bool op_Rational_Less_Rational(opaque_Rational a, opaque_Rational b)
             {
                 try
                 {
                     return checked(a.num * b.den < a.den * b.num);
                 }
-                catch(System.Exception)
+                catch (System.Exception)
                 {
                     return false;
                 }
@@ -172,99 +359,8 @@ namespace Aha.Base
         }
     }
 
-    namespace Math
-//doc 
-//    Title:   "Math"
-//    Purpose: "Floating-point numbers and matrices"
-//    Package: "Aha! Base Library"
-//    Author:  "Roman Movchan"
-//    Created: "2010-10-16"
-//end
-
-//use Rational: Base/Rational
-//import Rational(Types)
-
-//export Types:
-//    type Float: opaque "a floating-point number"
-//    type FormatParams:
-//        [
-//            general:
-//                [
-//                    period: character "character for decimal period"
-//                ] "general format" |
-//            fixed:
-//                [
-//                    period: character "character for decimal period"
-//                    decimals: integer "number of decimals"
-//                ] "fixed format" |
-//            exponent: 
-//                [
-//                    period: character "character for decimal period"
-//                ] "exponential format"
-//        ] "number formatting parameters"
-//end
-
-//export Operators:
-//    (Float + Float): { Float, Float -> Float } "the sum of two floats"
-//    (Float - Float): { Float, Float -> Float } "the difference between two floats"
-//    (Float * Float): { Float, Float -> Float } "the product of two floats"
-//    (Float / Float): { Float, Float -> Float } "the ratio of two floats"
-//    (Float < Float): { Float, Float } "is first float less than second?"
-//    (Float <= Float): { Float, Float } "is first float less than or equal to second?"
-//    (Float = Float): { Float, Float } "is first float equal to second?"
-//    (Float /= Float): { Float, Float } "is first float not equal to second?"
-//    (Float >= Float): { Float, Float } "is first float greater than or equal to second?"
-//    (Float > Float): { Float, Float } "is first float greater than second?"
-//    (~float integer): { integer -> Float } "convert integer to Float"
-//    (~float Rational): { Rational -> Float } "convert Rational to Float"
-//end
-
-//export Functions:
-//    the sin: { Float -> Float } "the sine function"
-//    the cos: { Float -> Float } "the cosine function"
-//    the exp: { Float -> Float } "the exponent function"
-//    the log: { Float -> Float } "the logarithm function"
-//    the tan: { Float -> Float } "the tangent function"
-//    the Pi: Float "the pi number"
-//    the Infinity: Float "+infinity"
-//    the NegInfinity: Float "-infinity"
-//    the Trunc: { Float -> integer } "truncate Float to integer"
-//    the Round: { Float, integer -> Rational } "round Float to given number of decimals after decimal point"
-//    the FloatToString: { Float, FormatParams -> [character] } "convert Float to string"
-//    the StringToFloat: { [character], FormatParams -> Float } "convert string to Float"
-//end
-
-//export MatrixAlgebra:
-//    type Scalar: Float "alias for floating-point numbers"
-//    type Matrix: opaque "a matrix"
-//    the Size: { Matrix -> [ rows: integer columns: integer ] } "matrix dimensions"
-//    (Matrix @ [ row: integer col: integer ]): { Matrix, [ row: integer col: integer ] -> Scalar } "matrix element with given coordinates"
-//    (~id integer): { integer -> Matrix } "identity matrix of given size"
-//    (~rows [[integer]]): { [[integer]] -> Matrix } "build matrix from rows of integers (must be of same size)"
-//    (~columns [[integer]]): { [[integer]] -> Matrix } "build matrix from columns of integers (must be of same size)"
-//    (~rows [[Rational]]): { [[Rational]] -> Matrix } "build matrix from rows of rationals (must be of same size)"
-//    (~columns [[Rational]]): { [[Rational]] -> Matrix } "build matrix from columns of rationals (must be of same size)"
-//    (~rows [[Scalar]]): { [[Scalar]] -> Matrix } "build matrix from rows of scalars (must be of same size)"
-//    (~columns [[Scalar]]): { [[Scalar]] -> Matrix } "build matrix from columns of scalars (must be of same size)"
-//    (Scalar * Matrix): { Scalar, Matrix -> Matrix } "multiply matrix by scalar"
-//    (Matrix + Matrix): { Matrix, Matrix -> Matrix } "sum of matrices"
-//    (Matrix - Matrix): { Matrix, Matrix -> Matrix } "difference of matrices"
-//    (Matrix * Matrix): { Matrix, Matrix -> Matrix } "product of matrices"
-//    the Det: { Matrix -> Scalar } "determinant"
-//    (~inv Matrix): { Matrix -> Matrix } "inverse matrix"
-//    (~tr Matrix): { Matrix -> Matrix } "transpose matrix"
-//end
+    namespace Float
     {
-        public struct opaque_Float
-        {
-            public double value;
-        }
-
-        public class opaque_Matrix
-        {
-            public double[,] value;
-        }
-
         public interface icomp_GeneralFormatParams
         {
             bool attr_period(out char result);
@@ -288,7 +384,7 @@ namespace Aha.Base
             bool attr_exponent(out icomp_ExponentFormatParams result);
         }
 
-        public interface imod_Math
+        public interface imod_Float
         {
             bool op__float_integer(long x, out opaque_Float result);
             bool op__float_Rational(Rational.opaque_Rational x, out opaque_Float result);
@@ -313,39 +409,49 @@ namespace Aha.Base
             bool attr_Pi(out opaque_Float result);
         }
 
-        public class module_Math : AhaModule, imod_Math
+        public struct opaque_Float
+        {
+            public double value;
+        }
+
+        //public class opaque_Matrix
+        //{
+        //    public double[,] value;
+        //}
+
+        public class module_Float : AhaModule, imod_Float
         {
             public bool op__float_integer(long x, out opaque_Float result) { result = new opaque_Float { value = (double)x }; return true; }
-            public bool op__float_Rational(Rational.opaque_Rational x, out opaque_Float result) { result = new opaque_Float { value = (double)x.num / (double)x.den }; return true; }
-            public bool op_Float_Plus_Float(opaque_Float a, opaque_Float b, out opaque_Float result) { result = new opaque_Float { value = a.value + b.value }; return true; }
-            public bool op_Float_Minus_Float(opaque_Float a, opaque_Float b, out opaque_Float result) { result = new opaque_Float { value = a.value - b.value }; return true; }
-            public bool op_Float_Times_Float(opaque_Float a, opaque_Float b, out opaque_Float result) { result = new opaque_Float { value = a.value * b.value }; return true; }
-            public bool op_Float_Div_Float(opaque_Float a, opaque_Float b, out opaque_Float result) { result = new opaque_Float { value = a.value / b.value }; return true; }
-            public bool op_Float_StarStar_integer(opaque_Float a, long b, out opaque_Float result) 
-            { 
-                try 
-                { 
-                    result = new opaque_Float { value = System.Math.Pow(a.value, (double)b) }; 
-                    return true; 
-                } 
-                catch (System.Exception) 
+            public bool op__float_Rational(Rational.opaque_Rational x, out opaque_Float result) { try { result = new opaque_Float { value = (double)x.num / (double)x.den }; return true; } catch (System.Exception) { result = default(opaque_Float); return false; } }
+            public bool op_Float_Plus_Float(opaque_Float a, opaque_Float b, out opaque_Float result) { try { result = new opaque_Float { value = a.value + b.value }; return true; } catch (System.Exception) { result = default(opaque_Float); return false; } }
+            public bool op_Float_Minus_Float(opaque_Float a, opaque_Float b, out opaque_Float result) { try { result = new opaque_Float { value = a.value - b.value }; return true; } catch (System.Exception) { result = default(opaque_Float); return false; } }
+            public bool op_Float_Times_Float(opaque_Float a, opaque_Float b, out opaque_Float result) { try { result = new opaque_Float { value = a.value * b.value }; return true; } catch (System.Exception) { result = default(opaque_Float); return false; } }
+            public bool op_Float_Div_Float(opaque_Float a, opaque_Float b, out opaque_Float result) { try { result = new opaque_Float { value = a.value / b.value }; return true; } catch (System.Exception) { result = default(opaque_Float); return false; } }
+            public bool op_Float_StarStar_integer(opaque_Float a, long b, out opaque_Float result)
+            {
+                try
+                {
+                    result = new opaque_Float { value = System.Math.Pow(a.value, (double)b) };
+                    return true;
+                }
+                catch (System.Exception)
                 {
                     result = default(opaque_Float);
                     return false;
-                } 
+                }
             }
-            public bool op_Float_StarStar_Float(opaque_Float a, opaque_Float b, out opaque_Float result) 
-            { 
-                try 
-                { 
-                    result = new opaque_Float { value = System.Math.Pow(a.value, b.value) }; 
-                    return true; 
-                } 
-                catch (System.Exception) 
+            public bool op_Float_StarStar_Float(opaque_Float a, opaque_Float b, out opaque_Float result)
+            {
+                try
+                {
+                    result = new opaque_Float { value = System.Math.Pow(a.value, b.value) };
+                    return true;
+                }
+                catch (System.Exception)
                 {
                     result = default(opaque_Float);
                     return false;
-                } 
+                }
             }
             public bool op_Float_Less_Float(opaque_Float a, opaque_Float b) { return a.value < b.value; }
             public bool op_Float_LessEqual_Float(opaque_Float a, opaque_Float b) { return a.value <= b.value; }
@@ -353,83 +459,17 @@ namespace Aha.Base
             public bool op_Float_NotEqual_Float(opaque_Float a, opaque_Float b) { return a.value != b.value; }
             public bool op_Float_GreaterEqual_Float(opaque_Float a, opaque_Float b) { return a.value >= b.value; }
             public bool op_Float_Greater_Float(opaque_Float a, opaque_Float b) { return a.value > b.value; }
-            public bool fattr_sin(opaque_Float a, out opaque_Float result) { result = new opaque_Float { value = System.Math.Sin(a.value) }; return true; }
-            public bool fattr_cos(opaque_Float a, out opaque_Float result) { result = new opaque_Float { value = System.Math.Cos(a.value) }; return true; }
-            public bool fattr_exp(opaque_Float a, out opaque_Float result) { result = new opaque_Float { value = System.Math.Exp(a.value) }; return true; }
-            public bool fattr_log(opaque_Float a, out opaque_Float result) { result = new opaque_Float { value = System.Math.Log(a.value) }; return true; }
-            public bool fattr_tan(opaque_Float a, out opaque_Float result) { result = new opaque_Float { value = System.Math.Tan(a.value) }; return true; }
-            public bool fattr_sqrt(opaque_Float a, out opaque_Float result) { result = new opaque_Float { value = System.Math.Sqrt(a.value) }; return true; }
+            public bool fattr_sin(opaque_Float a, out opaque_Float result) { try { result = new opaque_Float { value = System.Math.Sin(a.value) }; return true; } catch (System.Exception) { result = default(opaque_Float); return false; } }
+            public bool fattr_cos(opaque_Float a, out opaque_Float result) { try { result = new opaque_Float { value = System.Math.Cos(a.value) }; return true; } catch (System.Exception) { result = default(opaque_Float); return false; } }
+            public bool fattr_exp(opaque_Float a, out opaque_Float result) { try { result = new opaque_Float { value = System.Math.Exp(a.value) }; return true; } catch (System.Exception) { result = default(opaque_Float); return false; } }
+            public bool fattr_log(opaque_Float a, out opaque_Float result) { try { result = new opaque_Float { value = System.Math.Log(a.value) }; return true; } catch (System.Exception) { result = default(opaque_Float); return false; } }
+            public bool fattr_tan(opaque_Float a, out opaque_Float result) { try { result = new opaque_Float { value = System.Math.Tan(a.value) }; return true; } catch (System.Exception) { result = default(opaque_Float); return false; } }
+            public bool fattr_sqrt(opaque_Float a, out opaque_Float result) { try { result = new opaque_Float { value = System.Math.Sqrt(a.value) }; return true; } catch (System.Exception) { result = default(opaque_Float); return false; } }
             public bool attr_Pi(out opaque_Float result) { result = new opaque_Float { value = System.Math.PI }; return true; }
         }
     }
 
     namespace Time
-    //doc 
-    //    Title:   "Time"
-    //    Package: "Aha! Base Library"
-    //    Purpose: "Date and time manipulation"
-    //    Author:  "Roman Movchan, Melbourne, Australia"
-    //    Created: "2011-10-11"
-    //end
-
-//export Types:
-    //    type Timestamp: opaque "Date and time"
-    //    type Interval: opaque "Time interval"
-    //    type DateStruc:
-    //        [
-    //            year: integer "year(s)" 
-    //            month: integer "month(s)"
-    //            day: integer "day(s)"
-    //        ] "date as composite"
-    //    type TimeStruc:
-    //        [
-    //            hour: integer "hour(s)"
-    //            min: integer "minute(s)"
-    //            sec: integer "second(s)"
-    //            msec: integer "millisecond(s)"
-    //        ] "time as composite"
-    //    type TimestampStruc: [ date: DateStruc "date part" time: TimeStruc "time part" ] "timestamp as composite"
-    //    type DayOfWeek:
-    //        [
-    //            monday: "Monday?" |
-    //            tuesday: "Tuesday?" |
-    //            wednesday: "Wednesday?" |
-    //            thursday: "Thursday?" |
-    //            friday: "Friday?" |
-    //            saturday: "Saturday?" |
-    //            sunday: "Sunday?" 
-    //        ] "a day of the week"
-    //end
-
-//export Utils:
-    //    the DayOfWeek: { Timestamp -> DayOfWeek } "day of week for given Timestamp"
-    //    the Year: Interval "1-year interval"
-    //    the Month: Interval "1-month interval"
-    //    the Day: Interval "1-day interval"
-    //    the Hour: Interval "1-hour interval"
-    //    the Minute: Interval "1-minute interval"
-    //    the Second: Interval "1-second interval"
-    //    the Millisecond: Interval "1-millisecond interval"
-    //    the Tick: Interval "minimum length interval"
-    //    the Zero: Interval "zero length interval"
-    //end
-
-//export Operators:
-    //    (Timestamp - Timestamp): { Timestamp, Timestamp -> Interval } "difference between two timestamps"
-    //    (Interval + Interval): { Interval, Interval -> Interval } "sum of intervals"
-    //    (Interval - Interval): { Interval, Interval -> Interval } "difference between intervals"
-    //    (Timestamp + Interval): { Timestamp, Interval -> Timestamp } "timestamp plus interval"
-    //    (Timestamp - Interval): { Timestamp, Interval -> Timestamp } "timestamp minus interval"
-    //    (integer * Interval): { integer, Interval -> Interval } "integer times interval"
-    //    (Interval / integer): { Interval, integer -> Interval } "interval divided by an integer"
-    //    (~date DateStruc): { DateStruc -> Timestamp } "convert DateStruc to Timestamp (date only)"
-    //    (~time TimeStruc): { TimeStruc -> Interval } "convert TimeStruc to Interval (from midnight)"
-    //    (~date Timestamp): { Timestamp -> Timestamp } "date part of a Timestamp"
-    //    (~time Timestamp): { Timestamp -> Interval } "time part of a Timestamp as Interval (from midnight)"
-    //    (~struc Timestamp): { Timestamp -> TimestampStruc } "convert Timestamp to TimestampStruc"
-    //    (~struc Interval): { Interval -> TimestampStruc } "convert Interval to TimestampStruc"
-    //    (~ticks Interval): { Interval -> integer } "number of ticks in Interval"
-    //end
     {
         public struct opaque_Timestamp
         {
@@ -510,7 +550,7 @@ namespace Aha.Base
             bool op__interval_integer(long param_ticks, out opaque_Interval result);
         }
 
-        public class module_Time : AhaModule
+        public class module_Time : AhaModule, imod_Time
         {
             struct comp_DateStruc : icomp_DateStruc
             {
@@ -561,7 +601,7 @@ namespace Aha.Base
             public bool op_Interval_NotEqual_Interval(opaque_Interval a, opaque_Interval b) { return a.ticks != b.ticks; }
             public bool op_Interval_Greater_Interval(opaque_Interval a, opaque_Interval b) { return a.ticks > b.ticks; }
             public bool op_Interval_GreaterEqual_Interval(opaque_Interval a, opaque_Interval b) { return a.ticks >= b.ticks; }
-            public bool op__date_DateStruc(icomp_DateStruc date, out opaque_Timestamp result) 
+            public bool op__date_DateStruc(icomp_DateStruc date, out opaque_Timestamp result)
             {
                 long y;
                 long m;
@@ -574,10 +614,10 @@ namespace Aha.Base
                 else
                 {
                     result = default(opaque_Timestamp);
-                    return false; 
+                    return false;
                 }
             }
-            public bool op__time_TimeStruc(icomp_TimeStruc time, out opaque_Interval result) 
+            public bool op__time_TimeStruc(icomp_TimeStruc time, out opaque_Interval result)
             {
                 long h;
                 long m;
@@ -600,60 +640,6 @@ namespace Aha.Base
     }
 
     namespace StrUtils
-    //doc
-    //    Title:   "StrUtils"
-    //    Package: "Aha! Base Library"
-    //    Purpose: "String utilities"
-    //    Author:  "Roman Movchan, Melbourne, Australia"
-    //    Created: "2012-06-03"
-    //end
-
-//export Types:
-    //    type String: [character] "character string"
-    //    type Substring:
-    //        [
-    //            index: integer "first character index"
-    //            length: integer "substring length"
-    //        ] "identifies a substring inside a string"
-    //    type RegEx: opaque "a regular expression"
-    //    type Pattern: 
-    //        [
-    //            string: String "exact search string" |
-    //            regEx: RegEx "regular expression" |
-    //            equality: { character, character } "character-wise equality relation"
-    //        ] "search pattern"
-    //    type SearchParams:
-    //        [
-    //            for: Pattern "search pattern"
-    //             in: String "where to search"
-    //        ] "search parameters"
-    //    type CharCompare: { character, character -> integer } "character comparison function: negative - <, zero - =, positive - >"
-    //    type StringCompare: { String, String -> integer } "string comparison function: negative - <, zero - =, positive - >"
-    //end
-
-//export Utils:
-    //    the Substr: { String, Substring -> String } "extract substring from string"
-    //    the RegEx: { String -> RegEx } "construct regular expression from string"
-    //    the Search: { SearchParams -> Substring* } "return all occurrences of search pattern in string as a sequence"    
-    //    the StringBuilder:
-    //        obj String
-    //            add(character) "add a single character"
-    //            put([ at: integer char: character ]) "replace character at given index"
-    //            append(String) "append string to the end"
-    //            replace([ substr: [Substring] with: String ]) "simultaneously replace multiple non-overlapping substrings with string"
-    //            padLeft([ with: character to: integer ]) "pad with given character from left to given length"
-    //            padRight([ with: character to: integer ]) "pad with given character from right to given length"
-    //            extract(Substring) "extract substring"
-    //            trimSpaces "trim spaces"
-    //            apply({ character -> character }) "convert all characters using provided function"
-    //        end "the string builder"
-    //    the StringHashFunc: { String -> integer } "standard hash function for strings"
-    //    the StringCompare: { CharCompare -> StringCompare } "string comparison function from character comparison function"
-    //end
-
-//export Operators:
-    //    (String = String): { String, String } "compare strings"
-    //end
     {
         public interface icomp_Substring
         {
@@ -735,11 +721,11 @@ namespace Aha.Base
                     }
                 }
                 public IahaObject<icomp_Substring> copy() { return new obj_SearchSeq(str, sub) { index = index }; }
-                public bool action_skip() 
-                { 
+                public bool action_skip()
+                {
                     if (index >= 0)
                     {
-                        index = str.IndexOf(sub, index + 1); 
+                        index = str.IndexOf(sub, index + 1);
                         return index >= 0;
                     }
                     else
@@ -770,12 +756,12 @@ namespace Aha.Base
                 private System.Text.RegularExpressions.Regex regEx;
                 private System.Text.RegularExpressions.Match match;
                 public obj_SearchRegExSeq(string s, System.Text.RegularExpressions.Regex r) { str = s; regEx = r; match = regEx.Match(s); }
-                public bool state(out icomp_Substring result) 
+                public bool state(out icomp_Substring result)
                 {
                     if (match.Success)
-                    { 
-                        result = new comp_Substring(match.Index, match.Length); 
-                        return true; 
+                    {
+                        result = new comp_Substring(match.Index, match.Length);
+                        return true;
                     }
                     else
                     {
@@ -803,7 +789,7 @@ namespace Aha.Base
                 }
             }
 
-            public bool fattr_Substr(IahaArray<char> s, icomp_Substring ss, out IahaArray<char> result) 
+            public bool fattr_Substr(IahaArray<char> s, icomp_Substring ss, out IahaArray<char> result)
             {
                 long i; long l;
                 if (ss.attr_index(out i) && ss.attr_length(out l))
@@ -819,14 +805,14 @@ namespace Aha.Base
                     return false;
                 }
             }
-            public bool fattr_RegEx(IahaArray<char> s, out opaque_RegEx result) 
+            public bool fattr_RegEx(IahaArray<char> s, out opaque_RegEx result)
             {
                 try
                 {
                     result = new opaque_RegEx { value = new System.Text.RegularExpressions.Regex(new string(s.get())) };
                     return true;
                 }
-                catch(System.Exception)
+                catch (System.Exception)
                 {
                     result = default(opaque_RegEx);
                     return false;
@@ -862,40 +848,6 @@ namespace Aha.Base
     }
 
     namespace Trees
-//doc 
-//    Title:   "Trees"
-//    Purpose: "Generic trees"
-//    Author:  "Roman Movchan, Melbourne, Australia"
-//    Created: "2013-08-10"
-//end
-
-//type Node: arbitrary "Tree node"
-
-//export Types:
-//    type Tree: opaque "abstract tree"
-//    type Path: opaque "path to a sub-tree (sequence of child indexes), starting from the root"
-//end
-
-//export Constructors:
-//    the Tree: { [ root: Node children: [Tree] ] -> Tree } "create a tree with given root and children"
-//    the Leaf: { Node -> Tree } "create a leaf from given node"
-//end
-
-//export Utils:
-//    the Root: { Tree -> Node } "tree's root node"
-//    the Children: { Tree -> [Tree] } "all children of a tree"
-//    the NodesByLevel: { Tree -> Node* } "enumerate all tree nodes level by level"
-//    the NodesByBranch: { Tree -> Node* } "enumerate all tree nodes branch by branch"
-//    the PathsByLevel: { Tree -> Path* } "paths to all sub-trees level by level"
-//    the PathsByBranch: { Tree -> Path* } "paths to all sub-trees branch by branch"
-//    the Subtree: { Tree, Path -> Tree } "tree's sub-tree at given path"
-//    the Ancestors: { Tree, Path -> Tree* } "all ancestors of sub-tree at given path, starting from its parent"
-//    the LevelCount: { Tree -> integer } "tree's number of levels"
-//    the NodeCount: { Tree -> integer } "tree's total number of nodes"
-//    the InsertSubtree: { Tree, [ path: Path subtree: Tree ] -> Tree } "insert sub-tree into given tree at given path"
-//    the ReplaceSubtree: { Tree, [ path: Path subtree: Tree ] -> Tree } "replace sub-tree of given tree at given path"
-//    the DeleteSubtree: { Tree, Path -> Tree } "delete sub-tree of given tree at given path"
-//end    
     {
         public class opaque_Tree<tpar_Node>
         {
@@ -950,7 +902,7 @@ namespace Aha.Base
                     }
                 }
                 public IahaObject<tpar_Node> copy() { return new obj_NodesByLevel(queue.Peek()); }
-                public bool action_skip() 
+                public bool action_skip()
                 {
                     if (queue.Count > 0)
                     {
@@ -995,18 +947,18 @@ namespace Aha.Base
             {
                 private Stack<opaque_Tree<tpar_Node>> stack = new Stack<opaque_Tree<tpar_Node>>();
                 public obj_NodesByBranch(opaque_Tree<tpar_Node> tree) { stack.Push(tree); }
-                public bool state(out tpar_Node result) 
-                { 
-                    if (stack.Count > 0) 
-                    { 
-                        result = stack.Peek().root; 
-                        return true; 
-                    } 
-                    else 
+                public bool state(out tpar_Node result)
+                {
+                    if (stack.Count > 0)
+                    {
+                        result = stack.Peek().root;
+                        return true;
+                    }
+                    else
                     {
                         result = default(tpar_Node);
                         return false;
-                    } 
+                    }
                 }
                 public IahaObject<tpar_Node> copy() { return new obj_NodesByBranch(stack.Peek()); }
                 public bool action_skip()
@@ -1202,10 +1154,10 @@ namespace Aha.Base
             }
             public bool fattr_Leaf(tpar_Node node, out opaque_Tree<tpar_Node> result) { result = new opaque_Tree<tpar_Node>() { root = node, children = null, levels = 0 }; return true; }
             public bool fattr_Root(opaque_Tree<tpar_Node> tree, out tpar_Node result) { result = tree.root; return true; }
-            public bool fattr_Children(opaque_Tree<tpar_Node> tree, out IahaArray<opaque_Tree<tpar_Node>> result) 
-            { 
-                if (tree.children == null) 
-                    result = new AhaArray<opaque_Tree<tpar_Node>>(new opaque_Tree<tpar_Node>[] { }); 
+            public bool fattr_Children(opaque_Tree<tpar_Node> tree, out IahaArray<opaque_Tree<tpar_Node>> result)
+            {
+                if (tree.children == null)
+                    result = new AhaArray<opaque_Tree<tpar_Node>>(new opaque_Tree<tpar_Node>[] { });
                 else
                     result = new AhaArray<opaque_Tree<tpar_Node>>(tree.children);
                 return true;
@@ -1244,8 +1196,8 @@ namespace Aha.Base
                 }
                 return true;
             }
-            public bool fattr_Indexes(opaque_Path<tpar_Node> path, out IahaSequence<long> result) 
-            { 
+            public bool fattr_Indexes(opaque_Path<tpar_Node> path, out IahaSequence<long> result)
+            {
                 result = new AhaArraySeq<long> { items = path.indexes, index = 0 };
                 return true;
             }
@@ -1269,63 +1221,6 @@ namespace Aha.Base
     }
 
     namespace Bits
-    //doc 
-    //    Title:   "Bits"
-    //    Purpose: "Working with bits and bit strings"
-    //    Package: "Aha! Base Library"
-    //    Author:  "Roman Movchan"
-    //    Created: "2012-06-07"
-    //end
-
-//export Types:
-    //    type BitString: opaque "a string of bits"
-    //    type BitStrCom:
-    //        [
-    //            at: { integer } "is bit at index non-zero?"
-    //            size: integer "size of the string"
-    //        ] "a structure that provides the info about a bit string"
-    //    type DynamicBitString:
-    //        obj BitString
-    //            append(BitString) "append a bit string"
-    //            resize(integer) "set size to given value, pad with 0's"
-    //            set(integer) "set bit at index to 1"
-    //            reset(integer) "set bit at index to 0"
-    //            invert "invert all bits in bit string"
-    //        end "a dynamic (changeable) bit string"
-    //    type Substring:
-    //        [
-    //            index: integer "first bit index"
-    //            length: integer"number of bits"
-    //        ] "a structure representing a substring of a bit string"
-    //end
-
-//export Constructors:
-    //    the DynamicBitString: DynamicBitString "zero-length dynamic bit string"
-    //end
-
-//export Utils:
-    //    the Substr: { BitString, Substring -> BitString } "extract a substring from bit string"
-    //    the True: BitString "bit string consisting of a single '1'"
-    //    the False: BitString "bit string consisting of a single '0'"
-    //    the Nil: BitString "a zero-length bit string"
-    //end
-
-//export Operators:
-    //    (BitString = BitString): { BitString, BitString } "are bit strings equal?"
-    //    (BitString & BitString): { BitString, BitString -> BitString } "logical AND of two bit strings"
-    //    (BitString | BitString): { BitString, BitString -> BitString } "logical OR of two bit strings"
-    //    (BitString || BitString): { BitString, BitString -> BitString } "logical XOR of two bit strings"
-    //    (- BitString): { BitString -> BitString } "inverse of a bit string"
-    //    (BitString << integer): { BitString, integer -> BitString } "shift left, padding with zeros"
-    //    (BitString >> integer): { BitString, integer -> BitString } "shift right, losing last bits"
-    //    (BitString + BitString): { BitString, BitString -> BitString } "concatenation of two bit strings"
-    //    (BitString * integer): { BitString, integer -> BitString } "repeat a bit string a number of times"
-    //    (~bits character): { character -> BitString } "convert a character to a Unicode 16-bit string"
-    //    (~bits integer): { integer -> BitString } "convert an integer to a 64-bit string"
-    //    (~struc BitString): { BitString -> BitStrCom } "convert a bit string to a structure"
-    //    (~char BitString): { BitString -> character } "convert a 16-bit string to a character"
-    //    (~int BitString): { BitString -> integer } "convert a 64-bit string to an integer"
-    //end
     {
         public struct opaque_BitString
         {
@@ -1358,6 +1253,9 @@ namespace Aha.Base
             bool op_BitString_Or_BitString(opaque_BitString first, opaque_BitString second, out opaque_BitString result);
             bool op_BitString_Xor_BitString(opaque_BitString first, opaque_BitString second, out opaque_BitString result);
         }
-    }
 
+        public class module_Bits : AhaModule//, imod_Bits
+        {
+        }
+    }
 }

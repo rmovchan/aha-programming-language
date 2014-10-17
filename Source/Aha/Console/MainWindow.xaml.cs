@@ -13,12 +13,12 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Reflection;
-using Aha.API;
-using Aha.API.Application;
-using Aha.API.Jobs;
-using Aha.Base;
+using Aha.Package.API;
+using Aha.Package.API.Application;
+using Aha.Package.API.Jobs;
+using Aha.Package.Base;
 using Aha.Core;
-using Aha.Engine_;
+using Aha.Engine;
 
 namespace Console
 {
@@ -138,10 +138,10 @@ namespace Console
             try
             {
                 assembly = Assembly.LoadFrom(path);
-                eventType = assembly.GetType("Aha.API.Application.opaque_Event");
-                Type exportType = assembly.GetType("Aha.API.Application.export");
-                object export = Activator.CreateInstance(exportType);
-                app = exportType.GetField("value").GetValue(export);
+                eventType = assembly.GetType("Aha.Package.API.Application.opaque_Event");
+                Type exportType = assembly.GetType("Aha.Package.API.Application.module_Application");
+                app = Activator.CreateInstance(exportType);
+                //app = exportType.GetField("value").GetValue(export);
                 appType = typeof(imod_Application<>).MakeGenericType(new Type[] { eventType });
                 engType = typeof(comp_Engine<>).MakeGenericType(new Type[] { eventType });
                 eng = Activator.CreateInstance(engType);
@@ -154,7 +154,7 @@ namespace Console
                     app,
                     args);
                 string title = new string(((IahaArray<char>)args[0]).get());
-                status.Content = "Enter application settings";
+                status.Content = "Enter " + title + " settings and select command Start";
                 applicationBox.Text = title;
                 parameters.IsReadOnly = false;
                 parameters.Focus();
@@ -320,25 +320,14 @@ namespace Console
         {
             if (e.Key == Key.Return)
             {
-                object[] args = new object[2];
-                args[0] = new AhaString(((TextBox)sender).Text);
-                if ((bool)appType.InvokeMember
-                        (
-                            "fattr_Receive",
-                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
-                            null,
-                            app,
-                            args
-                        )
-                    )
-                    engType.InvokeMember
-                        (
-                            "HandleExternal",
-                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
-                            null,
-                            eng,
-                            new object[] { args[1] }
-                        );
+                engType.InvokeMember
+                    (
+                        "HandleInput",
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                        null,
+                        eng,
+                        new object[] { new AhaString(((TextBox)sender).Text) }
+                    );
                 ((TextBox)sender).Clear();
             }
         }
