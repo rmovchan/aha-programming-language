@@ -70,7 +70,7 @@ namespace Aha.Core
         }
     }
 
-    public struct AhaObjSeq<Item> : IahaSequence<Item>
+    public class AhaObjSeq<Item> : IahaSequence<Item>
     {
         public IahaObjSequence<Item> obj;
         public bool state(out Item result) { return obj.state(out result); }
