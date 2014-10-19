@@ -290,7 +290,7 @@ namespace Aha.Package.API
             {
                 private icomp_CreateReaderParam<tpar_Event> field_param;
                 private System.IO.FileStream stream = null;
-                private async void read(icomp_ReadParams<tpar_Event> p)
+                private void read(icomp_ReadParams<tpar_Event> p)
                 {
                     long ipos;
                     icomp_Position<tpar_Event> pos;
@@ -314,7 +314,7 @@ namespace Aha.Package.API
                             if (p.attr_bytes(out bytes))
                             {
                                 byte[] data = new byte[bytes];
-                                int byteCount = await stream.ReadAsync(data, 0, (int)bytes);
+                                int byteCount = stream.Read(data, 0, (int)bytes);
                                 if (byteCount != bytes) { Array.Resize<byte>(ref data, byteCount); }
                                 Aha.Package.Base.Bits.opaque_BitString bits = new Base.Bits.opaque_BitString { bytes = data, bits = byteCount * 8 };
                                 if (p.fattr_result(bits, out evt) && engine.fattr_raise(evt, out job))
@@ -366,7 +366,7 @@ namespace Aha.Package.API
             {
                 private icomp_CreateWriterParam<tpar_Event> field_param;
                 private System.IO.FileStream stream = null;
-                private async void write(icomp_WriteParams<tpar_Event> p)
+                private void write(icomp_WriteParams<tpar_Event> p)
                 {
                     long ipos;
                     icomp_Position<tpar_Event> pos;
@@ -390,7 +390,7 @@ namespace Aha.Package.API
                             if (p.attr_data(out bits))
                             {
                                 byte[] data = bits.bytes;
-                                await stream.WriteAsync(data, 0, data.Length);
+                                stream.Write(data, 0, data.Length);
                                 if (p.attr_written(out evt) && engine.fattr_raise(evt, out job))
                                     job.execute();
                             }
@@ -558,7 +558,7 @@ namespace Aha.Package.API
                 {
                     title = "ReadText " + path.value,
                     execute =
-                        async delegate()
+                        delegate()
                         {
                             System.IO.FileStream stream = null;
                             const int block = 8192;
@@ -583,7 +583,7 @@ namespace Aha.Package.API
                                 while (stream.Position < stream.Length)
                                 {
                                     byte[] data = new byte[block];
-                                    int byteCount = await stream.ReadAsync(data, 0, block);
+                                    int byteCount = stream.Read(data, 0, block);
                                     if (byteCount != block) { Array.Resize<byte>(ref data, byteCount); }
                                     if (encoding == null)
                                     {
@@ -635,7 +635,7 @@ namespace Aha.Package.API
                 {
                     title = "WriteText " + path.value,
                     execute =
-                        async delegate()
+                        delegate()
                         {
                             System.IO.FileStream stream = null;
                             const int block = 4096;
@@ -659,7 +659,7 @@ namespace Aha.Package.API
                                 byte[] BOM = encoding.GetPreamble();
                                 if (BOM.Length > 0)
                                 {
-                                    await stream.WriteAsync(BOM, 0, BOM.Length);
+                                    stream.Write(BOM, 0, BOM.Length);
                                 }
                                 char[] data = new char[block];
                                 long left;
@@ -680,7 +680,7 @@ namespace Aha.Package.API
                                     }
                                     if (size != block) Array.Resize<char>(ref data, size);
                                     byte[] buf = encoding.GetBytes(data);
-                                    await stream.WriteAsync(buf, 0, buf.Length);
+                                    stream.Write(buf, 0, buf.Length);
                                     left -= size;
                                 }
                                 param.attr_success(out evt);

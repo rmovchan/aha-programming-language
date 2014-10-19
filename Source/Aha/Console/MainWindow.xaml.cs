@@ -43,7 +43,7 @@ namespace Console
             private icomp_Engine<tpar_Event> field_engine;
 
             public bool attr_settings(out IahaArray<char> result) { result = new AhaString(field_settings); return true; }
-            public bool attr_password(out IahaArray<char> result) { result = new AhaString(""); return true; } //TODO
+            public bool attr_password(out IahaArray<char> result) { result = new AhaString(field_password); return true; } //TODO
             public bool fattr_output(IahaArray<char> text, out opaque_Job<tpar_Event> result) 
             {
                 func_Output output = field_output;
@@ -80,7 +80,7 @@ namespace Console
         private bool appSuspended;
         private void output(string text) 
         {
-            if (messages.Count == 100 && !queueOvfl)
+            if (messages.Count == 200 && !queueOvfl)
             {
                 queueOvfl = true;
                 engType.InvokeMember
@@ -96,7 +96,7 @@ namespace Console
         }
         private void addTrace(string text)
         {
-            if (trace.Count == 100 && !queueOvfl)
+            if (trace.Count == 200 && !queueOvfl)
             {
                 queueOvfl = true;
                 engType.InvokeMember

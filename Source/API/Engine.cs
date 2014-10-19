@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Aha.Core;
 using Aha.Package.Base;
 using Aha.Package;
@@ -293,7 +294,7 @@ namespace Aha.Engine
         {
             IahaArray<Aha.Package.API.Jobs.opaque_Job<tpar_Event>> jobs;
             if (!field_behavior.state(out jobs)) throw (Failure.One);
-            foreach (Aha.Package.API.Jobs.opaque_Job<tpar_Event> job in jobs.get()) 
+            foreach(Aha.Package.API.Jobs.opaque_Job<tpar_Event> job in jobs.get())
             {
                 if (field_suspended) resumed.WaitOne();
                 trace("JOB " + job.title);
@@ -301,7 +302,7 @@ namespace Aha.Engine
                 {
                     job.execute();
                 }
-                catch(System.Exception ex)
+                catch (System.Exception ex)
                 {
                     trace("EXCEPTION " + ex.Message + " IN " + job.title);
                 }
