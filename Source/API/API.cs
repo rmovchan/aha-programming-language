@@ -217,7 +217,7 @@ namespace Aha.Package.API
         {
             bool fattr_CreateReader(icomp_CreateReaderParam<tpar_Event> param, out Jobs.opaque_Job<tpar_Event> result);
             bool fattr_CreateWriter(icomp_CreateWriterParam<tpar_Event> param, out Jobs.opaque_Job<tpar_Event> result);
-            bool fattr_ReadText(icomp_ReadTextParam<tpar_Event> param, out Jobs.opaque_Job<tpar_Event> result);
+            bool fattr_ReadText(icom_ReadTextParam<tpar_Event> param, out Jobs.opaque_Job<tpar_Event> result);
             bool fattr_WriteText(icomp_WriteTextParam<tpar_Event> param, out Jobs.opaque_Job<tpar_Event> result);
         }
 
@@ -237,7 +237,7 @@ namespace Aha.Package.API
             bool attr_error(FileIOtypes.icomp_ErrorInfo error, out tpar_Event result);
         }
 
-        public interface icomp_ReadTextParam<tpar_Event>
+        public interface icom_ReadTextParam<tpar_Event>
         {
             bool attr_path(out Aha.Package.API.Environment.opaque_FilePath result);
             bool attr_engine(out Aha.Package.API.Jobs.icomp_Engine<tpar_Event> result);
@@ -543,7 +543,7 @@ namespace Aha.Package.API
                     return field_encoding.Equals(Encoding.Default);
                 }
             }
-            public bool fattr_ReadText(icomp_ReadTextParam<tpar_Event> param, out Jobs.opaque_Job<tpar_Event> result)
+            public bool fattr_ReadText(icom_ReadTextParam<tpar_Event> param, out Jobs.opaque_Job<tpar_Event> result)
             {
 
                 Environment.opaque_FilePath path;
@@ -605,11 +605,15 @@ namespace Aha.Package.API
                                 param.fattr_success(p, out evt);
                                 engine.fattr_raise(evt, out job);
                                 job.execute();
+                                engine.fattr_log(new AhaString("ReadText: success"), out job);
+                                job.execute();
                             }
                             catch (System.Exception ex)
                             {
                                 param.fattr_error(new ErrorInfo(ex), out evt);
                                 engine.fattr_raise(evt, out job);
+                                job.execute();
+                                engine.fattr_log(new AhaString("ReadText: " + ex.Message), out job);
                                 job.execute();
                             }
                             finally
@@ -686,11 +690,15 @@ namespace Aha.Package.API
                                 param.attr_success(out evt);
                                 engine.fattr_raise(evt, out job);
                                 job.execute();
+                                engine.fattr_log(new AhaString("WriteText: success"), out job);
+                                job.execute();
                             }
                             catch (System.Exception ex)
                             {
                                 param.fattr_error(new ErrorInfo(ex), out evt);
                                 engine.fattr_raise(evt, out job);
+                                job.execute();
+                                engine.fattr_log(new AhaString("WriteText: " + ex.Message), out job);
                                 job.execute();
                             }
                             finally
@@ -706,10 +714,9 @@ namespace Aha.Package.API
 
     namespace Application
     {
-        public interface icomp_BehaviorParams<tpar_Event>
+        public interface icom_BehaviorParams<tpar_Event>
         {
             bool attr_settings(out IahaArray<char> result);
-            bool attr_password(out IahaArray<char> result);
             bool fattr_output(IahaArray<char> text, out Jobs.opaque_Job<tpar_Event> result);
             bool attr_engine(out Jobs.icomp_Engine<tpar_Event> result);
         }
@@ -724,7 +731,7 @@ namespace Aha.Package.API
         {
             bool attr_Title(out IahaArray<char> result);
             bool attr_Signature(out IahaArray<char> result);
-            bool fattr_Behavior(icomp_BehaviorParams<tpar_Event> param_param, out iobj_Behavior<tpar_Event> result);
+            bool fattr_Behavior(icom_BehaviorParams<tpar_Event> param_param, out iobj_Behavior<tpar_Event> result);
         }
     }
 

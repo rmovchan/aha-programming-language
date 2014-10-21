@@ -21,7 +21,7 @@ namespace Aha.Package.API
         {
             class obj_Behavior : iobj_Behavior<opaque_Event>
             {
-                private icomp_BehaviorParams<opaque_Event> field_param;
+                private icom_BehaviorParams<opaque_Event> field_param;
                 private IahaArray<Jobs.opaque_Job<opaque_Event>> field_jobs;
                 private bool op_Exclaim_integer(long param_n, out long result)
                 {
@@ -76,7 +76,7 @@ namespace Aha.Package.API
                 }
                 public bool state(out IahaArray<Jobs.opaque_Job<opaque_Event>> result) { result = field_jobs; return true; }
                 public IahaObject<IahaArray<Jobs.opaque_Job<opaque_Event>>> copy() { return new obj_Behavior(field_param); }
-                public obj_Behavior(icomp_BehaviorParams<opaque_Event> param_param)
+                public obj_Behavior(icom_BehaviorParams<opaque_Event> param_param)
                 {
                     field_param = param_param;
                     Jobs.icomp_Engine<opaque_Event> engine;
@@ -89,7 +89,7 @@ namespace Aha.Package.API
 
             public bool attr_Title(out IahaArray<char> result) { result = new AhaString("Factorial"); return true; }
             public bool attr_Signature(out IahaArray<char> result) { result = new AhaString("Demo"); return true; }
-            public bool fattr_Behavior(icomp_BehaviorParams<opaque_Event> param_param, out iobj_Behavior<opaque_Event> result) { result = new obj_Behavior(param_param); return true; }
+            public bool fattr_Behavior(icom_BehaviorParams<opaque_Event> param_param, out iobj_Behavior<opaque_Event> result) { result = new obj_Behavior(param_param); return true; }
         }
     }
 }

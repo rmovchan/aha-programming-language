@@ -243,16 +243,6 @@ namespace Aha.Engine
 
     public class comp_Engine<tpar_Event> : Aha.Package.API.Jobs.icomp_Engine<tpar_Event>
     {
-        private struct Date : Aha.Package.Base.Time.icomp_DateStruc
-        {
-            public int field_year;
-            public int field_month;
-            public int field_day;
-            public bool attr_year(out long result) { result = field_year; return true; }
-            public bool attr_month(out long result) { result = field_month; return true; }
-            public bool attr_day(out long result) { result = field_day; return true; }
-        }
-
         private bool field_terminated;
         private bool field_enabled;
         private bool field_suspended;

@@ -646,5 +646,7 @@ namespace Aha.Core
 
     public class AhaModule
     {
+        public int majorver = 0;
+        public int minorver = 1;
     }
 }

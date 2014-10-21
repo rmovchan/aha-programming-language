@@ -28,7 +28,7 @@ namespace Aha.Package.API
             public bool attr_auto() { return true; }
         }
 
-        class ReadTextParam : icomp_ReadTextParam<opaque_Event>
+        class ReadTextParam : icom_ReadTextParam<opaque_Event>
         {
             public string path;
             public Jobs.icomp_Engine<opaque_Event> engine;
@@ -43,7 +43,7 @@ namespace Aha.Package.API
         {
             class obj_Behavior : iobj_Behavior<opaque_Event>
             {
-                private icomp_BehaviorParams<opaque_Event> field_param;
+                private icom_BehaviorParams<opaque_Event> field_param;
                 private IahaArray<Jobs.opaque_Job<opaque_Event>> field_jobs;
                 private imod_Scanner Scanner = new module_Scanner();
                 private imod_FileIO<opaque_Event> FileIO = new module_FileIO<opaque_Event>();
@@ -51,42 +51,42 @@ namespace Aha.Package.API
                 {
                     IahaArray<char> msg;
                     Jobs.opaque_Job<opaque_Event> job;
-                    Jobs.icomp_Engine<opaque_Event> engine;
+                    Jobs.icomp_Engine<opaque_Event> engine; 
                     field_param.attr_engine(out engine);
                     if (param_event.error != "")
                     {
                         msg = new AhaString(param_event.error);
-                        engine.fattr_log(msg, out job);
+                        field_param.fattr_output(msg, out job);
                         field_jobs = new AhaArray<Jobs.opaque_Job<opaque_Event>>(new Jobs.opaque_Job<opaque_Event>[] { job });
                     }
                     else
                     {
                         Jobs.opaque_Job<opaque_Event>[] jobs = new Jobs.opaque_Job<opaque_Event>[200];
                         int j = 0;
-                        IahaSequence<icom_Token> tokens, clone;
+                        IahaSequence<com_Token> tokens, clone;
                         IahaSequence<char> content;
                         long size;
-                        icom_Token token;
+                        com_Token token;
                         long row;
                         long col;
                         IahaArray<char> text;
-                        icom_Location loc;
+                        com_Location loc;
                         param_event.param.attr_content(out content);
                         param_event.param.attr_size(out size);
                         Scanner.fexport(content, size, out tokens);
-                        clone = (IahaSequence<icom_Token>)tokens.copy();
+                        clone = (IahaSequence<com_Token>)tokens.copy();
                         while (j < jobs.Length && clone.state(out token))
                         {
-                            token.attr_Location(out loc);
-                            loc.attr_row(out row);
-                            loc.attr_column(out col);
-                            token.attr_Text(out text);
+                            loc = token.attr_location;
+                            row = loc.attr_row;
+                            col = loc.attr_column;
+                            text = token.attr_text;
                             text = new AhaString(row.ToString() + ":" + col.ToString() + "\t" + new string(text.get()));
                             field_param.fattr_output(text, out jobs[j]);
-                            if (!clone.action_skip()) break;
                             j++;
+                            if (!clone.action_skip()) break;
                         }
-                        Array.Resize<Jobs.opaque_Job<opaque_Event>>(ref jobs, j + 1);
+                        Array.Resize<Jobs.opaque_Job<opaque_Event>>(ref jobs, j);
                         field_jobs = new AhaArray<Jobs.opaque_Job<opaque_Event>>(jobs);
                     }
                     return true; 
@@ -110,7 +110,7 @@ namespace Aha.Package.API
                 }
                 public bool state(out IahaArray<Jobs.opaque_Job<opaque_Event>> result) { result = field_jobs; return true; }
                 public IahaObject<IahaArray<Jobs.opaque_Job<opaque_Event>>> copy() { return new obj_Behavior(field_param); }
-                public obj_Behavior(icomp_BehaviorParams<opaque_Event> param_param)
+                public obj_Behavior(icom_BehaviorParams<opaque_Event> param_param)
                 {
                     field_param = param_param;
                     Jobs.icomp_Engine<opaque_Event> engine;
@@ -120,7 +120,7 @@ namespace Aha.Package.API
                     if (param_param.attr_settings(out settings) && settings.get().Length != 0)
                     {
                         string path = new string(settings.get());
-                        icomp_ReadTextParam<opaque_Event> readp = new ReadTextParam() { path = path, engine = engine };
+                        icom_ReadTextParam<opaque_Event> readp = new ReadTextParam() { path = path, engine = engine };
                         FileIO.fattr_ReadText(readp, out job);
                         field_jobs = new AhaArray<Jobs.opaque_Job<opaque_Event>>(new Jobs.opaque_Job<opaque_Event>[] { job });
                     }
@@ -135,7 +135,7 @@ namespace Aha.Package.API
 
             public bool attr_Title(out IahaArray<char> result) { result = new AhaString("Scanner"); return true; }
             public bool attr_Signature(out IahaArray<char> result) { result = new AhaString("Test"); return true; }
-            public bool fattr_Behavior(icomp_BehaviorParams<opaque_Event> param_param, out iobj_Behavior<opaque_Event> result) { result = new obj_Behavior(param_param); return true; }
+            public bool fattr_Behavior(icom_BehaviorParams<opaque_Event> param_param, out iobj_Behavior<opaque_Event> result) { result = new obj_Behavior(param_param); return true; }
         }
     }
 }

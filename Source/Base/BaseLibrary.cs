@@ -12,44 +12,43 @@ namespace Aha.Package.Base
 {
     namespace Collections
     {
-        public interface icomp_ReplaceParam<Item>
+        public struct com_ReplaceParam<Item>
         {
-            bool attr_index(out long result);
-            bool attr_item(out Item result);
+            public long attr_index;
+            public Item attr_item;
         }
 
-        public interface icomp_InsertParam<Item>
+        public struct com_InsertParam<Item>
         {
-            bool attr_index(out long result);
-            bool attr_item(out Item result);
+            public long attr_index;
+            public Item attr_item;
         }
 
-        public interface icomp_SwapParam<Item>
+        public struct com_SwapParam<Item>
         {
-            bool attr_first(out long result);
-            bool attr_second(out long result);
+            public long attr_first;
+            public long attr_second;
         }
 
-        public interface icomp_MoveParam<Item>
+        public struct com_MoveParam<Item>
         {
-            bool attr_from(out long result);
-            bool attr_to(out long result);
+            public long attr_from;
+            public long attr_to;
         }
 
         public interface iobj_DynamicArray<Item> : IahaObject<IahaArray<Item>>
         {
             bool action_add(Item item);
-            bool action_replace(icomp_ReplaceParam<Item> param);
-            bool action_insert(icomp_InsertParam<Item> param);
-            bool action_swap(icomp_SwapParam<Item> param);
-            bool action_move(icomp_MoveParam<Item> param);
+            bool action_replace(com_ReplaceParam<Item> param);
+            bool action_insert(com_InsertParam<Item> param);
+            bool action_swap(com_SwapParam<Item> param);
+            bool action_move(com_MoveParam<Item> param);
             bool action_delete(long index);
         }
 
         public interface iobj_DynamicSequence<Item> : IahaSequence<Item>
         {
             bool action_add(Item item);
-            bool action_skip();
         }
 
         public interface imod_Collections<Item>
@@ -78,13 +77,11 @@ namespace Aha.Package.Base
                     list.Add(item);
                     return true;
                 }
-                public bool action_replace(icomp_ReplaceParam<Item> param)
+                public bool action_replace(com_ReplaceParam<Item> param)
                 {
-                    long index;
-                    Item item;
-                    if (param.attr_index(out index) && index >= 0 && index < list.Count && param.attr_item(out item))
+                    if (param.attr_index >= 0 && param.attr_index < list.Count)
                     {
-                        list[(int)index] = item;
+                        list[(int)param.attr_index] = param.attr_item;
                         return true;
                     }
                     else
@@ -92,13 +89,11 @@ namespace Aha.Package.Base
                         return false;
                     }
                 }
-                public bool action_insert(icomp_InsertParam<Item> param)
+                public bool action_insert(com_InsertParam<Item> param)
                 {
-                    long index;
-                    Item item;
-                    if (param.attr_index(out index) && index >= 0 && index <= list.Count && param.attr_item(out item))
+                    if (param.attr_index >= 0 && param.attr_index <= list.Count)
                     {
-                        list.Insert((int)index, item);
+                        list.Insert((int)param.attr_index, param.attr_item);
                         return true;
                     }
                     else
@@ -106,14 +101,13 @@ namespace Aha.Package.Base
                         return false;
                     }
                 }
-                public bool action_swap(icomp_SwapParam<Item> param)
+                public bool action_swap(com_SwapParam<Item> param)
                 {
-                    long index1, index2;
-                    if (param.attr_first(out index1) && index1 >= 0 && index1 < list.Count && param.attr_second(out index2) && index2 >= 0 && index2 < list.Count)
+                    if (param.attr_first >= 0 && param.attr_first < list.Count && param.attr_second >= 0 && param.attr_second < list.Count)
                     {
-                        Item item = list[(int)index1];
-                        list[(int)index1] = list[(int)index2];
-                        list[(int)index2] = item;
+                        Item item = list[(int)param.attr_first];
+                        list[(int)param.attr_first] = list[(int)param.attr_second];
+                        list[(int)param.attr_second] = item;
                         return true;
                     }
                     else
@@ -121,23 +115,22 @@ namespace Aha.Package.Base
                         return false;
                     }
                 }
-                public bool action_move(icomp_MoveParam<Item> param)
+                public bool action_move(com_MoveParam<Item> param)
                 {
-                    long index1, index2;
-                    if (param.attr_from(out index1) && index1 >= 0 && index1 < list.Count && param.attr_to(out index2) && index2 >= 0 && index2 < list.Count)
+                    if (param.attr_from >= 0 && param.attr_from < list.Count && param.attr_to >= 0 && param.attr_to < list.Count)
                     {
-                        if (index1 != index2)
+                        if (param.attr_from != param.attr_to)
                         {
                             Item[] items = list.ToArray();
-                            Item item = list[(int)index1]; //from
+                            Item item = list[(int)param.attr_from]; //from
                             //shift items:
-                            if (index1 < index2)
-                                list.CopyTo((int)index1 + 1, items, (int)index1, (int)(index2 - index1)); //down
+                            if (param.attr_from < param.attr_to)
+                                list.CopyTo((int)param.attr_from + 1, items, (int)param.attr_from, (int)(param.attr_to - param.attr_from)); //down
                             else
-                                list.CopyTo((int)index1, items, (int)index1 + 1, (int)(index1 - index2)); //up
+                                list.CopyTo((int)param.attr_from, items, (int)param.attr_from + 1, (int)(param.attr_from - param.attr_to)); //up
 
                             list = new List<Item>(items);
-                            list[(int)index2] = item; //to
+                            list[(int)param.attr_to] = item; //to
                         }
                         return true;
                     }
@@ -299,16 +292,16 @@ namespace Aha.Package.Base
 
     namespace Rational
     {
-        public interface icomp_RatioStruc
+        public struct com_RatioStruc
         {
-            bool attr_num(out long result);
-            bool attr_den(out long result);
+            public long attr_num;
+            public long attr_den;
         }
 
         public interface imod_Rational
         {
             bool op_integer_Slash_integer(long num, long den, out opaque_Rational result);
-            bool op__struc(opaque_Rational x, out icomp_RatioStruc result);
+            bool op__struc(opaque_Rational x, out com_RatioStruc result);
             bool op_Rational_Plus_Rational(opaque_Rational a, opaque_Rational b, out opaque_Rational result);
             bool op_Rational_Less_Rational(opaque_Rational a, opaque_Rational b);
         }
@@ -321,17 +314,8 @@ namespace Aha.Package.Base
 
         public class module_Rational : AhaModule, imod_Rational
         {
-            class comp_RatioStruc : icomp_RatioStruc
-            {
-                private long num;
-                private long den;
-                public comp_RatioStruc(long n, long d) { num = n; den = d; }
-                public bool attr_num(out long result) { result = num; return true; }
-                public bool attr_den(out long result) { result = den; return true; }
-            }
-
             public bool op_integer_Slash_integer(long num, long den, out opaque_Rational result) { result = new opaque_Rational { num = num, den = den }; return true; }
-            public bool op__struc(opaque_Rational x, out icomp_RatioStruc result) { result = new comp_RatioStruc(x.num, x.den); return true; }
+            public bool op__struc(opaque_Rational x, out com_RatioStruc result) { result = new com_RatioStruc { attr_num = x.num, attr_den = x.den }; return true; }
             public bool op_Rational_Plus_Rational(opaque_Rational a, opaque_Rational b, out opaque_Rational result)
             {
                 try
@@ -361,27 +345,27 @@ namespace Aha.Package.Base
 
     namespace Float
     {
-        public interface icomp_GeneralFormatParams
+        public struct com_GeneralFormatParams
         {
-            bool attr_period(out char result);
+            public char attr_period;
         }
 
-        public interface icomp_FixedFormatParams
+        public struct com_FixedFormatParams
         {
-            bool attr_period(out char result);
-            bool attr_decimals(out long result);
+            public char attr_period;
+            public long attr_decimals;
         }
 
-        public interface icomp_ExponentFormatParams
+        public struct com_ExponentFormatParams
         {
-            bool attr_period(out char result);
+            public char attr_period;
         }
 
-        public interface icomp_FormatParams
+        public struct com_FormatParams
         {
-            bool attr_general(out icomp_GeneralFormatParams result);
-            bool attr_fixed(out icomp_FixedFormatParams result);
-            bool attr_exponent(out icomp_ExponentFormatParams result);
+            public com_GeneralFormatParams attr_general;
+            public com_FixedFormatParams attr_fixed;
+            public com_ExponentFormatParams attr_exponent;
         }
 
         public interface imod_Float
@@ -481,25 +465,25 @@ namespace Aha.Package.Base
             public long ticks;
         }
 
-        public interface icomp_DateStruc
+        public struct com_DateStruc
         {
-            bool attr_year(out long result);
-            bool attr_month(out long result);
-            bool attr_day(out long result);
+            public long attr_year;
+            public long attr_month;
+            public long attr_day;
         }
 
-        public interface icomp_TimeStruc
+        public struct com_TimeStruc
         {
-            bool attr_hour(out long result);
-            bool attr_min(out long result);
-            bool attr_sec(out long result);
-            bool attr_msec(out long result);
+            public long attr_hour;
+            public long attr_min;
+            public long attr_sec;
+            public long attr_msec;
         }
 
-        public interface icomp_TimestampStruc
+        public struct com_TimestampStruc
         {
-            bool attr_date(out icomp_DateStruc result);
-            bool attr_time(out icomp_TimeStruc result);
+            public com_DateStruc attr_date;
+            public com_TimeStruc attr_time;
         }
 
         public interface icomp_DayOfWeek
@@ -544,22 +528,14 @@ namespace Aha.Package.Base
             bool op_Interval_NotEqual_Interval(opaque_Interval a, opaque_Interval b);
             bool op_Interval_Greater_Interval(opaque_Interval a, opaque_Interval b);
             bool op_Interval_GreaterEqual_Interval(opaque_Interval a, opaque_Interval b);
-            bool op__date_DateStruc(icomp_DateStruc date, out opaque_Timestamp result);
-            bool op__time_TimeStruc(icomp_TimeStruc time, out opaque_Interval result);
+            bool op__date_DateStruc(com_DateStruc date, out opaque_Timestamp result);
+            bool op__time_TimeStruc(com_TimeStruc time, out opaque_Interval result);
             bool op__ticks_Interval(opaque_Interval i, out long result);
             bool op__interval_integer(long param_ticks, out opaque_Interval result);
         }
 
         public class module_Time : AhaModule, imod_Time
         {
-            struct comp_DateStruc : icomp_DateStruc
-            {
-                public DateTime dt;
-                public bool attr_year(out long result) { result = dt.Year; return true; }
-                public bool attr_month(out long result) { result = dt.Month; return true; }
-                public bool attr_day(out long result) { result = dt.Day; return true; }
-            }
-
             struct comp_DayOfWeek : icomp_DayOfWeek
             {
                 public System.DayOfWeek value;
@@ -601,34 +577,27 @@ namespace Aha.Package.Base
             public bool op_Interval_NotEqual_Interval(opaque_Interval a, opaque_Interval b) { return a.ticks != b.ticks; }
             public bool op_Interval_Greater_Interval(opaque_Interval a, opaque_Interval b) { return a.ticks > b.ticks; }
             public bool op_Interval_GreaterEqual_Interval(opaque_Interval a, opaque_Interval b) { return a.ticks >= b.ticks; }
-            public bool op__date_DateStruc(icomp_DateStruc date, out opaque_Timestamp result)
+            public bool op__date_DateStruc(com_DateStruc date, out opaque_Timestamp result)
             {
-                long y;
-                long m;
-                long d;
-                if (date.attr_year(out y) && date.attr_month(out m) && date.attr_day(out d))
+                try
                 {
-                    result = new opaque_Timestamp { ticks = (new DateTime((int)y, (int)m, (int)d)).Ticks };
+                    result = new opaque_Timestamp { ticks = (new DateTime((int)date.attr_year, (int)date.attr_month, (int)date.attr_day)).Ticks };
                     return true;
                 }
-                else
+                catch(System.Exception)
                 {
                     result = default(opaque_Timestamp);
                     return false;
                 }
             }
-            public bool op__time_TimeStruc(icomp_TimeStruc time, out opaque_Interval result)
+            public bool op__time_TimeStruc(com_TimeStruc time, out opaque_Interval result)
             {
-                long h;
-                long m;
-                long s;
-                long msec;
-                if (time.attr_hour(out h) && time.attr_min(out m) && time.attr_sec(out s) && time.attr_msec(out msec))
+                try
                 {
-                    result = new opaque_Interval { ticks = (new TimeSpan(0, (int)h, (int)m, (int)s, (int)msec)).Ticks };
+                    result = new opaque_Interval { ticks = (new TimeSpan(0, (int)time.attr_hour, (int)time.attr_min, (int)time.attr_sec, (int)time.attr_msec)).Ticks };
                     return true;
                 }
-                else
+                catch (System.Exception)
                 {
                     result = default(opaque_Interval);
                     return false;
@@ -641,47 +610,47 @@ namespace Aha.Package.Base
 
     namespace StrUtils
     {
-        public interface icomp_Substring
+        public struct com_Substring
         {
-            bool attr_index(out long result);
-            bool attr_length(out long result);
+            public long attr_index;
+            public long attr_length;
         }
 
-        public interface icomp_Pattern
+        public interface icom_Pattern
         {
             bool attr_string(out IahaArray<char> result);
             bool attr_regEx(out opaque_RegEx result);
         }
 
-        public interface icomp_SearchParams
+        public struct com_SearchParams
         {
-            bool attr_for(out icomp_Pattern result);
-            bool attr_in(out IahaArray<char> result);
+            public icom_Pattern attr_for;
+            public IahaArray<char> attr_in;
         }
 
-        public interface icomp_PutParams
+        public struct com_PutParams
         {
-            bool attr_at(out long result);
-            bool attr_char(out char result);
+            public long attr_at;
+            public char attr_char;
         }
 
-        public interface icomp_ReplaceParams
+        public struct com_ReplaceParams
         {
-            bool attr_substr(out IahaArray<icomp_Substring> result);
-            bool attr_with(out IahaArray<char> result);
+            public IahaArray<com_Substring> attr_substr;
+            public IahaArray<char> attr_with;
         }
 
-        public interface icomp_PadParams
+        public struct com_PadParams
         {
-            bool attr_with(out char result);
-            bool attr_to(out long result);
+            public char attr_with;
+            public long attr_to;
         }
 
         public interface imod_StrUtils
         {
-            bool fattr_Substr(IahaArray<char> s, icomp_Substring ss, out IahaArray<char> result);
+            bool fattr_Substr(IahaArray<char> s, com_Substring ss, out IahaArray<char> result);
             bool fattr_RegEx(IahaArray<char> s, out opaque_RegEx result);
-            bool fattr_Search(icomp_SearchParams param, out IahaSequence<icomp_Substring> result);
+            bool fattr_Search(com_SearchParams param, out IahaSequence<com_Substring> result);
             bool fattr_StringHashFunc(IahaArray<char> s, out long result);
         }
 
@@ -692,35 +661,26 @@ namespace Aha.Package.Base
 
         public class module_StrUtils : AhaModule, imod_StrUtils
         {
-            struct comp_Substring : icomp_Substring
-            {
-                public int field_index;
-                public int field_length;
-                public bool attr_index(out long result) { result = field_index; return true; }
-                public bool attr_length(out long result) { result = field_length; return true; }
-                public comp_Substring(int i, int l) { field_index = i; field_length = l; }
-            }
-
-            class obj_SearchSeq : IahaSequence<icomp_Substring>
+            class obj_SearchSeq : IahaSequence<com_Substring>
             {
                 private string str;
                 private string sub;
                 private int index;
                 public obj_SearchSeq(string s, string ss) { str = s; sub = ss; index = s.IndexOf(ss); }
-                public bool state(out icomp_Substring result)
+                public bool state(out com_Substring result)
                 {
                     if (index >= 0)
                     {
-                        result = new comp_Substring(index, sub.Length);
+                        result = new com_Substring { attr_index = index, attr_length = sub.Length };
                         return true;
                     }
                     else
                     {
-                        result = default(icomp_Substring);
+                        result = default(com_Substring);
                         return false;
                     }
                 }
-                public IahaObject<icomp_Substring> copy() { return new obj_SearchSeq(str, sub) { index = index }; }
+                public IahaObject<com_Substring> copy() { return new obj_SearchSeq(str, sub) { index = index }; }
                 public bool action_skip()
                 {
                     if (index >= 0)
@@ -733,77 +693,68 @@ namespace Aha.Package.Base
                         return false;
                     }
                 }
-                public bool first(Predicate<icomp_Substring> that, long max, out icomp_Substring result)
+                public bool first(Predicate<com_Substring> that, long max, out com_Substring result)
                 {
                     int i = index;
                     long j = 0;
-                    comp_Substring substr = new comp_Substring(i, sub.Length);
+                    com_Substring substr = new com_Substring { attr_index = i, attr_length = sub.Length };
                     while (i != -1 && j < max)
                     {
-                        substr.field_index = i;
+                        substr.attr_index = i;
                         if (that(substr)) { result = substr; return true; }
                         i = str.IndexOf(sub, i + 1);
                         j++;
                     }
-                    result = default(icomp_Substring);
+                    result = default(com_Substring);
                     return false;
                 }
             }
 
-            class obj_SearchRegExSeq : IahaSequence<icomp_Substring>
+            class obj_SearchRegExSeq : IahaSequence<com_Substring>
             {
                 private string str;
                 private System.Text.RegularExpressions.Regex regEx;
                 private System.Text.RegularExpressions.Match match;
                 public obj_SearchRegExSeq(string s, System.Text.RegularExpressions.Regex r) { str = s; regEx = r; match = regEx.Match(s); }
-                public bool state(out icomp_Substring result)
+                public bool state(out com_Substring result)
                 {
                     if (match.Success)
                     {
-                        result = new comp_Substring(match.Index, match.Length);
+                        result = new com_Substring { attr_index = match.Index, attr_length = match.Length };
                         return true;
                     }
                     else
                     {
-                        result = default(icomp_Substring);
+                        result = default(com_Substring);
                         return false;
                     }
                 }
-                public IahaObject<icomp_Substring> copy() { return new obj_SearchRegExSeq(str, regEx) { match = match }; }
+                public IahaObject<com_Substring> copy() { return new obj_SearchRegExSeq(str, regEx) { match = match }; }
                 public bool action_skip() { match = match.NextMatch(); return match.Success; }
-                public bool first(Predicate<icomp_Substring> that, long max, out icomp_Substring result)
+                public bool first(Predicate<com_Substring> that, long max, out com_Substring result)
                 {
                     long j = 0;
-                    comp_Substring substr = new comp_Substring(match.Index, match.Length);
+                    com_Substring substr = new com_Substring { attr_index = match.Index, attr_length = match.Length };
                     System.Text.RegularExpressions.Match m = match;
                     while (m.Success && j < max)
                     {
-                        substr.field_index = m.Index;
-                        substr.field_length = m.Length;
+                        substr.attr_index = m.Index;
+                        substr.attr_length = m.Length;
                         if (that(substr)) { result = substr; return true; }
                         m = m.NextMatch();
                         j++;
                     }
-                    result = default(icomp_Substring);
+                    result = default(com_Substring);
                     return false;
                 }
             }
 
-            public bool fattr_Substr(IahaArray<char> s, icomp_Substring ss, out IahaArray<char> result)
+            public bool fattr_Substr(IahaArray<char> s, com_Substring ss, out IahaArray<char> result)
             {
-                long i; long l;
-                if (ss.attr_index(out i) && ss.attr_length(out l))
-                {
-                    char[] items = new char[l];
-                    Array.Copy(s.get(), i, items, 0, l);
-                    result = new AhaString(items);
-                    return true;
-                }
-                else
-                {
-                    result = default(IahaArray<char>);
-                    return false;
-                }
+                char[] items = new char[ss.attr_length];
+                Array.Copy(s.get(), ss.attr_index, items, 0, ss.attr_length);
+                result = new AhaString(items);
+                return true;
             }
             public bool fattr_RegEx(IahaArray<char> s, out opaque_RegEx result)
             {
@@ -818,28 +769,24 @@ namespace Aha.Package.Base
                     return false;
                 }
             }
-            public bool fattr_Search(icomp_SearchParams param, out IahaSequence<icomp_Substring> result)
+            public bool fattr_Search(com_SearchParams param, out IahaSequence<com_Substring> result)
             {
-                IahaArray<char> source;
-                icomp_Pattern p;
+                icom_Pattern p;
                 IahaArray<char> sub;
-                opaque_RegEx r;
-                result = default(IahaSequence<icomp_Substring>);
-                if (param.attr_for(out p) && param.attr_in(out source))
+                opaque_RegEx rex;
+                result = default(IahaSequence<com_Substring>);
+                if (param.attr_for.attr_string(out sub))
                 {
-                    if (p.attr_string(out sub))
-                    {
-                        string temp1 = new string(sub.get());
-                        string temp2 = new string(source.get());
-                        result = new obj_SearchSeq(temp2, temp1);
-                        return true;
-                    }
-                    if (p.attr_regEx(out r))
-                    {
-                        string temp = new string(source.get());
-                        result = new obj_SearchRegExSeq(temp, r.value);
-                        return true;
-                    }
+                    string temp1 = new string(sub.get());
+                    string temp2 = new string(param.attr_in.get());
+                    result = new obj_SearchSeq(temp2, temp1);
+                    return true;
+                }
+                if (param.attr_for.attr_regEx(out rex))
+                {
+                    string temp = new string(param.attr_in.get());
+                    result = new obj_SearchRegExSeq(temp, rex.value);
+                    return true;
                 }
                 return false;
             }
@@ -861,15 +808,15 @@ namespace Aha.Package.Base
             public long[] indexes;
         }
 
-        public interface icomp_TreeParam<tpar_Node>
+        public struct com_TreeParam<tpar_Node>
         {
-            bool attr_root(out tpar_Node result);
-            bool attr_children(out IahaArray<opaque_Tree<tpar_Node>> result);
+            public tpar_Node attr_root;
+            public IahaArray<opaque_Tree<tpar_Node>> attr_children;
         }
 
         public interface imod_Trees<tpar_Node>
         {
-            bool fattr_Tree(icomp_TreeParam<tpar_Node> param, out opaque_Tree<tpar_Node> result);
+            bool fattr_Tree(com_TreeParam<tpar_Node> param, out opaque_Tree<tpar_Node> result);
             bool fattr_Leaf(tpar_Node node, out opaque_Tree<tpar_Node> result);
             bool fattr_Root(opaque_Tree<tpar_Node> tree, out tpar_Node result);
             bool fattr_Children(opaque_Tree<tpar_Node> tree, out IahaArray<opaque_Tree<tpar_Node>> result);
@@ -1134,23 +1081,13 @@ namespace Aha.Package.Base
                 }
             }
 
-            public bool fattr_Tree(icomp_TreeParam<tpar_Node> param, out opaque_Tree<tpar_Node> result)
+            public bool fattr_Tree(com_TreeParam<tpar_Node> param, out opaque_Tree<tpar_Node> result)
             {
                 int levels = 0;
-                IahaArray<opaque_Tree<tpar_Node>> children;
-                tpar_Node root;
-                if (param.attr_children(out children) && param.attr_root(out root))
-                {
-                    foreach (opaque_Tree<tpar_Node> child in children.get())
-                        if (child.levels > levels) levels = child.levels;
-                    result = new opaque_Tree<tpar_Node>() { root = root, children = children.get(), levels = levels + 1 };
-                    return true;
-                }
-                else
-                {
-                    result = default(opaque_Tree<tpar_Node>);
-                    return false;
-                }
+                foreach (opaque_Tree<tpar_Node> child in param.attr_children.get())
+                    if (child.levels > levels) levels = child.levels;
+                result = new opaque_Tree<tpar_Node>() { root = param.attr_root, children = param.attr_children.get(), levels = levels + 1 };
+                return true;
             }
             public bool fattr_Leaf(tpar_Node node, out opaque_Tree<tpar_Node> result) { result = new opaque_Tree<tpar_Node>() { root = node, children = null, levels = 0 }; return true; }
             public bool fattr_Root(opaque_Tree<tpar_Node> tree, out tpar_Node result) { result = tree.root; return true; }
@@ -1236,15 +1173,15 @@ namespace Aha.Package.Base
             bool action_reset(long index);
         }
 
-        public interface icomp_Substring
+        public struct com_Substring
         {
-            bool attr_index(out long result);
-            bool attr_length(out long result);
+            public long attr_index;
+            public long attr_length;
         }
 
         public interface imod_Bits
         {
-            bool fattr_Substr(opaque_BitString str, icomp_Substring sub, out opaque_BitString result);
+            bool fattr_Substr(opaque_BitString str, com_Substring sub, out opaque_BitString result);
             bool attr_True(out opaque_BitString result);
             bool attr_False(out opaque_BitString result);
             bool attr_Nil(out opaque_BitString result);

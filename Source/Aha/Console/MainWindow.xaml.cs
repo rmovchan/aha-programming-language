@@ -27,7 +27,7 @@ namespace Console
     /// </summary>
     public partial class MainWindow : Window
     {
-        delegate void func_Output(string text);
+        delegate void MyOutput(string text);
 
         struct TraceRec
         {
@@ -35,18 +35,18 @@ namespace Console
             public string message;
         }
 
-        struct BehaviorParams<tpar_Event> : icomp_BehaviorParams<tpar_Event>
+        struct BehaviorParams<tpar_Event>: icom_BehaviorParams<tpar_Event>
         {
-            private func_Output field_output;
+            private MyOutput field_output;
             private string field_settings;
             private string field_password;
             private icomp_Engine<tpar_Event> field_engine;
 
             public bool attr_settings(out IahaArray<char> result) { result = new AhaString(field_settings); return true; }
-            public bool attr_password(out IahaArray<char> result) { result = new AhaString(field_password); return true; } //TODO
+            //public bool attr_password(out IahaArray<char> result) { result = new AhaString(field_password); return true; } //TODO
             public bool fattr_output(IahaArray<char> text, out opaque_Job<tpar_Event> result) 
             {
-                func_Output output = field_output;
+                MyOutput output = field_output;
                 result = new opaque_Job<tpar_Event>()
                 {
                     title = "output",
@@ -56,7 +56,7 @@ namespace Console
             }
             public bool attr_engine(out icomp_Engine<tpar_Event> result) { result = field_engine; return true; }
 
-            public BehaviorParams(func_Output output, string settings, string password, icomp_Engine<tpar_Event> engine)
+            public BehaviorParams(MyOutput output, string settings, string password, icomp_Engine<tpar_Event> engine)
             {
                 field_output = output;
                 field_settings = settings;
@@ -195,10 +195,56 @@ namespace Console
 
         private void MenuItem_Click_1(object sender, RoutedEventArgs e)
         {
-            status.Content = "Enter application's password and press Enter";
-            password.Visibility = Visibility.Visible;
-            passwordLabel.Visibility = Visibility.Visible;
-            password.Focus();
+            //status.Content = "Enter application's password and press Enter";
+            //password.Visibility = Visibility.Visible;
+            //passwordLabel.Visibility = Visibility.Visible;
+            //password.Focus();
+            //passwordLabel.Visibility = Visibility.Hidden;
+            //password.Visibility = Visibility.Hidden;
+            // create behavior parameters
+            Type bpType = typeof(BehaviorParams<>).MakeGenericType(new Type[] { eventType });
+            MyOutput local_output = output;
+            func_Trace local_trace = addTrace;
+            b = Activator.CreateInstance(bpType, new object[] { local_output, parameters.Text, password.Password, eng });
+            // get application's behavior
+            object[] args = new object[2];
+            args[0] = b;
+            try
+            {
+                appType.InvokeMember
+                    (
+                        "fattr_Behavior",
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                        null,
+                        app,
+                        args
+                    );
+                engType.InvokeMember
+                    (
+                        "StartExternal",
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+                        null,
+                        eng,
+                        new object[] { args[1], local_trace }
+                    );
+            }
+            catch (System.Exception)
+            {
+                status.Content = "Error starting application";
+                return;
+            }
+            start.IsEnabled = false;
+            open.IsEnabled = false;
+            suspend.IsEnabled = true;
+            applicationBox.IsEnabled = false;
+            appSuspended = false;
+            stop.IsEnabled = true;
+            parameters.IsReadOnly = true;
+            messageLog.Clear();
+            //traceView.Items.Clear();
+            status.Content = "Running";
+            running = true;
+            outputTimer.Start();
         }
 
         private void MenuItem_Click_2(object sender, RoutedEventArgs e)
@@ -445,55 +491,55 @@ namespace Console
 
         private void password_KeyUp(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Return)
-            {
-                passwordLabel.Visibility = Visibility.Hidden;
-                password.Visibility = Visibility.Hidden;
-                // create behavior parameters
-                Type bpType = typeof(BehaviorParams<>).MakeGenericType(new Type[] { eventType });
-                func_Output local_output = output;
-                func_Trace local_trace = addTrace;
-                b = Activator.CreateInstance(bpType, new object[] { local_output, parameters.Text, password.Password, eng });
-                // get application's behavior
-                object[] args = new object[2];
-                args[0] = b;
-                try
-                {
-                    appType.InvokeMember
-                        (
-                            "fattr_Behavior",
-                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
-                            null,
-                            app,
-                            args
-                        );
-                    engType.InvokeMember
-                        (
-                            "StartExternal",
-                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
-                            null,
-                            eng,
-                            new object[] { args[1], local_trace }
-                        );
-                }
-                catch (System.Exception)
-                {
-                    status.Content = "Error starting application";
-                    return;
-                }
-                start.IsEnabled = false;
-                open.IsEnabled = false;
-                suspend.IsEnabled = true;
-                applicationBox.IsEnabled = false;
-                appSuspended = false;
-                stop.IsEnabled = true;
-                parameters.IsReadOnly = true;
-                messageLog.Clear();
-                //traceView.Items.Clear();
-                status.Content = "Running";
-                running = true;
-                outputTimer.Start();
-            }
+            //if (e.Key == Key.Return)
+            //{
+            //    passwordLabel.Visibility = Visibility.Hidden;
+            //    password.Visibility = Visibility.Hidden;
+            //    // create behavior parameters
+            //    Type bpType = typeof(BehaviorParams<>).MakeGenericType(new Type[] { eventType });
+            //    func_Output local_output = output;
+            //    func_Trace local_trace = addTrace;
+            //    b = Activator.CreateInstance(bpType, new object[] { local_output, parameters.Text, password.Password, eng });
+            //    // get application's behavior
+            //    object[] args = new object[2];
+            //    args[0] = b;
+            //    try
+            //    {
+            //        appType.InvokeMember
+            //            (
+            //                "fattr_Behavior",
+            //                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+            //                null,
+            //                app,
+            //                args
+            //            );
+            //        engType.InvokeMember
+            //            (
+            //                "StartExternal",
+            //                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod,
+            //                null,
+            //                eng,
+            //                new object[] { args[1], local_trace }
+            //            );
+            //    }
+            //    catch (System.Exception)
+            //    {
+            //        status.Content = "Error starting application";
+            //        return;
+            //    }
+            //    start.IsEnabled = false;
+            //    open.IsEnabled = false;
+            //    suspend.IsEnabled = true;
+            //    applicationBox.IsEnabled = false;
+            //    appSuspended = false;
+            //    stop.IsEnabled = true;
+            //    parameters.IsReadOnly = true;
+            //    messageLog.Clear();
+            //    //traceView.Items.Clear();
+            //    status.Content = "Running";
+            //    running = true;
+            //    outputTimer.Start();
+            //}
         }
 
     }

@@ -1,0 +1,19 @@
+doc 
+    Title:   "Miscellaneous"
+    Package: "Aha! Base Library"
+    Purpose: "Miscellaneous utilities"
+    Author:  "Roman Movchan, Melbourne, Australia"
+    Created: "2012-06-02"
+end
+
+export 
+    [
+        SetOfCardinals:
+            obj { integer }
+                include(integer) "include cardinal number into the set"
+                exclude(integer) "exclude cardinal number from the set"
+            end "dynamic set of cardinal numbers"
+        Random: { [ seed: integer limit: integer ] -> integer* } "generate a pseudo-random sequence of cardinals"
+        PrimesTo: { integer -> integer* } "generate prime numbers up to given number"
+        CharsIn: { [character] -> { character } } "set of characters in a given string"
+    ]
